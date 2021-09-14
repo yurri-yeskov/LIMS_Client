@@ -17,6 +17,7 @@ import {
   CCol,
   CRow,
   CTextarea,
+  CInputCheckbox,
 } from "@coreui/react";
 
 import "./style.css";
@@ -191,6 +192,7 @@ export default class InputLaboratory extends Component {
       charge_history: "",
       charge_table_flag: false,
       charge_value: new Date(),
+      reason: [],
     };
   }
 
@@ -367,8 +369,6 @@ export default class InputLaboratory extends Component {
     //   });
     // });
 
-    // console.log(history);
-
     // var header_item = [];
     // if (history.length > 0) {
     //   history.map((item, index) => {
@@ -501,7 +501,6 @@ export default class InputLaboratory extends Component {
       })
       .then((res) => {
         toast.success("Laboratory successfully uploaded");
-        console.log(res);
         this.setState({
           allData: res.data,
           filteredData: res.data,
@@ -745,6 +744,16 @@ export default class InputLaboratory extends Component {
     });
   }
 
+  handleSeltectedChangeReason = (e) => {
+    this.setState({ [e.target.name]: e.target.value });
+  };
+
+  onChangeCheckbox = (e) => {
+    this.setState({
+      [e.target.name]: !this.state[e.target.name],
+    });
+  };
+
   handleSelectChangeMaterial(e) {
     var filtered_material = [];
     var avaiable_a_types = [];
@@ -943,6 +952,7 @@ export default class InputLaboratory extends Component {
 
   async onRowClicked(item, analysis) {
     var history_item = [];
+    var reason = [];
 
     await axios.get(Config.ServerUri + "/get_objective_history").then((res) => {
       res.data.objectivehistory.map((temp) => {
@@ -953,6 +963,10 @@ export default class InputLaboratory extends Component {
       });
     });
 
+    await axios.get(Config.ServerUri + "/get_all_reason").then((res) => {
+      reason = res.data;
+    });
+
     this.setState({
       laboratory: item._id,
       a_types: item.a_types,
@@ -960,11 +974,16 @@ export default class InputLaboratory extends Component {
       anaylsis_button: analysis,
       history_item: history_item,
       client_id: item.client_id,
+      reason: reason,
     });
     this.setModal_detail(true);
   }
 
   onChangeValue(data) {
+    var accept = false;
+    if (data.accept) {
+      accept = data.accept;
+    }
     this.setState({
       [data.id + "-" + data.analysis + "-" + data.obj_value + "-" + data.unit]:
         data._id,
@@ -976,7 +995,30 @@ export default class InputLaboratory extends Component {
       "-" +
       data.obj_value +
       "-" +
-      data.analysis]: data.limitValue,
+      data.analysis +
+      `[${data.min}, ${data.max}]`]: data.limitValue,
+      [data.id +
+      "-" +
+      data.label +
+      "-" +
+      data.unit +
+      "-" +
+      data.obj_value +
+      "-" +
+      data.analysis +
+      `[${data.min}, ${data.max}]` +
+      "reason"]: data.reason,
+      [data.id +
+      "-" +
+      data.label +
+      "-" +
+      data.unit +
+      "-" +
+      data.obj_value +
+      "-" +
+      data.analysis +
+      `[${data.min}, ${data.max}]` +
+      "checkbox"]: accept,
     });
   }
 
@@ -1406,7 +1448,38 @@ export default class InputLaboratory extends Component {
   onCancelModal(objectives) {
     objectives.map((item) => {
       this.setState({
-        [item.id + "-" + item.label]: "",
+        [item.id +
+        "-" +
+        item.label +
+        "-" +
+        item.unit +
+        "-" +
+        item.value +
+        "-" +
+        item.analysis +
+        `[${item.min}, ${item.max}]`]: "",
+        [item.id +
+        "-" +
+        item.label +
+        "-" +
+        item.unit +
+        "-" +
+        item.value +
+        "-" +
+        item.analysis +
+        `[${item.min}, ${item.max}]` +
+        "reason"]: "",
+        [item.id +
+        "-" +
+        item.label +
+        "-" +
+        item.unit +
+        "-" +
+        item.value +
+        "-" +
+        item.analysis +
+        `[${item.min}, ${item.max}]` +
+        "checkbox"]: false,
         [item.label]: false,
         [item.id + "-" + item.analysis + "-" + item.label + item.unit]: "black",
       });
@@ -1453,15 +1526,15 @@ export default class InputLaboratory extends Component {
       objectives.map((item) => {
         if (item.label !== label.label) {
           this.setState({
-            [label.label +
+            [item.label +
             "-" +
-            label.analysis +
+            item.analysis +
             "-" +
-            label.unit +
+            item.unit +
             "-" +
-            label.value +
+            item.value +
             "-" +
-            label.id]: false,
+            item.id]: false,
           });
         }
       });
@@ -1496,51 +1569,60 @@ export default class InputLaboratory extends Component {
   onClickSaveObjectiveHistory(objectives) {
     var history_item = [];
     var data = [];
-    objectives.map((item) => {
-      if (
-        this.state[
-          item.id +
-            "-" +
-            item.label +
-            "-" +
-            item.unit +
-            "-" +
-            item.value +
-            "-" +
-            item.analysis
-        ] !== undefined
-      ) {
-        data.push({
-          label: item.label,
-          value:
-            this.state[
-              item.id +
-                "-" +
-                item.label +
-                "-" +
-                item.unit +
-                "-" +
-                item.value +
-                "-" +
-                item.analysis
-            ],
-          id: item.id,
-          analysis: item.analysis,
-          min: item.min,
-          max: item.max,
-          obj_value: item.value,
-          unit: item.unit,
-          _id: this.state[
-            item.id + "-" + item.analysis + "-" + item.value + "-" + item.unit
-          ],
-        });
-      }
 
-      this.setState({
-        [item.label]: false,
-        comment: "",
-        [item.id + "-" + item.label]: "",
-        [item.id + "-" + item.analysis + "-" + item.label + item.unit]: "black",
+    objectives.map((item) => {
+      data.push({
+        label: item.label,
+        value:
+          this.state[
+            item.id +
+              "-" +
+              item.label +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.analysis +
+              `[${item.min}, ${item.max}]`
+          ],
+        reason:
+          this.state[
+            item.id +
+              "-" +
+              item.label +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.analysis +
+              `[${item.min}, ${item.max}]` +
+              "reason"
+          ],
+        accept:
+          this.state[
+            item.id +
+              "-" +
+              item.label +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.analysis +
+              `[${item.min}, ${item.max}]` +
+              "checkbox"
+          ],
+        id: item.id,
+        analysis: item.analysis,
+        min: item.min,
+        max: item.max,
+        obj_value: item.value,
+        unit: item.unit,
+        _id: this.state[
+          item.id + "-" + item.analysis + "-" + item.value + "-" + item.unit
+        ],
       });
     });
 
@@ -1572,6 +1654,47 @@ export default class InputLaboratory extends Component {
           object_history: false,
           modal_detail: false,
         });
+
+        objectives.map((item) => {
+          this.setState({
+            [item.label]: false,
+            comment: "",
+            [item.id +
+            "-" +
+            item.label +
+            "-" +
+            item.unit +
+            "-" +
+            item.value +
+            "-" +
+            item.analysis +
+            `[${item.min}, ${item.max}]`]: "",
+            [item.id +
+            "-" +
+            item.label +
+            "-" +
+            item.unit +
+            "-" +
+            item.value +
+            "-" +
+            item.analysis +
+            `[${item.min}, ${item.max}]` +
+            "reason"]: "",
+            [item.id +
+            "-" +
+            item.label +
+            "-" +
+            item.unit +
+            "-" +
+            item.value +
+            "-" +
+            item.analysis +
+            `[${item.min}, ${item.max}]` +
+            "checkbox"]: false,
+            [item.id + "-" + item.analysis + "-" + item.label + item.unit]:
+              "black",
+          });
+        });
       });
   }
 
@@ -1584,35 +1707,25 @@ export default class InputLaboratory extends Component {
             return (
               <>
                 <CRow>
-                  <CCol md="5">
-                    <CLabel
-                      htmlFor="objective"
-                      onClick={() => this.onClickLabel(item, objectives)}
-                    >
-                      {item.label +
-                        " " +
-                        temp.unit +
-                        " " +
-                        `[${item.min}, ${item.max}]`}
-                    </CLabel>
-                  </CCol>
-                  <CCol md="5">
-                    <CInput
-                      type="number"
-                      name={
-                        item.id +
-                        "-" +
-                        item.label +
-                        "-" +
-                        item.unit +
-                        "-" +
-                        item.value +
-                        "-" +
-                        item.analysis
-                      }
-                      value={
-                        this.state[
-                          item.id +
+                  <CCol md="4">
+                    <CRow>
+                      <CCol md="8">
+                        <CLabel
+                          htmlFor="objective"
+                          onClick={() => this.onClickLabel(item, objectives)}
+                        >
+                          {item.label +
+                            " " +
+                            temp.unit +
+                            " " +
+                            `[${item.min}, ${item.max}]`}
+                        </CLabel>
+                      </CCol>
+                      <CCol md="4">
+                        <CInput
+                          type="number"
+                          name={
+                            item.id +
                             "-" +
                             item.label +
                             "-" +
@@ -1620,23 +1733,129 @@ export default class InputLaboratory extends Component {
                             "-" +
                             item.value +
                             "-" +
-                            item.analysis
-                        ]
-                      }
-                      style={{
-                        color:
-                          this.state[
+                            item.analysis +
+                            `[${item.min}, ${item.max}]`
+                          }
+                          value={
+                            this.state[
+                              item.id +
+                                "-" +
+                                item.label +
+                                "-" +
+                                item.unit +
+                                "-" +
+                                item.value +
+                                "-" +
+                                item.analysis +
+                                `[${item.min}, ${item.max}]`
+                            ] | 0
+                          }
+                          style={{
+                            color:
+                              this.state[
+                                item.id +
+                                  "-" +
+                                  item.analysis +
+                                  "-" +
+                                  item.label +
+                                  item.unit
+                              ],
+                          }}
+                          className="form-control-sm"
+                          onChange={(e) => this.onChangeMinMaxValues(e, item)}
+                          required={true}
+                        />
+                      </CCol>
+                    </CRow>
+                  </CCol>
+                  <CCol md="4">
+                    <CRow>
+                      <CCol md="3">
+                        <CLabel>Reason</CLabel>
+                      </CCol>
+                      <CCol md="9">
+                        <CSelect
+                          name={
                             item.id +
-                              "-" +
-                              item.analysis +
-                              "-" +
-                              item.label +
-                              item.unit
-                          ],
-                      }}
-                      className="form-control-sm"
-                      onChange={(e) => this.onChangeMinMaxValues(e, item)}
-                    />
+                            "-" +
+                            item.label +
+                            "-" +
+                            item.unit +
+                            "-" +
+                            item.value +
+                            "-" +
+                            item.analysis +
+                            `[${item.min}, ${item.max}]` +
+                            "reason"
+                          }
+                          value={
+                            this.state[
+                              item.id +
+                                "-" +
+                                item.label +
+                                "-" +
+                                item.unit +
+                                "-" +
+                                item.value +
+                                "-" +
+                                item.analysis +
+                                `[${item.min}, ${item.max}]` +
+                                "reason"
+                            ]
+                          }
+                          onChange={this.handleSeltectedChangeReason}
+                        >
+                          <option key="default" value="">
+                            Select reason [from Admin/reasons]
+                          </option>
+                          {this.state.reason.map((item) => (
+                            <option key={item._id} value={item.reason}>
+                              {item.reason}
+                            </option>
+                          ))}
+                        </CSelect>
+                      </CCol>
+                    </CRow>
+                  </CCol>
+                  <CCol md="4">
+                    <CRow>
+                      <CCol md="10">
+                        <CLabel>Accept value anyway</CLabel>
+                      </CCol>
+                      <CCol md="1">
+                        <CInputCheckbox
+                          name={
+                            item.id +
+                            "-" +
+                            item.label +
+                            "-" +
+                            item.unit +
+                            "-" +
+                            item.value +
+                            "-" +
+                            item.analysis +
+                            `[${item.min}, ${item.max}]` +
+                            "checkbox"
+                          }
+                          checked={
+                            this.state[
+                              item.id +
+                                "-" +
+                                item.label +
+                                "-" +
+                                item.unit +
+                                "-" +
+                                item.value +
+                                "-" +
+                                item.analysis +
+                                `[${item.min}, ${item.max}]` +
+                                "checkbox"
+                            ]
+                          }
+                          onChange={this.onChangeCheckbox}
+                        />
+                      </CCol>
+                    </CRow>
                   </CCol>
                 </CRow>
                 <CRow style={{ marginTop: "5px" }}>
@@ -2188,7 +2407,7 @@ export default class InputLaboratory extends Component {
                 className="float-right"
                 style={{ margin: "0px 0px 0px 16px" }}
               >
-                <i className="fa fa-download" />
+                <i className="fa fa-upload" />
                 <span style={{ padding: "4px" }} />
                 Import
               </CButton>
@@ -2297,7 +2516,7 @@ export default class InputLaboratory extends Component {
                   data = [];
                   this.state.objectiveHistory.map((temp) => {
                     if (temp.id === item._id) {
-                      data = [temp];
+                      data.push(temp);
                     }
                   });
                 });
@@ -2325,8 +2544,21 @@ export default class InputLaboratory extends Component {
                             </div>
                           );
                         } else {
+                          var analysis_history = [];
+                          for (var i = data.length - 1; i >= 0; i--) {
+                            if (
+                              !analysis_history.some(
+                                (val) =>
+                                  `${val.label} + ${val.analysis}` ===
+                                  `${data[i].label} + ${data[i].analysis}`
+                              )
+                            ) {
+                              analysis_history.push(data[i]);
+                            }
+                          }
+
                           color = "";
-                          data.map((temp) => {
+                          analysis_history.map((temp) => {
                             if (temp.analysis === v) {
                               if (
                                 temp.limitValue >= temp.min &&
@@ -2338,7 +2570,11 @@ export default class InputLaboratory extends Component {
                                   color = "#2eb85c";
                                 }
                               } else {
-                                color = "#e55353";
+                                if (temp.accept === true) {
+                                  color = "#2eb85c";
+                                } else {
+                                  color = "#e55353";
+                                }
                               }
                             }
                           });
@@ -2462,6 +2698,7 @@ export default class InputLaboratory extends Component {
         <CModal
           show={this.state.modal_detail}
           onClose={() => this.AnalysisTypeChange()}
+          style={{ width: "40vw" }}
         >
           <CModalHeader>
             <CModalTitle>{this.state.anaylsis_button}</CModalTitle>

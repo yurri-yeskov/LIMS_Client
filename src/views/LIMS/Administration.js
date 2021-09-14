@@ -1,16 +1,17 @@
-import React, { Component }  from 'react'
-import AdminUser from './AdminUser'
-import AdminObjective from './AdminObjective'
-import AdminPackingType from './AdminPackingType'
-import AdminCertificateType from './AdminCertificateType'
-import AdminAnalysisType from './AdminAnalysisType'
-import AdminSampleType from './AdminSampleType'
-import AdminUserType from './AdminUserType'
-import AdminMaterial from './AdminMaterial.js'
-import AdminUnit from './AdminUnit'
-import AdminClient from './AdminClient'
+import React, { Component } from "react";
+import AdminUser from "./AdminUser";
+import AdminObjective from "./AdminObjective";
+import AdminPackingType from "./AdminPackingType";
+import AdminCertificateType from "./AdminCertificateType";
+import AdminAnalysisType from "./AdminAnalysisType";
+import AdminSampleType from "./AdminSampleType";
+import AdminUserType from "./AdminUserType";
+import AdminMaterial from "./AdminMaterial.js";
+import AdminUnit from "./AdminUnit";
+import AdminClient from "./AdminClient";
+import AdminReason from "./AdminReason";
 
-import {Toaster} from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 
 import {
   CCol,
@@ -23,23 +24,23 @@ import {
   CCard,
   CCardBody,
   CTabs,
-} from '@coreui/react'
+} from "@coreui/react";
 
-import './style.css';
+import "./style.css";
 
 export default class Administration extends Component {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
       current_tab: 0,
-    }
+    };
   }
 
   on_tab_clicked(e, tab) {
     e.preventDefault();
     this.setState({
-      current_tab: tab
-    })
+      current_tab: tab,
+    });
   }
 
   render() {
@@ -100,31 +101,56 @@ export default class Administration extends Component {
                       Clients
                     </CNavLink>
                   </CNavItem>
+                  <CNavItem>
+                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 10)}>
+                      Reason
+                    </CNavLink>
+                  </CNavItem>
                 </CNav>
                 <CTabContent>
                   <CTabPane>
                     {this.state.current_tab !== 0 ? <div /> : <AdminUser />}
                   </CTabPane>
                   <CTabPane>
-                  {this.state.current_tab !== 1 ? <div /> : <AdminUserType />}
+                    {this.state.current_tab !== 1 ? <div /> : <AdminUserType />}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 2 ? <div /> : <AdminSampleType />}
+                    {this.state.current_tab !== 2 ? (
+                      <div />
+                    ) : (
+                      <AdminSampleType />
+                    )}
                   </CTabPane>
                   <CTabPane>
                     {this.state.current_tab !== 3 ? <div /> : <AdminMaterial />}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 4 ? <div /> : <AdminAnalysisType />}
+                    {this.state.current_tab !== 4 ? (
+                      <div />
+                    ) : (
+                      <AdminAnalysisType />
+                    )}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 5 ? <div /> : <AdminObjective />}
+                    {this.state.current_tab !== 5 ? (
+                      <div />
+                    ) : (
+                      <AdminObjective />
+                    )}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 6 ? <div /> : <AdminPackingType />}
+                    {this.state.current_tab !== 6 ? (
+                      <div />
+                    ) : (
+                      <AdminPackingType />
+                    )}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 7 ? <div /> : <AdminCertificateType />}
+                    {this.state.current_tab !== 7 ? (
+                      <div />
+                    ) : (
+                      <AdminCertificateType />
+                    )}
                   </CTabPane>
                   <CTabPane>
                     {this.state.current_tab !== 8 ? <div /> : <AdminUnit />}
@@ -132,16 +158,16 @@ export default class Administration extends Component {
                   <CTabPane>
                     {this.state.current_tab !== 9 ? <div /> : <AdminClient />}
                   </CTabPane>
+                  <CTabPane>
+                    {this.state.current_tab !== 10 ? <div /> : <AdminReason />}
+                  </CTabPane>
                 </CTabContent>
               </CTabs>
             </CCardBody>
           </CCard>
         </CCol>
-        <Toaster
-          position="top-right"
-          reverseOrder={true}
-        />
+        <Toaster position="top-right" reverseOrder={true} />
       </CRow>
-    )
+    );
   }
 }
