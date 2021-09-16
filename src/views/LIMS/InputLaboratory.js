@@ -17,11 +17,11 @@ import {
   CCol,
   CRow,
   CTextarea,
-  CInputCheckbox,
 } from "@coreui/react";
 
 import "./style.css";
 import { ReactMultiEmail, isEmail } from "react-multi-email";
+import { Input } from "antd";
 import "react-multi-email/style.css";
 import { Select, DatePicker as AtndDatePicker } from "antd";
 import ReactFileReader from "react-file-reader";
@@ -29,6 +29,7 @@ import { toast } from "react-hot-toast";
 import "react-datepicker/dist/react-datepicker.css";
 import { CSVLink } from "react-csv";
 import moment from "moment";
+import { thisExpression } from "@babel/types";
 
 const axios = require("axios");
 const Config = require("../../Config.js");
@@ -81,6 +82,8 @@ const object_fields = [
   { key: "limitValue", label: "Value" },
   { key: "author", label: "Author" },
   { key: "update_date", label: "Date" },
+  { key: "reason", label: "Reason" },
+  { key: "accept", label: "Accept" },
   { key: "comment", label: "Comment" },
 ];
 
@@ -193,6 +196,7 @@ export default class InputLaboratory extends Component {
       charge_table_flag: false,
       charge_value: new Date(),
       reason: [],
+      chk_full: false,
     };
   }
 
@@ -205,6 +209,7 @@ export default class InputLaboratory extends Component {
     this.getAllSampleTypes();
     this.getAllData();
     this.getObjectiveHistory();
+    this.getUserType();
   }
 
   getAllData() {
@@ -218,6 +223,13 @@ export default class InputLaboratory extends Component {
       })
       .catch((error) => {});
   }
+
+  getUserType = () => {
+    var token = localStorage.getItem("token");
+    axios.post(Config.ServerUri + "/get_userTypes", { token }).then((res) => {
+      this.setState({ accept_visible: res.data.accept_visible });
+    });
+  };
 
   getObjectiveHistory() {
     axios.get(Config.ServerUri + "/get_objective_history").then((res) => {
@@ -357,54 +369,6 @@ export default class InputLaboratory extends Component {
   }
 
   async on_export_clicked() {
-    // var history = [];
-    // await axios.get(Config.ServerUri + "/get_objective_history").then((res) => {
-    //   res.data.objectivehistory.map((item) => {
-    //     res.data.unit.map((temp) => {
-    //       if (item.unit === temp._id) {
-    //         item.unit_name = temp.unit;
-    //         history.push(item);
-    //       }
-    //     });
-    //   });
-    // });
-
-    // var header_item = [];
-    // if (history.length > 0) {
-    //   history.map((item, index) => {
-    //     var list = [
-    //       {
-    //         key: "objective" + (index + 1),
-    //         label: "Objective" + (index + 1),
-    //       },
-    //       { key: "unit" + (index + 1), label: "Unit" + (index + 1) },
-    //       {
-    //         key: "max_min_value" + (index + 1),
-    //         label: "MinMaxValue" + (index + 1),
-    //       },
-    //       {
-    //         key: "update_date" + (index + 1),
-    //         label: "UpdateDate" + (index + 1),
-    //       },
-    //       { key: "author" + (index + 1), label: "author" + (index + 1) },
-    //       {
-    //         key: "limitvalue" + (index + 1),
-    //         label: "LimitValue" + (index + 1),
-    //       },
-    //     ];
-    //     header_item = header_item.concat(list);
-    //     data["objective" + (index + 1)] = item.label;
-    //     data["unit" + (index + 1)] = item.unit_name;
-    //     data["max_min_value" + (index + 1)] =
-    //       "[" + item.max + "," + item.min + "]";
-    //     data["update_date" + (index + 1)] = item.update_date;
-    //     data["author" + (index + 1)] = item.userid.userName;
-    //     data["limitvalue" + (index + 1)] = item.limitValue;
-    //   });
-    // }
-
-    // var title = header.concat(header_item);
-
     await this.csvLink.link.click();
   }
 
@@ -438,7 +402,6 @@ export default class InputLaboratory extends Component {
       order_id: "",
       pos_id: "",
       weight: "",
-      // display_detail: false
     });
 
     this.setModal_Create(true);
@@ -748,12 +711,6 @@ export default class InputLaboratory extends Component {
     this.setState({ [e.target.name]: e.target.value });
   };
 
-  onChangeCheckbox = (e) => {
-    this.setState({
-      [e.target.name]: !this.state[e.target.name],
-    });
-  };
-
   handleSelectChangeMaterial(e) {
     var filtered_material = [];
     var avaiable_a_types = [];
@@ -893,8 +850,9 @@ export default class InputLaboratory extends Component {
     this.setState({ fetch_date });
   }
 
-  onChangeChargeDate(e, i) {
-    this.setState({ charge_value: i });
+  onChangeChargeDate(charge_value) {
+    var charge_value = charge_value || this.state.charge_value;
+    this.setState({ charge_value });
   }
 
   onSaveWeight = () => {
@@ -980,10 +938,27 @@ export default class InputLaboratory extends Component {
   }
 
   onChangeValue(data) {
+    var color = "";
     var accept = false;
+    var reason = "";
     if (data.accept) {
       accept = data.accept;
     }
+
+    if (data.reason) {
+      reason = data.reason;
+    }
+
+    if (data.min <= data.limitValue && data.limitValue <= data.max) {
+      color = "#2eb85c";
+    } else {
+      color = "#e55353";
+    }
+
+    if (data.accept === true) {
+      color = "#2eb85c";
+    }
+
     this.setState({
       [data.id + "-" + data.analysis + "-" + data.obj_value + "-" + data.unit]:
         data._id,
@@ -1007,7 +982,7 @@ export default class InputLaboratory extends Component {
       "-" +
       data.analysis +
       `[${data.min}, ${data.max}]` +
-      "reason"]: data.reason,
+      "reason"]: reason,
       [data.id +
       "-" +
       data.label +
@@ -1019,6 +994,7 @@ export default class InputLaboratory extends Component {
       data.analysis +
       `[${data.min}, ${data.max}]` +
       "checkbox"]: accept,
+      [data.id + "-" + data.analysis + "-" + data.label + data.unit]: color,
     });
   }
 
@@ -1130,7 +1106,7 @@ export default class InputLaboratory extends Component {
                     style={{ float: "right" }}
                     onClick={this.charge_history_table}
                   >
-                    Charge:
+                    Charge Data:
                   </CLabel>
                 </CCol>
                 <CCol md="8">
@@ -1429,15 +1405,42 @@ export default class InputLaboratory extends Component {
     ) {
       this.setState({
         [item.id + "-" + item.analysis + "-" + item.label + item.unit]: "red",
+        accept_disable: false,
       });
     } else {
       this.setState({
         [item.id + "-" + item.analysis + "-" + item.label + item.unit]: "green",
+        accept_disable: true,
       });
     }
+    var value = e.target.value.replace(".", ",");
+
+    console.log(e.target.value);
 
     this.setState({
-      [e.target.name]: e.target.value,
+      [e.target.name]: value,
+      [item.id +
+      "-" +
+      item.label +
+      "-" +
+      item.unit +
+      "-" +
+      item.value +
+      "-" +
+      item.analysis +
+      `[${item.min}, ${item.max}]` +
+      "reason"]: "",
+      [item.id +
+      "-" +
+      item.label +
+      "-" +
+      item.unit +
+      "-" +
+      item.value +
+      "-" +
+      item.analysis +
+      `[${item.min}, ${item.max}]` +
+      "checkbox"]: false,
     });
   }
 
@@ -1508,6 +1511,8 @@ export default class InputLaboratory extends Component {
           data._id = item._id;
           data.unit = item.unit;
           data.value = item.obj_value;
+          data.reason = item.reason;
+          data.accept = item.accept;
 
           if (data.constructor === Object && Object.keys(data).length === 0) {
           } else {
@@ -1700,6 +1705,7 @@ export default class InputLaboratory extends Component {
 
   renderDetailModalCreate(objectives) {
     var data = {};
+    var dis = "";
     data = objectives.map((item) => {
       return this.state.unitData.map((temp) => {
         if (item.analysis === this.state.anaylsis_button) {
@@ -1722,8 +1728,8 @@ export default class InputLaboratory extends Component {
                         </CLabel>
                       </CCol>
                       <CCol md="4">
-                        <CInput
-                          type="number"
+                        <Input
+                          type="text"
                           name={
                             item.id +
                             "-" +
@@ -1748,7 +1754,7 @@ export default class InputLaboratory extends Component {
                                 "-" +
                                 item.analysis +
                                 `[${item.min}, ${item.max}]`
-                            ] | 0
+                            ]
                           }
                           style={{
                             color:
@@ -1801,11 +1807,25 @@ export default class InputLaboratory extends Component {
                                 item.analysis +
                                 `[${item.min}, ${item.max}]` +
                                 "reason"
-                            ]
+                            ] === undefined
+                              ? ""
+                              : this.state[
+                                  item.id +
+                                    "-" +
+                                    item.label +
+                                    "-" +
+                                    item.unit +
+                                    "-" +
+                                    item.value +
+                                    "-" +
+                                    item.analysis +
+                                    `[${item.min}, ${item.max}]` +
+                                    "reason"
+                                ]
                           }
                           onChange={this.handleSeltectedChangeReason}
                         >
-                          <option key="default" value="">
+                          <option key="default" value="" disabled>
                             Select reason [from Admin/reasons]
                           </option>
                           {this.state.reason.map((item) => (
@@ -1819,25 +1839,30 @@ export default class InputLaboratory extends Component {
                   </CCol>
                   <CCol md="4">
                     <CRow>
-                      <CCol md="10">
-                        <CLabel>Accept value anyway</CLabel>
+                      <CCol md="7">
+                        <CLabel
+                          style={{
+                            display:
+                              this.state.accept_visible === true
+                                ? "block"
+                                : "none",
+                          }}
+                        >
+                          Accept value anyway
+                        </CLabel>
                       </CCol>
-                      <CCol md="1">
-                        <CInputCheckbox
-                          name={
-                            item.id +
-                            "-" +
-                            item.label +
-                            "-" +
-                            item.unit +
-                            "-" +
-                            item.value +
-                            "-" +
-                            item.analysis +
-                            `[${item.min}, ${item.max}]` +
-                            "checkbox"
-                          }
-                          checked={
+                      <CCol md="2">
+                        <div
+                          style={{
+                            display:
+                              this.state.accept_visible == true
+                                ? "block"
+                                : "none",
+                            pointerEvents: this.state.accept_disable
+                              ? "none"
+                              : "auto",
+                          }}
+                          className={
                             this.state[
                               item.id +
                                 "-" +
@@ -1850,10 +1875,39 @@ export default class InputLaboratory extends Component {
                                 item.analysis +
                                 `[${item.min}, ${item.max}]` +
                                 "checkbox"
-                            ]
+                            ] === true
+                              ? "chk clr-full"
+                              : "chk"
                           }
-                          onChange={this.onChangeCheckbox}
-                        />
+                          onClick={(e) => {
+                            this.setState({
+                              [item.id +
+                              "-" +
+                              item.label +
+                              "-" +
+                              item.unit +
+                              "-" +
+                              item.value +
+                              "-" +
+                              item.analysis +
+                              `[${item.min}, ${item.max}]` +
+                              "checkbox"]:
+                                !this.state[
+                                  item.id +
+                                    "-" +
+                                    item.label +
+                                    "-" +
+                                    item.unit +
+                                    "-" +
+                                    item.value +
+                                    "-" +
+                                    item.analysis +
+                                    `[${item.min}, ${item.max}]` +
+                                    "checkbox"
+                                ],
+                            });
+                          }}
+                        ></div>
                       </CCol>
                     </CRow>
                   </CCol>
@@ -1878,6 +1932,19 @@ export default class InputLaboratory extends Component {
                           scopedSlots={{
                             author: (item, index) => {
                               return <td>{item.author}</td>;
+                            },
+                            accept: (item, index) => {
+                              return (
+                                <td>
+                                  <div
+                                    className={
+                                      item.accept === true
+                                        ? "chk clr-full"
+                                        : "chk"
+                                    }
+                                  ></div>
+                                </td>
+                              );
                             },
                           }}
                         />
@@ -2545,12 +2612,13 @@ export default class InputLaboratory extends Component {
                           );
                         } else {
                           var analysis_history = [];
+                          var color_group = [];
                           for (var i = data.length - 1; i >= 0; i--) {
                             if (
                               !analysis_history.some(
                                 (val) =>
-                                  `${val.label} + ${val.analysis}` ===
-                                  `${data[i].label} + ${data[i].analysis}`
+                                  `${val.label} + ${val.analysis} + ${val.obj_value}` ===
+                                  `${data[i].label} + ${data[i].analysis} + ${data[i].obj_value}`
                               )
                             ) {
                               analysis_history.push(data[i]);
@@ -2558,7 +2626,7 @@ export default class InputLaboratory extends Component {
                           }
 
                           color = "";
-                          analysis_history.map((temp) => {
+                          analysis_history.map((temp, index) => {
                             if (temp.analysis === v) {
                               if (
                                 temp.limitValue >= temp.min &&
@@ -2569,15 +2637,30 @@ export default class InputLaboratory extends Component {
                                 } else {
                                   color = "#2eb85c";
                                 }
+                                color_group.push(color);
                               } else {
                                 if (temp.accept === true) {
                                   color = "#2eb85c";
                                 } else {
                                   color = "#e55353";
                                 }
+                                color_group.push(color);
                               }
                             }
                           });
+
+                          if (color_group.length !== 0) {
+                            var a = color_group.filter(
+                              (temp) => temp === "#e55353"
+                            );
+
+                            if (a.length === 0) {
+                              color = "#2eb85c";
+                            } else {
+                              color = "#e55353";
+                            }
+                          }
+
                           if (color == "") {
                             color = "grey";
                           }
@@ -2698,7 +2781,9 @@ export default class InputLaboratory extends Component {
         <CModal
           show={this.state.modal_detail}
           onClose={() => this.AnalysisTypeChange()}
-          style={{ width: "40vw" }}
+          style={{ width: "60vw" }}
+          size="lg"
+          centered
         >
           <CModalHeader>
             <CModalTitle>{this.state.anaylsis_button}</CModalTitle>
@@ -2708,6 +2793,7 @@ export default class InputLaboratory extends Component {
         <CModal
           show={this.state.client_detail_flag}
           onClose={() => this.client_detail_cancel()}
+          style={{ width: "30vw" }}
         >
           <CModalHeader>
             <CModalTitle>{this.state.client_title}</CModalTitle>
@@ -2717,6 +2803,7 @@ export default class InputLaboratory extends Component {
         <CModal
           show={this.state.weight_flag}
           onClose={() => this.weight_data_cancel()}
+          style={{ width: "30vw" }}
         >
           <CModalHeader>
             <CModalTitle>Weight(actual)</CModalTitle>
@@ -2737,6 +2824,7 @@ export default class InputLaboratory extends Component {
         <CModal
           show={this.state.charge_flag}
           onClose={() => this.charge_data_cancel()}
+          style={{ width: "30vw" }}
         >
           <CModalHeader>
             <CModalTitle>Charge</CModalTitle>

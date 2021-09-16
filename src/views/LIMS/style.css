@@ -101,3 +101,36 @@
   color: #cacccf;
   background-color: #fff;
 }
+
+.row {
+  align-items: center;
+}
+
+label {
+  margin: 0px !important;
+}
+
+.col-md-2 {
+  display: flex;
+  align-items: center;
+}
+.chk {
+  width: 15px;
+  height: 15px;
+  background-color: white;
+  border: 1px solid black;
+  border-radius: 2px;
+  transition: all 1s ease;
+}
+
+.clr-full {
+  background-color: rgb(46, 184, 92);
+}
+
+.modal.show .modal-dialog {
+  width: fit-content !important;
+}
+
+.modal-lg {
+  max-width: 2000px;
+}
