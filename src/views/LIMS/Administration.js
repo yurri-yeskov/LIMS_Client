@@ -10,6 +10,7 @@ import AdminMaterial from "./AdminMaterial.js";
 import AdminUnit from "./AdminUnit";
 import AdminClient from "./AdminClient";
 import AdminReason from "./AdminReason";
+import AdminCertificate from "./AdminCertificate";
 
 import { Toaster } from "react-hot-toast";
 
@@ -106,6 +107,11 @@ export default class Administration extends Component {
                       Reason
                     </CNavLink>
                   </CNavItem>
+                  <CNavItem>
+                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 11)}>
+                      Certificate Template
+                    </CNavLink>
+                  </CNavItem>
                 </CNav>
                 <CTabContent>
                   <CTabPane>
@@ -160,6 +166,9 @@ export default class Administration extends Component {
                   </CTabPane>
                   <CTabPane>
                     {this.state.current_tab !== 10 ? <div /> : <AdminReason />}
+                  </CTabPane>
+                  <CTabPane>
+                    {this.state.current_tab !== 11 ? <div /> : <AdminCertificate />}
                   </CTabPane>
                 </CTabContent>
               </CTabs>

@@ -1,4 +1,4 @@
-import React, { Component }  from 'react'
+import React, { Component } from "react";
 import {
   CCard,
   CCardBody,
@@ -17,23 +17,23 @@ import {
   CInput,
   CRow,
   CCol,
-  CSelect
-} from '@coreui/react'
+  CSelect,
+} from "@coreui/react";
 
 import Select from "react-select";
-import {toast} from "react-hot-toast";
+import { toast } from "react-hot-toast";
 
-const axios = require('axios')
-const Config = require('../../Config.js')
+const axios = require("axios");
+const Config = require("../../Config.js");
 
 const fields = [
-  {key: 'material', sorter: false},
-  {key: 'certificateType'},
-  {key: 'packing', label: 'Packing Type'},
-  {key: 'analysises', label: 'AnalysisType-Objective', sorter: false},
-  {key: 'remark', sorter: false},
-  {key: 'buttonGroups', label: '', _style: { width: '84px'}}
-]
+  { key: "material", sorter: false },
+  { key: "certificateType" },
+  { key: "packing", label: "Packing Type" },
+  { key: "analysises", label: "AnalysisType-Objective", sorter: false },
+  { key: "remark", sorter: false },
+  { key: "buttonGroups", label: "", _style: { width: "84px" } },
+];
 
 export default class AdminCertificateType extends Component {
   constructor(props) {
@@ -55,18 +55,18 @@ export default class AdminCertificateType extends Component {
       modal_delete: false,
       modal_create: false,
       current_id: null,
-      material: '',
-      client: '',
-      certificateType: '',
-      packing: '',
+      material: "",
+      client: "",
+      certificateType: "",
+      packing: "",
       analysises: [],
       _analysises: [],
-      remark: '',
+      remark: "",
       _create: false,
-      double_error: '',
+      double_error: "",
       analysisOption: [],
-      analysisOpt: []
-    }
+      analysisOpt: [],
+    };
   }
 
   componentDidMount() {
@@ -74,29 +74,37 @@ export default class AdminCertificateType extends Component {
   }
 
   getAnalysises(analysises, material, client) {
-    if (analysises === '' || analysises === undefined)
-      return '';
+    if (analysises === "" || analysises === undefined) return "";
 
-    var returnVal = '';
+    var returnVal = "";
     analysises.map((item, index) => {
       var label = this.getAnalysisName(item.id);
-      if (label !== '') {
+      if (label !== "") {
         item.objectives.map((item0) => {
           var subLabel = this.getObjectiveName(item0.id);
           var subUnit = this.getUnitName(item0.unit);
-          if (subLabel !== '' && subUnit !== '')
-            returnVal = returnVal + label + ' - ' + subLabel + ' ' + subUnit + ' ' + this.getMaterialMinMax(material, item0.id, item0.unit, client) + '\n';
+          if (subLabel !== "" && subUnit !== "")
+            returnVal =
+              returnVal +
+              label +
+              " - " +
+              subLabel +
+              " " +
+              subUnit +
+              " " +
+              this.getMaterialMinMax(material, item0.id, item0.unit, client) +
+              "\n";
           return true;
-        })
+        });
       }
       return true;
-    })
+    });
 
     return returnVal;
   }
 
   getMaterial(material, client) {
-    return this.getMaterialName(material) + ' - ' + this.getClientName(client);
+    return this.getMaterialName(material) + " - " + this.getClientName(client);
   }
 
   getPacking(packing) {
@@ -105,36 +113,36 @@ export default class AdminCertificateType extends Component {
 
   handleMaterialInputChange = (e) => {
     var option = [];
-    this.state.materialsData.map(item => {
+    this.state.materialsData.map((item) => {
       if (item._id == e.target.value) {
         console.log(item);
         this.setState({ analysisOption: item.aTypesValues });
         if (this.state.client === "") {
-          item.aTypesValues.map(temp => {
+          item.aTypesValues.map((temp) => {
             if (temp.client === "") {
               option.push({ label: temp.label, value: temp.value });
             }
-          })
+          });
         }
       }
-    })
+    });
 
     console.log(option);
 
     this.setState({ [e.target.name]: e.target.value, analysisOpt: option });
-    this.setState({client: '', analysises: [], _analysises: []});
-  }
+    this.setState({ client: "", analysises: [], _analysises: [] });
+  };
 
   handleClientInputChange = (e) => {
     var option = [];
-    this.state.analysisOption.map(item => {
+    this.state.analysisOption.map((item) => {
       if (item.client === e.target.value) {
         option.push({ label: item.label, value: item.value });
       }
-    })
+    });
     this.setState({ [e.target.name]: e.target.value, analysisOpt: option });
-    this.setState({analysises: [], _analysises: []});
-  }
+    this.setState({ analysises: [], _analysises: [] });
+  };
 
   handleInputChange(e) {
     var name = e.target.name;
@@ -161,14 +169,14 @@ export default class AdminCertificateType extends Component {
     //   this.setState({analysises: [], _analysises: []});
 
     this.setState({
-      [name]: value
-    })
+      [name]: value,
+    });
   }
 
   getObjectivesValue(id) {
     var values = this.state.analysises;
-    var retVal = {id: id, objectives: []};
-    for (var i = 0; i < values.length; i ++) {
+    var retVal = { id: id, objectives: [] };
+    for (var i = 0; i < values.length; i++) {
       if (values[i].id === id) {
         retVal = values[i];
         break;
@@ -183,9 +191,9 @@ export default class AdminCertificateType extends Component {
     e.map((item) => {
       analysises.push(this.getObjectivesValue(item.value));
       return true;
-    })
+    });
 
-    this.setState({analysises: analysises, _analysises: e});
+    this.setState({ analysises: analysises, _analysises: e });
   }
 
   handleSubMultiSelectChange(e, index) {
@@ -193,78 +201,72 @@ export default class AdminCertificateType extends Component {
 
     var objectives = [];
     e.map((item) => {
-      var ids = item.value.split('-');
-      objectives.push({id: ids[0], unit: ids[1]});
+      var ids = item.value.split("-");
+      objectives.push({ id: ids[0], unit: ids[1] });
       return true;
-    })
+    });
     analysises[index].objectives = objectives;
 
-    this.setState({analysises: analysises});
+    this.setState({ analysises: analysises });
   }
-  
+
   getObjectiveName(id) {
     var objectives = this.state.objectivesData;
-    for (var i = 0; i < objectives.length; i ++) {
-      if (objectives[i]._id === id)
-        return objectives[i].objective;
+    for (var i = 0; i < objectives.length; i++) {
+      if (objectives[i]._id === id) return objectives[i].objective;
     }
-    return '';
+    return "";
   }
 
   getAnalysisName(id) {
     var analysises = this.state.analysisTypesData;
-    for (var i = 0; i < analysises.length; i ++) {
-      if (analysises[i]._id === id)
-        return analysises[i].analysisType;
+    for (var i = 0; i < analysises.length; i++) {
+      if (analysises[i]._id === id) return analysises[i].analysisType;
     }
-    return '';
+    return "";
   }
 
   getClientName(id) {
-    if (id === '') return 'Default';
+    if (id === "") return "Default";
     var clients = this.state.clientsData;
-    for (var i = 0; i < clients.length; i ++) {
+    for (var i = 0; i < clients.length; i++) {
       if (clients[i]._id === id) {
         return clients[i].name;
       }
     }
-    return '';
+    return "";
   }
 
   getMaterialName(id) {
     var materials = this.state.materialsData;
-    for (var i = 0; i < materials.length; i ++) {
-      if (materials[i]._id === id)
-        return materials[i].material;
+    for (var i = 0; i < materials.length; i++) {
+      if (materials[i]._id === id) return materials[i].material;
     }
-    return '';
+    return "";
   }
 
   getPackingName(id) {
     var packings = this.state.packingsData;
-    for (var i = 0; i < packings.length; i ++) {
-      if (packings[i]._id === id)
-        return packings[i].packingType;
+    for (var i = 0; i < packings.length; i++) {
+      if (packings[i]._id === id) return packings[i].packingType;
     }
-    return '';
+    return "";
   }
 
   getUnitName(id) {
     var units = this.state.unitsData;
-    for (var i = 0; i < units.length; i ++) {
-      if (units[i]._id === id)
-        return units[i].unit;
+    for (var i = 0; i < units.length; i++) {
+      if (units[i]._id === id) return units[i].unit;
     }
-    return '';
+    return "";
   }
 
   getAnalysisObjectives(id) {
     var analysises = this.state.analysisTypesData;
-    for (var i = 0; i < analysises.length; i ++) {
-      if (analysises[i]._id === id)
-        return analysises[i].objectives;
+    for (var i = 0; i < analysises.length; i++) {
+      if (analysises[i]._id === id) return analysises[i].objectives;
     }
-    return '';
+    return "";
   }
 
   getMaterialClients() {
@@ -279,29 +281,32 @@ export default class AdminCertificateType extends Component {
     if (material !== null) {
       material.clients.map((item) => {
         var name = this.getClientName(item);
-        if (name !== '')
-          clients.push({id: item, name: name});
+        if (name !== "") clients.push({ id: item, name: name });
         return true;
-      })
+      });
     }
 
     return clients;
   }
 
-  getMaterialMinMax(id/*material*/, objective, unit, client) {
+  getMaterialMinMax(id /*material*/, objective, unit, client) {
     for (var i in this.state.materialsData) {
       var material = this.state.materialsData[i];
       if (material._id === id) {
         for (var j in material.objectiveValues) {
           var item = material.objectiveValues[j];
-          if (item.id === objective && item.unit === unit && item.client === client) {
-            return '[' + item.min + '-' + item.max + ']';
+          if (
+            item.id === objective &&
+            item.unit === unit &&
+            item.client === client
+          ) {
+            return "[" + item.min + "-" + item.max + "]";
           }
-        } 
+        }
         break;
       }
     }
-    return '[]';
+    return "[]";
   }
 
   getValidMaterialObjs() {
@@ -315,10 +320,9 @@ export default class AdminCertificateType extends Component {
     }
     if (material !== null) {
       material.objectiveValues.map((item) => {
-        if (item.client === this.state.client)
-          objs.push(item);
+        if (item.client === this.state.client) objs.push(item);
         return true;
-      })
+      });
     }
 
     return objs;
@@ -326,13 +330,18 @@ export default class AdminCertificateType extends Component {
 
   isValidMaterialObj(validObjs, client, analysis, objective, unit) {
     for (var i in validObjs) {
-      if (validObjs[i].client === client && validObjs[i].analysis === analysis && validObjs[i].unit === unit && validObjs[i].id === objective)
+      if (
+        validObjs[i].client === client &&
+        validObjs[i].analysis === analysis &&
+        validObjs[i].unit === unit &&
+        validObjs[i].id === objective
+      )
         return true;
     }
     return false;
   }
 
-    isValidMaterialObj_value(validObjs, objective, unit) {
+  isValidMaterialObj_value(validObjs, objective, unit) {
     for (var i in validObjs) {
       if (validObjs[i].unit === unit && validObjs[i].id === objective)
         return true;
@@ -341,8 +350,7 @@ export default class AdminCertificateType extends Component {
   }
 
   renderModalCreate() {
-    if (this.state.modal_create === false)
-      return <div></div>;
+    if (this.state.modal_create === false) return <div></div>;
 
     // var options = [];
     // this.state.analysisTypesData.map((item) => {
@@ -353,61 +361,102 @@ export default class AdminCertificateType extends Component {
     var clientOptions = this.getMaterialClients();
     var validObjs = this.getValidMaterialObjs();
     var data = this.state.analysisOpt;
-    var anaysis_option = Array.from(data.reduce((a, o) => a.set(`${o.value}`, o), new Map()).values());
+    var anaysis_option = Array.from(
+      data.reduce((a, o) => a.set(`${o.value}`, o), new Map()).values()
+    );
 
     return (
       <CCard>
         <CCardBody>
-          <CForm className="was-validated" onSubmit={this.state._create === true ? this.createCertificateType : this.updateCertificateType}>
+          <CForm
+            className="was-validated"
+            onSubmit={
+              this.state._create === true
+                ? this.createCertificateType
+                : this.updateCertificateType
+            }
+          >
             <CFormGroup>
-              <CLabel style={{fontWeight: '500'}}>Materials</CLabel>
-              <CSelect custom name="material" value={this.state.material} onChange={this.handleMaterialInputChange} required >
+              <CLabel style={{ fontWeight: "500" }}>Materials</CLabel>
+              <CSelect
+                custom
+                name="material"
+                value={this.state.material}
+                onChange={this.handleMaterialInputChange}
+                required
+              >
                 <option value="" disabled></option>
-                {
-                  this.state.materialsData.map((item, i) => {
-                    return <option key={i} value={item._id}>{item.material}</option>
-                  })
-                }
+                {this.state.materialsData.map((item, i) => {
+                  return (
+                    <option key={i} value={item._id}>
+                      {item.material}
+                    </option>
+                  );
+                })}
               </CSelect>
               <CInvalidFeedback className="help-block">
                 Please provide a valid information
               </CInvalidFeedback>
-              <CValidFeedback className="help-block">Input provided</CValidFeedback>
+              <CValidFeedback className="help-block">
+                Input provided
+              </CValidFeedback>
             </CFormGroup>
             <CFormGroup>
-              <CLabel style={{fontWeight: '500'}}>Clients</CLabel>
-              <CSelect custom name="client" value={this.state.client} onChange={this.handleClientInputChange} >
+              <CLabel style={{ fontWeight: "500" }}>Clients</CLabel>
+              <CSelect
+                custom
+                name="client"
+                value={this.state.client}
+                onChange={this.handleClientInputChange}
+              >
                 <option value="">Default</option>
-                {
-                  clientOptions.map((item, i) => {
-                    return <option key={i} value={item.id}>{item.name}</option>
-                  })
-                }
+                {clientOptions.map((item, i) => {
+                  return (
+                    <option key={i} value={item.id}>
+                      {item.name}
+                    </option>
+                  );
+                })}
               </CSelect>
             </CFormGroup>
             <CFormGroup>
-              <CLabel style={{fontWeight: '500'}}>Packing Type</CLabel>
-              <CSelect custom name="packing" value={this.state.packing} onChange={this.handleInputChange} required >
+              <CLabel style={{ fontWeight: "500" }}>Packing Type</CLabel>
+              <CSelect
+                custom
+                name="packing"
+                value={this.state.packing}
+                onChange={this.handleInputChange}
+                required
+              >
                 <option value="" disabled></option>
-                {
-                  this.state.packingsData.map((item, i) => {
-                    return <option key={i} value={item._id}>{item.packingType}</option>
-                  })
-                }
+                {this.state.packingsData.map((item, i) => {
+                  return (
+                    <option key={i} value={item._id}>
+                      {item.packingType}
+                    </option>
+                  );
+                })}
               </CSelect>
             </CFormGroup>
             <CFormGroup>
-              <CLabel style={{fontWeight: '500'}}>CertificateType</CLabel>
-              <CInput name="certificateType" value={this.state.certificateType} onChange={this.handleInputChange} required />
+              <CLabel style={{ fontWeight: "500" }}>CertificateType</CLabel>
+              <CInput
+                name="certificateType"
+                value={this.state.certificateType}
+                onChange={this.handleInputChange}
+                required
+              />
               <CInvalidFeedback className="help-block">
                 Please provide a valid information
               </CInvalidFeedback>
-              <CValidFeedback className="help-block">Input provided</CValidFeedback>
+              <CValidFeedback className="help-block">
+                Input provided
+              </CValidFeedback>
             </CFormGroup>
             <CFormGroup>
               <CRow>
                 <CCol md="2">
-                  <CLabel style={{fontWeight: '500'}}>Analysis Types</CLabel>
+                  <CLabel style={{ fontWeight: "500" }}>Analysis Types</CLabel>
                 </CCol>
                 <CCol md="10">
                   <CFormGroup>
@@ -419,12 +468,14 @@ export default class AdminCertificateType extends Component {
                           styles={{
                             control: (base, state) => ({
                               ...base,
-                              boxShadow: state.isFocused ? "0 0 0 0.2rem rgba(46, 184, 92, 0.25)" : 0,
-                              borderColor: '#2eb85c',
-                              '&:hover': {
-                                borderColor: '#2eb85c'
-                              }
-                            })
+                              boxShadow: state.isFocused
+                                ? "0 0 0 0.2rem rgba(46, 184, 92, 0.25)"
+                                : 0,
+                              borderColor: "#2eb85c",
+                              "&:hover": {
+                                borderColor: "#2eb85c",
+                              },
+                            }),
                           }}
                           options={anaysis_option}
                           onChange={(e) => this.handleMultiSelectChange(e)}
@@ -433,8 +484,7 @@ export default class AdminCertificateType extends Component {
                       </CCol>
                     </CRow>
                   </CFormGroup>
-                {
-                  this.state._analysises.map((item, index) => {
+                  {this.state._analysises.map((item, index) => {
                     var label = item.label;
 
                     var analysisObjs = this.getAnalysisObjectives(item.value);
@@ -442,29 +492,51 @@ export default class AdminCertificateType extends Component {
                     analysisObjs.map((item0) => {
                       var label = this.getObjectiveName(item0.id);
                       var unit = this.getUnitName(item0.unit);
-                      if (label !== '' && unit !== '' && this.isValidMaterialObj(validObjs, this.state.client, item.value, item0.id, item0.unit))
-                        subOptions.push({label: label + ' ' + unit, value: item0.id + '-' + item0.unit});
+                      if (
+                        label !== "" &&
+                        unit !== "" &&
+                        this.isValidMaterialObj(
+                          validObjs,
+                          this.state.client,
+                          item.value,
+                          item0.id,
+                          item0.unit
+                        )
+                      )
+                        subOptions.push({
+                          label: label + " " + unit,
+                          value: item0.id + "-" + item0.unit,
+                        });
                       return true;
-                    })
+                    });
 
                     var objs = this.state.analysises[index].objectives;
                     var _objs = []; // values for analysisType->objective
                     objs.map((item0) => {
                       var label = this.getObjectiveName(item0.id);
                       var unit = this.getUnitName(item0.unit);
-                      if (label !== '' && unit !== '' && this.isValidMaterialObj_value(validObjs, item0.id, item0.unit)) {
-                        _objs.push({label: label + ' ' + unit, value: item0.id + '-' + item0.unit});
+                      if (
+                        label !== "" &&
+                        unit !== "" &&
+                        this.isValidMaterialObj_value(
+                          validObjs,
+                          item0.id,
+                          item0.unit
+                        )
+                      ) {
+                        _objs.push({
+                          label: label + " " + unit,
+                          value: item0.id + "-" + item0.unit,
+                        });
                       }
                       return true;
-                    })
+                    });
 
-                    if (label !== '') {
+                    if (label !== "") {
                       return (
                         <CFormGroup key={index}>
                           <CRow>
-                            <CCol md="2">
-                              {label}
-                            </CCol>
+                            <CCol md="2">{label}</CCol>
                             <CCol md="10">
                               <Select
                                 isMulti
@@ -472,41 +544,55 @@ export default class AdminCertificateType extends Component {
                                 styles={{
                                   control: (base, state) => ({
                                     ...base,
-                                    boxShadow: state.isFocused ? "0 0 0 0.2rem rgba(46, 184, 92, 0.25)" : 0,
-                                    borderColor: '#2eb85c',
-                                    '&:hover': {
-                                      borderColor: '#2eb85c'
-                                    }
-                                  })
+                                    boxShadow: state.isFocused
+                                      ? "0 0 0 0.2rem rgba(46, 184, 92, 0.25)"
+                                      : 0,
+                                    borderColor: "#2eb85c",
+                                    "&:hover": {
+                                      borderColor: "#2eb85c",
+                                    },
+                                  }),
                                 }}
                                 options={subOptions}
-                                onChange={(e) => this.handleSubMultiSelectChange(e, index)}
+                                onChange={(e) =>
+                                  this.handleSubMultiSelectChange(e, index)
+                                }
                                 value={_objs}
                               />
                             </CCol>
                           </CRow>
                         </CFormGroup>
-                      )
+                      );
                     }
-                    return false
-                  })
-                }
+                    return false;
+                  })}
                 </CCol>
               </CRow>
             </CFormGroup>
             <CFormGroup>
-              <CLabel style={{fontWeight: '500'}}>Remark</CLabel>
-              <CInput name="remark" value={this.state.remark} onChange={this.handleInputChange} />
+              <CLabel style={{ fontWeight: "500" }}>Remark</CLabel>
+              <CInput
+                name="remark"
+                value={this.state.remark}
+                onChange={this.handleInputChange}
+              />
             </CFormGroup>
             <div className="float-right">
-              <CButton type="submit" color="info">{ this.state._create === true ? 'Create' : 'Update' }</CButton>
-              <span style={{padding: '4px'}}/>
-              <CButton color="secondary" onClick={() => this.setModal_Create(false)}>Cancel</CButton>
+              <CButton type="submit" color="info">
+                {this.state._create === true ? "Create" : "Update"}
+              </CButton>
+              <span style={{ padding: "4px" }} />
+              <CButton
+                color="secondary"
+                onClick={() => this.setModal_Create(false)}
+              >
+                Cancel
+              </CButton>
             </div>
           </CForm>
         </CCardBody>
       </CCard>
-    )
+    );
   }
 
   render() {
@@ -516,10 +602,16 @@ export default class AdminCertificateType extends Component {
           <CButton
             color="info"
             className="float-right"
-            style={{margin: '0px 0px 0px 16px'}}
+            style={{ margin: "0px 0px 0px 16px" }}
             //style={{margin: '16px'}}
-            onClick={()=>{ this.on_create_clicked() }}
-          ><i className="fa fa-plus"/><span style={{padding: '4px'}}/>Create New</CButton>
+            onClick={() => {
+              this.on_create_clicked();
+            }}
+          >
+            <i className="fa fa-plus" />
+            <span style={{ padding: "4px" }} />
+            Create New
+          </CButton>
         </div>
         <div>
           <CDataTable
@@ -532,57 +624,58 @@ export default class AdminCertificateType extends Component {
             pagination
             hover
             clickableRows
-            scopedSlots = {{
-              'material': 
-                (item, index)=>{
-                    return (
-                      <td>
-                        { this.getMaterial(item.material, item.client) }
-                      </td>
-                    )
-                },
-              'packing': 
-                (item, index)=>{
-                    return (
-                      <td>
-                        { this.getPacking(item.packing) }
-                      </td>
-                    )
-                },
-              'analysises':
-                (item, index)=>{
-                  return (
-                    <td style={{whiteSpace: 'pre-line'}}>
-                      { this.getAnalysises(item.analysises, item.material, item.client) }
-                    </td>
-                  )
-                },
-              'buttonGroups':
-                (item, index)=>{
-                  return (
-                    <td>
-                      <div style={{display: 'flex'}}>
-                        <CButton
-                          color="info"
-                          size="sm"
-                          onClick={()=>{ this.on_update_clicked(item) }}
-                        ><i className="fa fa-edit"/></CButton>
-                        <span style={{padding: '4px'}}/>
-                        <CButton
-                          color="danger"
-                          size="sm"
-                          onClick={()=>{ this.on_delete_clicked(item._id) }}
-                        ><i className="fa fa-trash"/></CButton>
-                      </div>
-                    </td>
-                  )
-                }
+            scopedSlots={{
+              material: (item, index) => {
+                return <td>{this.getMaterial(item.material, item.client)}</td>;
+              },
+              packing: (item, index) => {
+                return <td>{this.getPacking(item.packing)}</td>;
+              },
+              analysises: (item, index) => {
+                return (
+                  <td style={{ whiteSpace: "pre-line" }}>
+                    {this.getAnalysises(
+                      item.analysises,
+                      item.material,
+                      item.client
+                    )}
+                  </td>
+                );
+              },
+              buttonGroups: (item, index) => {
+                return (
+                  <td>
+                    <div style={{ display: "flex" }}>
+                      <CButton
+                        color="info"
+                        size="sm"
+                        onClick={() => {
+                          this.on_update_clicked(item);
+                        }}
+                      >
+                        <i className="fa fa-edit" />
+                      </CButton>
+                      <span style={{ padding: "4px" }} />
+                      <CButton
+                        color="danger"
+                        size="sm"
+                        onClick={() => {
+                          this.on_delete_clicked(item._id);
+                        }}
+                      >
+                        <i className="fa fa-trash" />
+                      </CButton>
+                    </div>
+                  </td>
+                );
+              },
             }}
           />
         </div>
-              
-        <CModal 
-          show={this.state.modal_delete} 
+
+        <CModal
+          style={{ width: "40vw" }}
+          show={this.state.modal_delete}
           onClose={() => this.setModal_Delete(false)}
         >
           <CModalHeader>
@@ -595,98 +688,100 @@ export default class AdminCertificateType extends Component {
             <CButton
               color="danger"
               onClick={() => this.deleteCertificateType()}
-            >Delete</CButton>{' '}
-            <CButton 
-              color="secondary" 
+            >
+              Delete
+            </CButton>{" "}
+            <CButton
+              color="secondary"
               onClick={() => this.setModal_Delete(false)}
-            >Cancel</CButton>
+            >
+              Cancel
+            </CButton>
           </CModalFooter>
         </CModal>
-        
-        <CModal 
-          show={this.state.modal_create} 
+
+        <CModal
+          style={{ width: "40vw" }}
+          show={this.state.modal_create}
           onClose={() => this.setModal_Create(false)}
           closeOnBackdrop={false}
           centered
-          size="lg"
         >
           <CModalHeader>
-            <CModalTitle>{this.state._create === true ? 'Create New Certificate Type' : 'Update Certificate Type'}</CModalTitle>
+            <CModalTitle>
+              {this.state._create === true
+                ? "Create New Certificate Type"
+                : "Update Certificate Type"}
+            </CModalTitle>
           </CModalHeader>
-          <CModalBody>
-            { this.renderModalCreate() }
-          </CModalBody>
+          <CModalBody>{this.renderModalCreate()}</CModalBody>
         </CModal>
       </div>
     );
   }
 
   getAllCertificateTypes() {
-    axios.get(Config.ServerUri + '/get_all_certificateTypes')
-    .then((res) => {
-      this.setState({
-        materialsData: res.data.materials,
-        clientsData: res.data.clients,
-        certificateTypesData: res.data.certificateTypes,
-        objectivesData: res.data.objectives,
-        analysisTypesData: res.data.analysises,
-        unitsData: res.data.units,
-        packingsData: res.data.packings,
-      });
-      console.log(res.data.packings);
-    })
-    .catch((error) => {
-      
-    })
+    axios
+      .get(Config.ServerUri + "/get_all_certificateTypes")
+      .then((res) => {
+        this.setState({
+          materialsData: res.data.materials,
+          clientsData: res.data.clients,
+          certificateTypesData: res.data.certificateTypes,
+          objectivesData: res.data.objectives,
+          analysisTypesData: res.data.analysises,
+          unitsData: res.data.units,
+          packingsData: res.data.packings,
+        });
+        console.log(res.data.packings);
+      })
+      .catch((error) => {});
   }
 
   on_delete_clicked(id) {
-    this.setState({current_id: id});
+    this.setState({ current_id: id });
 
     this.setModal_Delete(true);
   }
 
   on_create_clicked() {
     this.setState({
-      current_id: '',
-      certificateType: '',
-      remark: '',
+      current_id: "",
+      certificateType: "",
+      remark: "",
       analysises: [],
       _analysises: [],
-      material: '',
-      client: '',
-      packing:'',
+      material: "",
+      client: "",
+      packing: "",
       _create: true,
-      double_error: ''
+      double_error: "",
     });
 
     this.setModal_Create(true);
   }
-  
+
   on_update_clicked(item) {
     var analysises = [];
     var _analysises = [];
 
     item.analysises.map((item) => {
       var label = this.getAnalysisName(item.id);
-      if (label !== '') {
-        analysises.push({id: item.id, objectives: item.objectives});
-        _analysises.push({label: label, value: item.id});
+      if (label !== "") {
+        analysises.push({ id: item.id, objectives: item.objectives });
+        _analysises.push({ label: label, value: item.id });
       }
-      return true
-    })
+      return true;
+    });
 
     var material = item.material;
-    if (this.getMaterialName(material) === '')
-      material = '';
+    if (this.getMaterialName(material) === "") material = "";
 
     var packing = item.packing;
-      if (this.getPackingName(packing) === '')
-        packing = '';
+    if (this.getPackingName(packing) === "") packing = "";
 
     var client = item.client;
-    if (this.getClientName(client) === '')
-      client = '';
+    if (this.getClientName(client) === "") client = "";
 
     this.setState({
       current_id: item._id,
@@ -698,7 +793,7 @@ export default class AdminCertificateType extends Component {
       client: client,
       packing: packing,
       _create: false,
-      double_error: ''
+      double_error: "",
     });
 
     this.setModal_Create(true);
@@ -707,100 +802,97 @@ export default class AdminCertificateType extends Component {
   deleteCertificateType() {
     this.setModal_Delete(false);
 
-    axios.post(Config.ServerUri + '/delete_certificateType', {
-      id: this.state.current_id
-    })
-    .then((res) => {
-      toast.success('CertificateType successfully deleted');
-      this.setState({
-        materialsData: res.data.materials,
-        clientsData: res.data.clients,
-        certificateTypesData: res.data.certificateTypes,
-        objectivesData: res.data.objectives,
-        analysisTypesData: res.data.analysises,
-        unitsData: res.data.units,
-        packingsData: res.data.packings
-      });
-    })
-    .catch((error) => {
-      
-    })
+    axios
+      .post(Config.ServerUri + "/delete_certificateType", {
+        id: this.state.current_id,
+      })
+      .then((res) => {
+        toast.success("CertificateType successfully deleted");
+        this.setState({
+          materialsData: res.data.materials,
+          clientsData: res.data.clients,
+          certificateTypesData: res.data.certificateTypes,
+          objectivesData: res.data.objectives,
+          analysisTypesData: res.data.analysises,
+          unitsData: res.data.units,
+          packingsData: res.data.packings,
+        });
+      })
+      .catch((error) => {});
   }
 
   createCertificateType(event) {
     event.preventDefault();
 
-    if (this.state.double_error !== '') return;
+    if (this.state.double_error !== "") return;
 
     this.setModal_Create(false);
 
-    axios.post(Config.ServerUri + '/create_certificateType', {
-      material: this.state.material,
-      client: this.state.client,
-      certificateType: this.state.certificateType,
-      analysises: this.state.analysises,
-      remark: this.state.remark,
-      packing: this.state.packing,
-    })
-    .then((res) => {
-      toast.success('CertificateType successfully created');
-      this.setState({
-        materialsData: res.data.materials,
-        clientsData: res.data.clients,
-        certificateTypesData: res.data.certificateTypes,
-        objectivesData: res.data.objectives,
-        analysisTypesData: res.data.analysises,
-        unitsData: res.data.units,
-        packingsData: res.data.packings
-      });
-    })
-    .catch((error) => {
-      
-    })
+    axios
+      .post(Config.ServerUri + "/create_certificateType", {
+        material: this.state.material,
+        client: this.state.client,
+        certificateType: this.state.certificateType,
+        analysises: this.state.analysises,
+        remark: this.state.remark,
+        packing: this.state.packing,
+      })
+      .then((res) => {
+        toast.success("CertificateType successfully created");
+        this.setState({
+          materialsData: res.data.materials,
+          clientsData: res.data.clients,
+          certificateTypesData: res.data.certificateTypes,
+          objectivesData: res.data.objectives,
+          analysisTypesData: res.data.analysises,
+          unitsData: res.data.units,
+          packingsData: res.data.packings,
+        });
+      })
+      .catch((error) => {});
   }
-  
+
   updateCertificateType(event) {
     event.preventDefault();
 
-    if (this.state.double_error !== '') return;
+    if (this.state.double_error !== "") return;
 
     this.setModal_Create(false);
 
-    axios.post(Config.ServerUri + '/update_certificateType', {
-      id: this.state.current_id,
-      material: this.state.material,
-      client: this.state.client,
-      certificateType: this.state.certificateType,
-      analysises: this.state.analysises,
-      remark: this.state.remark,
-      packing: this.state.packing,
-    })
-    .then((res) => {
-      toast.success('CertificateType successfully updated');
-      this.setState({
-        materialsData: res.data.materials,
-        clientsData: res.data.clients,
-        certificateTypesData: res.data.certificateTypes,
-        objectivesData: res.data.objectives,
-        analysisTypesData: res.data.analysises,
-        unitsData: res.data.units,
-        packingsData: res.data.packings
-      });
-    })
-    .catch((error) => {
-      
-    })
+    axios
+      .post(Config.ServerUri + "/update_certificateType", {
+        id: this.state.current_id,
+        material: this.state.material,
+        client: this.state.client,
+        certificateType: this.state.certificateType,
+        analysises: this.state.analysises,
+        remark: this.state.remark,
+        packing: this.state.packing,
+      })
+      .then((res) => {
+        toast.success("CertificateType successfully updated");
+        this.setState({
+          materialsData: res.data.materials,
+          clientsData: res.data.clients,
+          certificateTypesData: res.data.certificateTypes,
+          objectivesData: res.data.objectives,
+          analysisTypesData: res.data.analysises,
+          unitsData: res.data.units,
+          packingsData: res.data.packings,
+        });
+      })
+      .catch((error) => {});
   }
 
   setModal_Delete(modal) {
     this.setState({
-      modal_delete: modal
-    })
+      modal_delete: modal,
+    });
   }
 
   setModal_Create(modal) {
     this.setState({
-      modal_create: modal
-    })
+      modal_create: modal,
+    });
   }
 }

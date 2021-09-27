@@ -200,6 +200,7 @@ export default class AdminReason extends Component {
         </div>
 
         <CModal
+          style={{ width: "40vw" }}
           show={this.state.modal_delete}
           onClose={() => this.setModal_Delete(false)}
         >
@@ -221,6 +222,7 @@ export default class AdminReason extends Component {
         </CModal>
 
         <CModal
+          style={{ width: "40vw" }}
           show={this.state.modal_create}
           onClose={() => this.setModal_Create(false)}
           closeOnBackdrop={false}
