@@ -643,7 +643,6 @@ export default class AdminMaterial extends Component {
       var name = this.getObjectiveName(item0.id);
       var unit = this.getUnitName(item0.unit);
       var analysis = this.getAnalysisName(item0.analysis);
-      console.log(item0);
       if (name !== "" && unit !== "") {
         ret =
           ret +

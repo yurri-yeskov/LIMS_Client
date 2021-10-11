@@ -115,7 +115,6 @@ export default class AdminCertificateType extends Component {
     var option = [];
     this.state.materialsData.map((item) => {
       if (item._id == e.target.value) {
-        console.log(item);
         this.setState({ analysisOption: item.aTypesValues });
         if (this.state.client === "") {
           item.aTypesValues.map((temp) => {
@@ -126,8 +125,6 @@ export default class AdminCertificateType extends Component {
         }
       }
     });
-
-    console.log(option);
 
     this.setState({ [e.target.name]: e.target.value, analysisOpt: option });
     this.setState({ client: "", analysises: [], _analysises: [] });
@@ -733,7 +730,6 @@ export default class AdminCertificateType extends Component {
           unitsData: res.data.units,
           packingsData: res.data.packings,
         });
-        console.log(res.data.packings);
       })
       .catch((error) => {});
   }

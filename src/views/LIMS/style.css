@@ -153,3 +153,12 @@ label {
 .modal-lg {
   max-width: 2000px;
 }
+
+.ctable {
+  line-height: 5px !important;
+  font-size: 13px !important;
+}
+.ctable .table-responsive {
+  line-height: 5px !important;
+  font-size: 12px;
+}

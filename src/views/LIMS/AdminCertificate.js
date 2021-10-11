@@ -5,20 +5,21 @@ import axios from "axios";
 import Config from "../../Config";
 import "./style.css";
 import {
-  CCard,
-  CCardBody,
   CDataTable,
+  CCard,
+  CForm,
+  CCardBody,
   CModal,
   CModalTitle,
   CModalBody,
   CModalFooter,
   CModalHeader,
   CButton,
-  CForm,
   CFormGroup,
   CLabel,
   CInput,
   CTextarea,
+  CSelect,
 } from "@coreui/react";
 import { toast } from "react-hot-toast";
 const { Option } = Select;
@@ -69,8 +70,9 @@ class AdminCertificate extends Component {
       productdataVisible: false,
       freetextVisible: false,
       tableColVisible: false,
-
+      samenameerror: false,
       name: "",
+      certificatetitle: "",
       company: "",
       place: "",
       previewVisible: false,
@@ -82,6 +84,7 @@ class AdminCertificate extends Component {
       previewImage_Footer: "",
       fileList_Footer: [],
       freetext: "",
+      date_format: "DD.MM.YYYY",
 
       //Product Modal data variable
       P_name: "",
@@ -110,33 +113,56 @@ class AdminCertificate extends Component {
         { name: "", fieldname: null },
       ],
     };
+
     this.columns = [
       {
         key: "name",
       },
       {
+        label: "Certificate Title",
+        key: "certificatetitle",
+      },
+      {
         key: "company",
+        label: "Company",
       },
       {
         key: "logo",
+        label: "Logo",
+        sorter: false,
       },
       {
         key: "place",
+        label: "Place",
+      },
+      {
+        key: "date_format",
+        label: "Date Format",
+        sorter: false,
       },
       {
         key: "productdata",
+        label: "Product Data",
+        sorter: false,
       },
       {
         key: "tablecolumns",
+        label: "Table Columns",
+        sorter: false,
       },
       {
         key: "freetext",
+        label: "Free Text",
+        sorter: false,
       },
       {
         key: "footer",
+        label: "Footer",
+        sorter: false,
       },
       {
         key: "buttonGroups",
+        label: "",
       },
     ];
   }
@@ -229,10 +255,12 @@ class AdminCertificate extends Component {
               name: v.name,
               company: v.company,
               logo: v.logo.path,
+              certificatetitle: v.certificatetitle,
               logodata: v.logo,
               productdata: v.productdata,
               place: v.place,
               tablecol: v.tablecol,
+              date_format: v.date_format,
               freetext: v.freetext,
               footer: v.footer.path,
               footerdata: v.footer,
@@ -252,6 +280,7 @@ class AdminCertificate extends Component {
       addVisible: true,
       name: "",
       company: "",
+      certificatetitle: "",
       fileList: [],
       place: "",
       productdata: "",
@@ -259,6 +288,7 @@ class AdminCertificate extends Component {
       freetext: "",
       fileList_Footer: [],
       rowid: "",
+      date_format: "DD.MM.YYYY",
     });
   };
   KhandleCancel = () => {
@@ -277,12 +307,16 @@ class AdminCertificate extends Component {
       name: e.name,
       company: e.company,
       rowid: e.id,
+      certificatetitle: e.certificatetitle,
       place: e.place,
       fileList_Footer: [footerdata],
       fileList: [logodata],
       addVisible: true,
+      date_format: e.date_format,
     });
   };
+
+  date_format_func = (e) => this.setState({ date_format: e });
 
   handleCancel = () => this.setState({ previewVisible: false });
 
@@ -294,18 +328,29 @@ class AdminCertificate extends Component {
   };
 
   handleUpload = ({ fileList }) => {
-
     this.setState({ fileList });
   };
 
   handleSubmit = (event) => {
     event.preventDefault();
-
-    const { name, fileList_Footer, fileList, company, place, rowid } =
-      this.state;
+    const {
+      name,
+      certificatetitle,
+      fileList_Footer,
+      fileList,
+      company,
+      place,
+      rowid,
+      samenameerror,
+      date_format,
+    } = this.state;
     let formData = new FormData();
     var arr = [];
-    if (fileList.length == 0 || fileList_Footer.length == 0) {
+    if (
+      fileList.length == 0 ||
+      fileList_Footer.length == 0 ||
+      samenameerror == true
+    ) {
       return;
     }
     this.setState({ addVisible: false });
@@ -316,11 +361,12 @@ class AdminCertificate extends Component {
     }
     formData.append("logoUid", fileList[0].originFileObj.uid);
     formData.append("footerUid", fileList_Footer[0].originFileObj.uid);
-    // formData.append("file", fileList_Footer[0].originFileObj);
     formData.append("name", name);
     formData.append("company", company);
     formData.append("place", place);
     formData.append("rowid", rowid);
+    formData.append("certificatetitle", certificatetitle);
+    formData.append("date_format", date_format);
 
     axios
       .post(Config.ServerUri + "/add_certificate", formData)
@@ -379,7 +425,6 @@ class AdminCertificate extends Component {
   };
 
   handleUpload_footer = ({ fileList }) => {
-
     this.setState({ fileList_Footer: fileList });
   };
   handleCancel_footer = () => this.setState({ previewVisible_Footer: false });
@@ -392,7 +437,16 @@ class AdminCertificate extends Component {
   };
 
   onChangeInput = (e) => {
-    this.setState({ [e.target.name]: e.target.value });
+    const { data } = this.state;
+    var err = data.filter((v) => v.name == e.target.value).length;
+    if (e.target.name == "name") {
+      this.setState({
+        [e.target.name]: e.target.value,
+        samenameerror: err > 0 ? true : false,
+      });
+    } else {
+      this.setState({ [e.target.name]: e.target.value });
+    }
   };
   ProductModalCancel = () => {
     this.setState({ productdataVisible: false, rowid: "" });
@@ -444,8 +498,10 @@ class AdminCertificate extends Component {
       previewImage_Footer,
       fileList_Footer,
       name,
+      certificatetitle,
       company,
       place,
+      date_format,
       productdataVisible,
     } = this.state;
     const uploadButton = (
@@ -515,18 +571,22 @@ class AdminCertificate extends Component {
                 item.logo.indexOf("public\\") + 6,
                 item.logo.length
               );
-              return <td>
-                <img src={str} width="50px" height="50px" />
-              </td>
+              return (
+                <td>
+                  <img src={str} width="50px" height="50px" />
+                </td>
+              );
             },
             footer: (item, index) => {
               var str = item.footer.substr(
                 item.footer.indexOf("public\\") + 6,
                 item.footer.length
               );
-              return <div style={{ width: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
-                <img src={str} width="50px" height="50px" />
-              </div>
+              return (
+                <td>
+                  <img src={str} width="50px" height="50px" />
+                </td>
+              );
             },
             productdata: (item, index) => {
               return (
@@ -587,102 +647,141 @@ class AdminCertificate extends Component {
           onClose={this.KhandleCancel}
           centered={true}
           style={{ width: "50vw" }}
+          closeOnBackdrop={false}
         >
           <CModalHeader>
-            <h4>{this.state.rowid ? "Update Data" : "Add Data"}</h4>
+            <h4>Certificate Template</h4>
           </CModalHeader>
           <CModalBody>
-            <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Name</CLabel>
-              <CInput
-                style={{ width: "100%" }}
-                value={name}
-                name="name"
-                onChange={this.onChangeInput}
-              />
-            </CFormGroup>
-
-            <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Company</CLabel>
-              <CInput
-                value={company}
-                name="company"
-                onChange={this.onChangeInput}
-              />
-            </CFormGroup>
-            <div style={{ display: "flex" }}>
-              <div
-                style={{
-                  width: "50%",
-                  display: "flex",
-                  justifyContent: "center",
-                }}
-              >
-                <CFormGroup>
-                  <CLabel style={{ fontWeight: "500" }}>Logo</CLabel>
-                  <Upload
-                    listType="picture-card"
-                    fileList={fileList}
-                    onPreview={this.handlePreview}
-                    onChange={this.handleUpload}
-                    beforeUpload={() => false}
-                  >
-                    {fileList.length > 0 ? "" : uploadButton}
-                  </Upload>
-                  <Modal
-                    visible={previewVisible}
-                    footer={null}
-                    onCancel={this.handleCancel}
-                  >
-                    <img
-                      alt="example"
+            <CCard>
+              <CCardBody>
+                <CForm className="was-validated">
+                  <CFormGroup>
+                    <CLabel style={{ fontWeight: "500" }}>Name</CLabel>
+                    <CInput
                       style={{ width: "100%" }}
-                      src={previewImage}
+                      value={name}
+                      name="name"
+                      onChange={this.onChangeInput}
+                      required
                     />
-                  </Modal>
-                </CFormGroup>
-              </div>
-              <div
-                style={{
-                  width: "50%",
-                  display: "flex",
-                  justifyContent: "center",
-                }}
-              >
-                <CFormGroup>
-                  <CLabel style={{ fontWeight: "500" }}>Footer</CLabel>
-                  <Upload
-                    listType="picture-card"
-                    fileList={fileList_Footer}
-                    onPreview={this.handlePreview_footer}
-                    onChange={this.handleUpload_footer}
-                    beforeUpload={() => false}
-                  >
-                    {fileList_Footer.length > 0 ? "" : uploadButton_Footer}
-                  </Upload>
-                  <Modal
-                    visible={previewVisible_Footer}
-                    footer={null}
-                    onCancel={this.handleCancel_footer}
-                  >
-                    <img
-                      alt="example"
+                    {this.state.samenameerror && (
+                      <CLabel style={{ color: "red" }}>
+                        Name already exists
+                      </CLabel>
+                    )}
+                  </CFormGroup>
+                  <CFormGroup>
+                    <CLabel style={{ fontWeight: "500" }}>
+                      Certificate Title
+                    </CLabel>
+                    <CInput
                       style={{ width: "100%" }}
-                      src={previewImage_Footer}
+                      value={certificatetitle}
+                      name="certificatetitle"
+                      onChange={this.onChangeInput}
                     />
-                  </Modal>
-                </CFormGroup>
-              </div>
-            </div>
+                  </CFormGroup>
+                  <CFormGroup>
+                    <CLabel style={{ fontWeight: "500" }}>Company</CLabel>
+                    <CInput
+                      value={company}
+                      name="company"
+                      onChange={this.onChangeInput}
+                    />
+                  </CFormGroup>
+                  <div style={{ display: "flex" }}>
+                    <div
+                      style={{
+                        width: "50%",
+                        display: "flex",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <CFormGroup>
+                        <CLabel style={{ fontWeight: "500" }}>Logo</CLabel>
+                        <Upload
+                          listType="picture-card"
+                          fileList={fileList}
+                          onPreview={this.handlePreview}
+                          onChange={this.handleUpload}
+                          beforeUpload={() => false}
+                        >
+                          {fileList.length > 0 ? "" : uploadButton}
+                        </Upload>
+                        <Modal
+                          visible={previewVisible}
+                          footer={null}
+                          onCancel={this.handleCancel}
+                        >
+                          <img
+                            alt="example"
+                            style={{ width: "100%" }}
+                            src={previewImage}
+                          />
+                        </Modal>
+                      </CFormGroup>
+                    </div>
+                    <div
+                      style={{
+                        width: "50%",
+                        display: "flex",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <CFormGroup>
+                        <CLabel style={{ fontWeight: "500" }}>Footer</CLabel>
+                        <Upload
+                          listType="picture-card"
+                          fileList={fileList_Footer}
+                          onPreview={this.handlePreview_footer}
+                          onChange={this.handleUpload_footer}
+                          beforeUpload={() => false}
+                        >
+                          {fileList_Footer.length > 0
+                            ? ""
+                            : uploadButton_Footer}
+                        </Upload>
+                        <Modal
+                          visible={previewVisible_Footer}
+                          footer={null}
+                          onCancel={this.handleCancel_footer}
+                        >
+                          <img
+                            alt="example"
+                            style={{ width: "100%" }}
+                            src={previewImage_Footer}
+                          />
+                        </Modal>
+                      </CFormGroup>
+                    </div>
+                  </div>
 
-            <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>place</CLabel>
-              <CInput
-                value={place}
-                name="place"
-                onChange={this.onChangeInput}
-              />
-            </CFormGroup>
+                  <CFormGroup>
+                    <CLabel style={{ fontWeight: "500" }}>place</CLabel>
+                    <CInput
+                      value={place}
+                      name="place"
+                      onChange={this.onChangeInput}
+                    />
+                  </CFormGroup>
+                  <CFormGroup>
+                    <CLabel style={{ fontWeight: "500" }}>Date Format</CLabel>
+                    <Select
+                      placeholder="Please select your Date Format"
+                      className="form-control"
+                      value={date_format}
+                      onChange={this.date_format_func}
+                    >
+                      <Option value="DD.MM.YYYY">DD.MM.YYYY</Option>
+                      <Option value="DD/MM/YYYY">DD/MM/YYYY</Option>
+                      <Option value="YYYY-MM-DD">YYYY-MM-DD</Option>
+                      <Option value="YYYY/MM/DD">YYYY/MM/dd</Option>
+                    </Select>
+                  </CFormGroup>
+                </CForm>
+              </CCardBody>
+            </CCard>
           </CModalBody>
           <CModalFooter>
             <CButton color="info" onClick={this.handleSubmit}>
@@ -803,7 +902,7 @@ class AdminCertificate extends Component {
             </table>
           </CModalBody>
           <CModalFooter>
-            <CButton color="primary" onClick={this.ProductModalOK}>
+            <CButton color="info" onClick={this.ProductModalOK}>
               OK
             </CButton>
             <CButton color="secondary" onClick={this.ProductModalCancel}>
@@ -851,8 +950,11 @@ class AdminCertificate extends Component {
                         <Option value={2}>Author</Option>
                         <Option value={3}>Date</Option>
                         <Option value={4}>Reason</Option>
-                        <Option value={5}>Accept</Option>
+                        <Option value={5}>Specification</Option>
                         <Option value={6}>Comment</Option>
+                        <Option value={7}>Certificate Type</Option>
+                        <Option value={8}>AnalysisType-Objective</Option>
+                        <Option value={9}>Norm</Option>
                       </Select>
                     </td>
                   </tr>
@@ -861,7 +963,7 @@ class AdminCertificate extends Component {
             </table>
           </CModalBody>
           <CModalFooter>
-            <CButton color="primary" onClick={this.TableColOK}>
+            <CButton color="info" onClick={this.TableColOK}>
               OK
             </CButton>
             <CButton color="secondary" onClick={this.TableColCancel}>
@@ -887,7 +989,7 @@ class AdminCertificate extends Component {
             />
           </CModalBody>
           <CModalFooter>
-            <CButton color="primary" onClick={this.FreetextModalOK}>
+            <CButton color="info" onClick={this.FreetextModalOK}>
               OK
             </CButton>
             <CButton color="secondary" onClick={this.FreetextModalCancel}>
