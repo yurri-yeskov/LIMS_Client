@@ -62,8 +62,8 @@ const ClientField = [
 ];
 
 class AdminCertificate extends Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
       data: [],
       addVisible: false,
@@ -85,7 +85,7 @@ class AdminCertificate extends Component {
       fileList_Footer: [],
       freetext: "",
       date_format: "DD.MM.YYYY",
-
+      create_new_label: props.language_data.filter(item => item.label === 'create_new')[0][props.selected_language],
       //Product Modal data variable
       P_name: "",
       P_Modal_data: [
@@ -112,64 +112,129 @@ class AdminCertificate extends Component {
         { name: "", fieldname: null },
         { name: "", fieldname: null },
       ],
+      columns : [
+        {
+          key: "name",
+          label:props.language_data.filter(item => item.label === 'name')[0][props.selected_language],
+        },
+        {
+          label:props.language_data.filter(item => item.label === 'certificate_title')[0][props.selected_language],
+          key: "certificatetitle",
+        },
+        {
+          key: "company",
+          label:props.language_data.filter(item => item.label === 'company')[0][props.selected_language],
+          
+        },
+        {
+          key: "logo",
+          label:props.language_data.filter(item => item.label === 'logo')[0][props.selected_language],        
+          sorter: false,
+        },
+        {
+          key: "place",
+          label:props.language_data.filter(item => item.label === 'place')[0][props.selected_language],
+        },
+        {
+          key: "date_format",
+          label:props.language_data.filter(item => item.label === 'date_format')[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "productdata",
+          label:props.language_data.filter(item => item.label === 'product_data')[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "tablecolumns",
+          label:props.language_data.filter(item => item.label === 'table_columns')[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "freetext",
+          label:props.language_data.filter(item => item.label === 'free_text')[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "footer",
+          label:props.language_data.filter(item => item.label === 'footer')[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "buttonGroups",
+          label: "",
+        },
+      ],
     };
 
-    this.columns = [
-      {
-        key: "name",
-      },
-      {
-        label: "Certificate Title",
-        key: "certificatetitle",
-      },
-      {
-        key: "company",
-        label: "Company",
-      },
-      {
-        key: "logo",
-        label: "Logo",
-        sorter: false,
-      },
-      {
-        key: "place",
-        label: "Place",
-      },
-      {
-        key: "date_format",
-        label: "Date Format",
-        sorter: false,
-      },
-      {
-        key: "productdata",
-        label: "Product Data",
-        sorter: false,
-      },
-      {
-        key: "tablecolumns",
-        label: "Table Columns",
-        sorter: false,
-      },
-      {
-        key: "freetext",
-        label: "Free Text",
-        sorter: false,
-      },
-      {
-        key: "footer",
-        label: "Footer",
-        sorter: false,
-      },
-      {
-        key: "buttonGroups",
-        label: "",
-      },
-    ];
+    
   }
 
   componentWillMount() {
     this.First();
   }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.selected_language != this.props.selected_language) {
+      this.setState({
+        create_new_label: nextProps.language_data.filter(item => item.label === 'create_new')[0][nextProps.selected_language],
+        columns : [
+          {
+            key: "name",
+            label:nextProps.language_data.filter(item => item.label === 'name')[0][nextProps.selected_language],
+          },
+          {
+            label:nextProps.language_data.filter(item => item.label === 'certificate_title')[0][nextProps.selected_language],
+            key: "certificatetitle",
+          },
+          {
+            key: "company",
+            label:nextProps.language_data.filter(item => item.label === 'company')[0][nextProps.selected_language],
+            
+          },
+          {
+            key: "logo",
+            label:nextProps.language_data.filter(item => item.label === 'logo')[0][nextProps.selected_language],        
+            sorter: false,
+          },
+          {
+            key: "place",
+            label:nextProps.language_data.filter(item => item.label === 'place')[0][nextProps.selected_language],
+          },
+          {
+            key: "date_format",
+            label:nextProps.language_data.filter(item => item.label === 'date_format')[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "productdata",
+            label:nextProps.language_data.filter(item => item.label === 'product_data')[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "tablecolumns",
+            label:nextProps.language_data.filter(item => item.label === 'table_columns')[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "freetext",
+            label:nextProps.language_data.filter(item => item.label === 'free_text')[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "footer",
+            label:nextProps.language_data.filter(item => item.label === 'footer')[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "buttonGroups",
+            label: "",
+          },
+        ],
+      })
+    }
+  }
+
   showTableCol = (e) => {
     var tablecol_data = [
       { name: "", fieldname: null },
@@ -526,11 +591,11 @@ class AdminCertificate extends Component {
         >
           <i className="fa fa-plus" />
           <span style={{ padding: "4px" }} />
-          Create New
+          {this.state.create_new_label}
         </CButton>
         <CDataTable
           items={this.state.data}
-          fields={this.columns}
+          fields={this.state.columns}
           itemsPerPage={50}
           itemsPerPageSelect
           sorter

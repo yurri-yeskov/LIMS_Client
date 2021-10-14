@@ -1,0 +1,5 @@
+export const actionConstants = {
+    SET_LANGUAGE : 'SET_LANGUAGE',
+    SET_SIDEBAR : 'SET_SIDEBAR',
+    SET_LANGUAGEDATA: 'SET_LANGUAGEDATA'
+}

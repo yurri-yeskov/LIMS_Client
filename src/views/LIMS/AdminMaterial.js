@@ -20,16 +20,11 @@ import {
 
 import Select from "react-select";
 import { toast } from "react-hot-toast";
+import { CSVLink } from "react-csv";
+import ReactFileReader from 'react-file-reader';
 
 const axios = require("axios");
 const Config = require("../../Config.js");
-
-const fields = [
-  { key: "material", _style: { width: "25%" } },
-  { key: "objectives", label: "AnalysisType-Objectives", sorter: false },
-  { key: "remark", sorter: false },
-  { key: "buttonGroups", label: "", _style: { width: "84px" } },
-];
 
 export default class AdminMaterial extends Component {
   constructor(props) {
@@ -38,6 +33,7 @@ export default class AdminMaterial extends Component {
     this.deleteMaterial = this.deleteMaterial.bind(this);
     this.createMaterial = this.createMaterial.bind(this);
     this.updateMaterial = this.updateMaterial.bind(this);
+    this.handleFiles = this.handleFiles.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
 
     this.state = {
@@ -56,11 +52,29 @@ export default class AdminMaterial extends Component {
       _clients: [],
       remark: "",
       _create: false,
-      material_error: "",
-
+      material_error: '',
+      material_id: '',
+      export_all_data: [],
       analysisData: [],
       analysisTypes: [],
       minMaxValues: [],
+      import_label: props.language_data.filter(item => item.label === 'import')[0][props.selected_language],
+      export_label: props.language_data.filter(item => item.label === 'export')[0][props.selected_language],
+      create_new_label: props.language_data.filter(item => item.label === 'create_new')[0][props.selected_language],
+      fields: [
+        { key: 'material_id', label: props.language_data.filter(item => item.label === 'material_id')[0][props.selected_language] },
+        { key: 'material', _style: { width: '25%' }, label: props.language_data.filter(item => item.label === 'material')[0][props.selected_language] },
+        { key: 'objectives', sorter: false, label: props.language_data.filter(item => item.label === 'analysistype_objectives')[0][props.selected_language] },
+        { key: 'remark', sorter: false, label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        { key: 'buttonGroups', label: '', _style: { width: '84px' } }
+      ],
+      header: [
+        { key: 'material_id', label: props.language_data.filter(item => item.label === 'material_id')[0][props.selected_language] },
+        { key: 'material', label: props.language_data.filter(item => item.label === 'material')[0][props.selected_language] },
+        { key: 'client', label: props.language_data.filter(item => item.label === 'clients')[0][props.selected_language] },
+        { key: 'combination', label: props.language_data.filter(item => item.label === 'analysistype_objectives')[0][props.selected_language] },
+        { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+      ],
     };
   }
 
@@ -68,6 +82,52 @@ export default class AdminMaterial extends Component {
     this.getAllMaterials();
   }
 
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.selected_language != this.props.selected_language) {
+      this.setState({
+        import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
+        export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
+        create_new_label: nextProps.language_data.filter(item => item.label === 'create_new')[0][nextProps.selected_language],
+        fields: [
+          { key: 'material_id', label: nextProps.language_data.filter(item => item.label === 'material_id')[0][nextProps.selected_language] },
+          { key: 'material', _style: { width: '25%' }, label: nextProps.language_data.filter(item => item.label === 'material')[0][nextProps.selected_language] },
+          { key: 'objectives', sorter: false, label: nextProps.language_data.filter(item => item.label === 'analysistype_objectives')[0][nextProps.selected_language] },
+          { key: 'remark', sorter: false, label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          { key: 'buttonGroups', label: '', _style: { width: '84px' } }
+        ],
+        header: [
+          { key: 'material_id', label: nextProps.language_data.filter(item => item.label === 'material_id')[0][nextProps.selected_language] },
+          { key: 'material', label: nextProps.language_data.filter(item => item.label === 'material')[0][nextProps.selected_language] },
+          { key: 'client', label: nextProps.language_data.filter(item => item.label === 'clients')[0][nextProps.selected_language] },
+          { key: 'combination', label: nextProps.language_data.filter(item => item.label === 'analysistype_objectives')[0][nextProps.selected_language] },
+          { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+        ],
+      })
+    }
+  }
+  async on_export_clicked() {
+    await this.csvLink.link.click();
+  }
+
+  async handleFiles(files) {
+    var reader = new FileReader();
+    reader.readAsText(files[0]);
+    const result = await new Promise((resolve, reject) => {
+      reader.onload = function (e) {
+        resolve(reader.result);
+      }
+    })
+    console.log(result);
+    axios.post(Config.ServerUri + '/upload_material_csv', {
+      data: result
+    })
+      .then((res) => {
+        this.setState({
+          materialsData: res.data.materials,
+        });
+        toast.success('Material CSV file successfully imported');
+      });
+  }
   handleInputChange(e) {
     var name = e.target.name;
     var value = e.target.value;
@@ -303,6 +363,14 @@ export default class AdminMaterial extends Component {
                 : this.updateMaterial
             }
           >
+            <CFormGroup>
+              <CLabel style={{ fontWeight: '500' }}>Material ID</CLabel>
+              <CInput name="material_id" value={this.state.material_id} onChange={this.handleInputChange} required />
+              {
+                error === undefined || error === '' ? <div></div> :
+                  <div style={{ width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353' }}>{error}</div>
+              }
+            </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>Material</CLabel>
               <CInput
@@ -676,19 +744,37 @@ export default class AdminMaterial extends Component {
             className="float-right"
             style={{ margin: "0px 0px 0px 16px" }}
             //style={{margin: '16px'}}
-            onClick={() => {
-              this.on_create_clicked();
-            }}
+            onClick={() => { this.on_create_clicked() }}
+          ><i className="fa fa-plus" /><span style={{ padding: '4px' }} />{this.state.create_new_label}</CButton>
+          <CButton
+            color="info"
+            className="float-right"
+            style={{ margin: "0px 0px 0px 16px" }}
+            onClick={() => this.on_export_clicked()}
           >
-            <i className="fa fa-plus" />
+            <i className="fa fa-download"></i>
             <span style={{ padding: "4px" }} />
-            Create New
+            {this.state.export_label}
           </CButton>
+          <CSVLink
+            headers={this.state.header}
+            filename="Export-Material.csv"
+            data={this.state.export_all_data}
+            ref={(r) => (this.csvLink = r)}
+          ></CSVLink>
+          <ReactFileReader handleFiles={this.handleFiles} fileTypes={'.csv'}>
+            <CButton
+              color="info"
+              className="float-right"
+              style={{ margin: '0px 0px 0px 16px' }}
+            //style={{margin: '16px'}}
+            ><i className="fa fa-upload" /><span style={{ padding: '4px' }} />{this.state.import_label}</CButton>
+          </ReactFileReader>
         </div>
         <div>
           <CDataTable
             items={this.state.materialsData}
-            fields={fields}
+            fields={this.state.fields}
             itemsPerPage={50}
             itemsPerPageSelect
             sorter
@@ -828,8 +914,22 @@ export default class AdminMaterial extends Component {
           clientsData: res.data.clients,
           analysisData: res.data.analysisTypes,
         });
+        var material_list = [];
+        res.data.materials.map((material) => {
+          var client_list = 'Default\n';
+          var combination_list = '';
+          combination_list += this.getTooltip(material, '') + '\n';
+          material.clients.map((client_id) => {
+            client_list += this.getClientName(client_id) + '\n';
+            combination_list += this.getTooltip(material, client_id) + '\n';
+          });
+          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
+        });
+        this.setState({
+          export_all_data: material_list
+        });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   on_delete_clicked(id) {
@@ -840,9 +940,10 @@ export default class AdminMaterial extends Component {
 
   on_create_clicked() {
     this.setState({
-      current_id: "",
-      material: "",
-      remark: "",
+      current_id: '',
+      material: '',
+      material_id: '',
+      remark: '',
       objectives: [],
       objectiveValues: [],
       objectivesError: [],
@@ -906,6 +1007,7 @@ export default class AdminMaterial extends Component {
     this.setState({
       current_id: item._id,
       material: item.material,
+      material_id: item.material_id,
       objectives: objectives,
       objectiveValues: objectiveValues,
       objectivesError: [],
@@ -935,8 +1037,22 @@ export default class AdminMaterial extends Component {
           unitsData: res.data.units,
           clientsData: res.data.clients,
         });
+        var material_list = [];
+        res.data.materials.map((material) => {
+          var client_list = 'Default\n';
+          var combination_list = '';
+          combination_list += this.getTooltip(material, '') + '\n';
+          material.clients.map((client_id) => {
+            client_list += this.getClientName(client_id) + '\n';
+            combination_list += this.getTooltip(material, client_id) + '\n';
+          });
+          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
+        });
+        this.setState({
+          export_all_data: material_list
+        });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   checkMinMax() {
@@ -986,6 +1102,7 @@ export default class AdminMaterial extends Component {
 
     axios
       .post(Config.ServerUri + "/create_material", {
+        material_id: this.state.material_id,
         material: this.state.material,
         objectiveValues: objectiveValues,
         clients: this.state.clients,
@@ -1001,8 +1118,22 @@ export default class AdminMaterial extends Component {
           clientsData: res.data.clients,
           analysisTypes: res.data.analysisTypes,
         });
+        var material_list = [];
+        res.data.materials.map((material) => {
+          var client_list = 'Default\n';
+          var combination_list = '';
+          combination_list += this.getTooltip(material, '') + '\n';
+          material.clients.map((client_id) => {
+            client_list += this.getClientName(client_id) + '\n';
+            combination_list += this.getTooltip(material, client_id) + '\n';
+          });
+          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
+        });
+        this.setState({
+          export_all_data: material_list
+        });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   updateMaterial(event) {
@@ -1033,6 +1164,7 @@ export default class AdminMaterial extends Component {
     axios
       .post(Config.ServerUri + "/update_material", {
         id: this.state.current_id,
+        material_id: this.state.material_id,
         material: this.state.material,
         objectiveValues: this.state.objectiveValues,
         clients: this.state.clients,
@@ -1048,8 +1180,22 @@ export default class AdminMaterial extends Component {
           clientsData: res.data.clients,
           analysisTypes: res.data.analysisTypes,
         });
+        var material_list = [];
+        res.data.materials.map((material) => {
+          var client_list = 'Default\n';
+          var combination_list = '';
+          combination_list += this.getTooltip(material, '') + '\n';
+          material.clients.map((client_id) => {
+            client_list += this.getClientName(client_id) + '\n';
+            combination_list += this.getTooltip(material, client_id) + '\n';
+          });
+          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
+        });
+        this.setState({
+          export_all_data: material_list
+        });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   setModal_Delete(modal) {

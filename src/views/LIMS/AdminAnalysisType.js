@@ -20,17 +20,11 @@ import {
 
 import Select from "react-select";
 import { toast } from "react-hot-toast";
+import { CSVLink } from "react-csv";
+import ReactFileReader from 'react-file-reader';
 
 const axios = require("axios");
 const Config = require("../../Config.js");
-
-const fields = [
-  { key: "analysisType" },
-  { key: "norm" },
-  { key: "objectives", sorter: false },
-  { key: "remark", sorter: false },
-  { key: "buttonGroups", label: "", _style: { width: "84px" } },
-];
 
 export default class AdminAnalysisType extends Component {
   constructor(props) {
@@ -40,21 +34,42 @@ export default class AdminAnalysisType extends Component {
     this.createAnalysisType = this.createAnalysisType.bind(this);
     this.updateAnalysisType = this.updateAnalysisType.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
+    this.handleFiles = this.handleFiles.bind(this);
 
     this.state = {
       analysisTypesData: [],
       objectivesData: [],
       unitsData: [],
+      export_all_data: [],
       modal_delete: false,
       modal_create: false,
       current_id: null,
-      analysisType: "",
-      norm: "",
+      analysisType: '',
+      analysisType_id: '',
+      norm: '',
       objectives: [],
       _objectives: [],
       remark: "",
       _create: false,
       double_error: "",
+      import_label: props.language_data.filter(item => item.label === 'import')[0][props.selected_language],
+      export_label: props.language_data.filter(item => item.label === 'export')[0][props.selected_language],
+      create_new_label: props.language_data.filter(item => item.label === 'create_new')[0][props.selected_language],
+      fields: [
+        { key: 'analysisType_id', label: props.language_data.filter(item => item.label === 'analysistype_id')[0][props.selected_language] },
+        { key: 'analysisType', label: props.language_data.filter(item => item.label === 'analysis_type')[0][props.selected_language] },
+        { key: 'norm', label: props.language_data.filter(item => item.label === 'norm')[0][props.selected_language] },
+        { key: 'objectives', sorter: false, label: props.language_data.filter(item => item.label === 'objectives')[0][props.selected_language] },
+        { key: 'remark', sorter: false, label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        { key: 'buttonGroups', label: '', _style: { width: '84px' } }
+      ],
+      header: [
+        { key: 'analysisType_id', label: props.language_data.filter(item => item.label === 'analysistype_id')[0][props.selected_language] },
+        { key: 'analysisType', label: props.language_data.filter(item => item.label === 'analysis_type')[0][props.selected_language] },
+        { key: 'norm', label: props.language_data.filter(item => item.label === 'norm')[0][props.selected_language] },
+        { key: 'objectives', label: props.language_data.filter(item => item.label === 'objectives')[0][props.selected_language] },
+        { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+      ]
     };
   }
 
@@ -62,6 +77,52 @@ export default class AdminAnalysisType extends Component {
     this.getAllAnalysisTypes();
   }
 
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.selected_language != this.props.selected_language) {
+      this.setState({
+        import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
+        export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
+        create_new_label: nextProps.language_data.filter(item => item.label === 'create_new')[0][nextProps.selected_language],
+        fields: [
+          { key: 'analysisType_id', label: nextProps.language_data.filter(item => item.label === 'analysistype_id')[0][nextProps.selected_language] },
+          { key: 'analysisType', label: nextProps.language_data.filter(item => item.label === 'analysis_type')[0][nextProps.selected_language] },
+          { key: 'norm', label: nextProps.language_data.filter(item => item.label === 'norm')[0][nextProps.selected_language] },
+          { key: 'objectives', sorter: false, label: nextProps.language_data.filter(item => item.label === 'objectives')[0][nextProps.selected_language] },
+          { key: 'remark', sorter: false, label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          { key: 'buttonGroups', label: '', _style: { width: '84px' } }
+        ],
+        header: [
+          { key: 'analysisType_id', label: nextProps.language_data.filter(item => item.label === 'analysistype_id')[0][nextProps.selected_language] },
+          { key: 'analysisType', label: nextProps.language_data.filter(item => item.label === 'analysis_type')[0][nextProps.selected_language] },
+          { key: 'norm', label: nextProps.language_data.filter(item => item.label === 'norm')[0][nextProps.selected_language] },
+          { key: 'objectives', label: nextProps.language_data.filter(item => item.label === 'objectives')[0][nextProps.selected_language] },
+          { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+        ]
+      })
+    }
+  }
+  async on_export_clicked() {
+    await this.csvLink.link.click();
+  }
+
+  async handleFiles(files) {
+    var reader = new FileReader();
+    reader.readAsText(files[0]);
+    const result = await new Promise((resolve, reject) => {
+      reader.onload = function (e) {
+        resolve(reader.result);
+      }
+    })
+    axios.post(Config.ServerUri + '/upload_analysisType_csv', {
+      data: result
+    })
+      .then((res) => {
+        this.setState({
+          analysisTypesData: res.data.analysisTypes,
+        });
+        toast.success('AnalysisType CSV file successfully imported');
+      });
+  }
   getObjectiveName(id) {
     var objectives = this.state.objectivesData;
     for (var i = 0; i < objectives.length; i++) {
@@ -159,6 +220,14 @@ export default class AdminAnalysisType extends Component {
             }
           >
             <CFormGroup>
+              <CLabel style={{ fontWeight: '500' }}>Analysis Type ID</CLabel>
+              <CInput name="analysisType_id" value={this.state.analysisType_id} onChange={this.handleInputChange} required />
+              {
+                error === undefined || error === '' ? <div></div> :
+                  <div style={{ width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353' }}>{error}</div>
+              }
+            </CFormGroup>
+            <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>Analysis Type</CLabel>
               <CInput
                 name="analysisType"
@@ -252,19 +321,37 @@ export default class AdminAnalysisType extends Component {
             className="float-right"
             style={{ margin: "0px 0px 0px 16px" }}
             //style={{margin: '16px'}}
-            onClick={() => {
-              this.on_create_clicked();
-            }}
+            onClick={() => { this.on_create_clicked() }}
+          ><i className="fa fa-plus" /><span style={{ padding: '4px' }} />{this.state.create_new_label}</CButton>
+          <CButton
+            color="info"
+            className="float-right"
+            style={{ margin: "0px 0px 0px 16px" }}
+            onClick={() => this.on_export_clicked()}
           >
-            <i className="fa fa-plus" />
+            <i className="fa fa-download"></i>
             <span style={{ padding: "4px" }} />
-            Create New
+            {this.state.export_label}
           </CButton>
+          <CSVLink
+            headers={this.state.header}
+            filename="Export-AnalysisType.csv"
+            data={this.state.export_all_data}
+            ref={(r) => (this.csvLink = r)}
+          ></CSVLink>
+          <ReactFileReader handleFiles={this.handleFiles} fileTypes={'.csv'}>
+            <CButton
+              color="info"
+              className="float-right"
+              style={{ margin: '0px 0px 0px 16px' }}
+            //style={{margin: '16px'}}
+            ><i className="fa fa-upload" /><span style={{ padding: '4px' }} />{this.state.import_label}</CButton>
+          </ReactFileReader>
         </div>
         <div id="tableUserTypes">
           <CDataTable
             items={this.state.analysisTypesData}
-            fields={fields}
+            fields={this.state.fields}
             itemsPerPage={50}
             itemsPerPageSelect
             sorter
@@ -355,16 +442,25 @@ export default class AdminAnalysisType extends Component {
   }
 
   getAllAnalysisTypes() {
-    axios
-      .get(Config.ServerUri + "/get_all_analysisTypes")
+    axios.get(Config.ServerUri + '/get_all_analysisTypes')
       .then((res) => {
         this.setState({
           analysisTypesData: res.data.analysisTypes,
           objectivesData: res.data.objectives,
           unitsData: res.data.units,
         });
+        var analysis_list = []
+        res.data.analysisTypes.map((analysistype) => {
+          var objectiveHistory_data = this.getObjectives(analysistype.objectives);
+          analysis_list.push({ "analysisType_id": analysistype.analysisType_id, "analysisType": analysistype.analysisType, "norm": analysistype.norm, "objectives": objectiveHistory_data, "remark": analysistype.remark })
+        });
+        this.setState({
+          export_all_data: analysis_list,
+        });
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   on_delete_clicked(id) {
@@ -375,9 +471,10 @@ export default class AdminAnalysisType extends Component {
 
   on_create_clicked() {
     this.setState({
-      current_id: "",
-      analysisType: "",
-      norm: "",
+      current_id: '',
+      analysisType_id: '',
+      analysisType: '',
+      norm: '',
       objectives: [],
       _objectives: [],
       remark: "",
@@ -408,6 +505,7 @@ export default class AdminAnalysisType extends Component {
     this.setState({
       current_id: item._id,
       analysisType: item.analysisType,
+      analysisType_id: item.analysisType_id,
       norm: item.norm,
       objectives: objectives,
       _objectives: _objectives,
@@ -421,71 +519,95 @@ export default class AdminAnalysisType extends Component {
 
   deleteAnalysisType() {
     this.setModal_Delete(false);
-
-    axios
-      .post(Config.ServerUri + "/delete_analysisType", {
-        id: this.state.current_id,
-      })
+    axios.post(Config.ServerUri + '/delete_analysisType', {
+      id: this.state.current_id
+    })
       .then((res) => {
-        toast.success("AnalysisType successfully deleted");
+        toast.success('AnalysisType successfully deleted');
         this.setState({
           analysisTypesData: res.data.analysisTypes,
           objectivesData: res.data.objectives,
           unitsData: res.data.units,
         });
+        var analysis_list = []
+        res.data.analysisTypes.map((analysistype) => {
+          var objectiveHistory_data = this.getObjectives(analysistype.objectives);
+          analysis_list.push({ "analysisType_id": analysistype.analysisType_id, "analysisType": analysistype.analysisType, "norm": analysistype.norm, "objectives": objectiveHistory_data, "remark": analysistype.remark })
+        });
+        this.setState({
+          export_all_data: analysis_list,
+        });
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   createAnalysisType(event) {
     event.preventDefault();
 
     if (this.state.double_error !== "") return;
-
     this.setModal_Create(false);
-
-    axios
-      .post(Config.ServerUri + "/create_analysisType", {
-        analysisType: this.state.analysisType,
-        norm: this.state.norm,
-        objectives: this.state.objectives,
-        remark: this.state.remark,
-      })
+    axios.post(Config.ServerUri + '/create_analysisType', {
+      analysisType_id: this.state.analysisType_id,
+      analysisType: this.state.analysisType,
+      norm: this.state.norm,
+      objectives: this.state.objectives,
+      remark: this.state.remark
+    })
       .then((res) => {
-        toast.success("AnalysisType successfully created");
+        toast.success('AnalysisType successfully created');
         this.setState({
           analysisTypesData: res.data.analysisTypes,
           objectivesData: res.data.objectives,
           unitsData: res.data.units,
         });
+        var analysis_list = []
+        res.data.analysisTypes.map((analysistype) => {
+          var objectiveHistory_data = this.getObjectives(analysistype.objectives);
+          analysis_list.push({ "analysisType_id": analysistype.analysisType_id, "analysisType": analysistype.analysisType, "norm": analysistype.norm, "objectives": objectiveHistory_data, "remark": analysistype.remark })
+        });
+        this.setState({
+          export_all_data: analysis_list,
+        });
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   updateAnalysisType(event) {
     event.preventDefault();
 
     if (this.state.double_error !== "") return;
-
     this.setModal_Create(false);
-
-    axios
-      .post(Config.ServerUri + "/update_analysisType", {
-        id: this.state.current_id,
-        analysisType: this.state.analysisType,
-        norm: this.state.norm,
-        objectives: this.state.objectives,
-        remark: this.state.remark,
-      })
+    axios.post(Config.ServerUri + '/update_analysisType', {
+      id: this.state.current_id,
+      analysisType_id: this.state.analysisType_id,
+      analysisType: this.state.analysisType,
+      norm: this.state.norm,
+      objectives: this.state.objectives,
+      remark: this.state.remark
+    })
       .then((res) => {
-        toast.success("AnalysisType successfully updated");
+        toast.success('AnalysisType successfully updated');
         this.setState({
           analysisTypesData: res.data.analysisTypes,
           objectivesData: res.data.objectives,
           unitsData: res.data.units,
         });
+        var analysis_list = []
+        res.data.analysisTypes.map((analysistype) => {
+          var objectiveHistory_data = this.getObjectives(analysistype.objectives);
+          analysis_list.push({ "analysisType_id": analysistype.analysisType_id, "analysisType": analysistype.analysisType, "norm": analysistype.norm, "objectives": objectiveHistory_data, "remark": analysistype.remark })
+        });
+        this.setState({
+          export_all_data: analysis_list,
+        });
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   setModal_Delete(modal) {

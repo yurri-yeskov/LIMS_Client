@@ -22,18 +22,11 @@ import {
 
 import Select from "react-select";
 import { toast } from "react-hot-toast";
+import { CSVLink } from "react-csv";
+import ReactFileReader from 'react-file-reader';
 
 const axios = require("axios");
 const Config = require("../../Config.js");
-
-const fields = [
-  { key: "material", sorter: false },
-  { key: "certificateType" },
-  { key: "packing", label: "Packing Type" },
-  { key: "analysises", label: "AnalysisType-Objective", sorter: false },
-  { key: "remark", sorter: false },
-  { key: "buttonGroups", label: "", _style: { width: "84px" } },
-];
 
 export default class AdminCertificateType extends Component {
   constructor(props) {
@@ -43,6 +36,7 @@ export default class AdminCertificateType extends Component {
     this.createCertificateType = this.createCertificateType.bind(this);
     this.updateCertificateType = this.updateCertificateType.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
+    this.handleFiles = this.handleFiles.bind(this);
 
     this.state = {
       materialsData: [],
@@ -52,13 +46,15 @@ export default class AdminCertificateType extends Component {
       objectivesData: [],
       analysisTypesData: [],
       unitsData: [],
+      export_all_data: [],
       modal_delete: false,
       modal_create: false,
       current_id: null,
-      material: "",
-      client: "",
-      certificateType: "",
-      packing: "",
+      material: '',
+      client: '',
+      certificateType_id: '',
+      certificateType: '',
+      packing: '',
       analysises: [],
       _analysises: [],
       remark: "",
@@ -66,11 +62,79 @@ export default class AdminCertificateType extends Component {
       double_error: "",
       analysisOption: [],
       analysisOpt: [],
+      import_label: props.language_data.filter(item => item.label === 'import')[0][props.selected_language],
+      export_label: props.language_data.filter(item => item.label === 'export')[0][props.selected_language],
+      create_new_label: props.language_data.filter(item => item.label === 'create_new')[0][props.selected_language],
+      fields: [
+        { key: 'certificateType_id', label: props.language_data.filter(item => item.label === 'certificate_type_id')[0][props.selected_language] },
+        { key: 'material', sorter: false, label: props.language_data.filter(item => item.label === 'material')[0][props.selected_language] },
+        { key: 'certificateType', label: props.language_data.filter(item => item.label === 'certificate_type')[0][props.selected_language] },
+        { key: 'packing', label: props.language_data.filter(item => item.label === 'packing_type')[0][props.selected_language] },
+        { key: 'analysises', sorter: false, label: props.language_data.filter(item => item.label === 'analysistype_objectives')[0][props.selected_language] },
+        { key: 'remark', sorter: false, label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        { key: 'buttonGroups', label: '', _style: { width: '84px' } },
+      ],
+      header: [
+        { key: 'certificateType_id', label: props.language_data.filter(item => item.label === 'certificate_type_id')[0][props.selected_language] },
+        { key: 'material', label: props.language_data.filter(item => item.label === 'material')[0][props.selected_language] },
+        { key: 'certificateType', label: props.language_data.filter(item => item.label === 'certificate_type')[0][props.selected_language] },
+        { key: 'packing', label: props.language_data.filter(item => item.label === 'packing_type')[0][props.selected_language] },
+        { key: 'analysises', label: props.language_data.filter(item => item.label === 'analysistype_objectives')[0][props.selected_language] },
+        { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+      ],
     };
   }
 
   componentDidMount() {
     this.getAllCertificateTypes();
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.selected_language != this.props.selected_language) {
+      this.setState({
+        import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
+        export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
+        create_new_label: nextProps.language_data.filter(item => item.label === 'create_new')[0][nextProps.selected_language],
+        fields: [
+          { key: 'certificateType_id', label: nextProps.language_data.filter(item => item.label === 'certificate_type_id')[0][nextProps.selected_language] },
+          { key: 'material', sorter: false, label: nextProps.language_data.filter(item => item.label === 'material')[0][nextProps.selected_language] },
+          { key: 'certificateType', label: nextProps.language_data.filter(item => item.label === 'certificate_type')[0][nextProps.selected_language] },
+          { key: 'packing', label: nextProps.language_data.filter(item => item.label === 'packing_type')[0][nextProps.selected_language] },
+          { key: 'analysises', sorter: false, label: nextProps.language_data.filter(item => item.label === 'analysistype_objectives')[0][nextProps.selected_language] },
+          { key: 'remark', sorter: false, label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          { key: 'buttonGroups', label: '', _style: { width: '84px' } },
+        ],
+        header: [
+          { key: 'certificateType_id', label: nextProps.language_data.filter(item => item.label === 'certificate_type_id')[0][nextProps.selected_language] },
+          { key: 'material', label: nextProps.language_data.filter(item => item.label === 'material')[0][nextProps.selected_language] },
+          { key: 'certificateType', label: nextProps.language_data.filter(item => item.label === 'certificate_type')[0][nextProps.selected_language] },
+          { key: 'packing', label: nextProps.language_data.filter(item => item.label === 'packing_type')[0][nextProps.selected_language] },
+          { key: 'analysises', label: nextProps.language_data.filter(item => item.label === 'analysistype_objectives')[0][nextProps.selected_language] },
+          { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+        ],
+      })
+    }
+  }
+
+  async on_export_clicked() {
+    await this.csvLink.link.click();
+  }
+
+  async handleFiles(files) {
+    var reader = new FileReader();
+    reader.readAsText(files[0]);
+    const result = await new Promise((resolve, reject) => {
+      reader.onload = function (e) {
+        resolve(reader.result);
+      }
+    })
+    axios.post(Config.ServerUri + '/upload_certificatetype_csv', {
+      data: result
+    })
+      .then((res) => {
+        this.setState({ certificateTypesData: res.data });
+        toast.success('Certificate Type CSV file successfully imported');
+      });
   }
 
   getAnalysises(analysises, material, client) {
@@ -79,27 +143,18 @@ export default class AdminCertificateType extends Component {
     var returnVal = "";
     analysises.map((item, index) => {
       var label = this.getAnalysisName(item.id);
-      if (label !== "") {
+      if (label !== '') {
         item.objectives.map((item0) => {
           var subLabel = this.getObjectiveName(item0.id);
           var subUnit = this.getUnitName(item0.unit);
-          if (subLabel !== "" && subUnit !== "")
-            returnVal =
-              returnVal +
-              label +
-              " - " +
-              subLabel +
-              " " +
-              subUnit +
-              " " +
-              this.getMaterialMinMax(material, item0.id, item0.unit, client) +
-              "\n";
+
+          if (subLabel !== '' && subUnit !== '')
+            returnVal = returnVal + label + ' - ' + subLabel + ' ' + subUnit + ' ' + this.getMaterialMinMax(material, item0.id, item0.unit, client) + '\n';
           return true;
         });
       }
       return true;
     });
-
     return returnVal;
   }
 
@@ -374,14 +429,16 @@ export default class AdminCertificateType extends Component {
             }
           >
             <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Materials</CLabel>
-              <CSelect
-                custom
-                name="material"
-                value={this.state.material}
-                onChange={this.handleMaterialInputChange}
-                required
-              >
+              <CLabel style={{ fontWeight: '500' }}>CertificateType ID</CLabel>
+              <CInput name="certificateType_id" value={this.state.certificateType_id} onChange={this.handleInputChange} required />
+              <CInvalidFeedback className="help-block">
+                Please provide a valid information
+              </CInvalidFeedback>
+              <CValidFeedback className="help-block">Input provided</CValidFeedback>
+            </CFormGroup>
+            <CFormGroup>
+              <CLabel style={{ fontWeight: '500' }}>Materials</CLabel>
+              <CSelect custom name="material" value={this.state.material} onChange={this.handleMaterialInputChange} required >
                 <option value="" disabled></option>
                 {this.state.materialsData.map((item, i) => {
                   return (
@@ -601,19 +658,37 @@ export default class AdminCertificateType extends Component {
             className="float-right"
             style={{ margin: "0px 0px 0px 16px" }}
             //style={{margin: '16px'}}
-            onClick={() => {
-              this.on_create_clicked();
-            }}
+            onClick={() => { this.on_create_clicked() }}
+          ><i className="fa fa-plus" /><span style={{ padding: '4px' }} />{this.state.create_new_label}</CButton>
+          <CButton
+            color="info"
+            className="float-right"
+            style={{ margin: "0px 0px 0px 16px" }}
+            onClick={() => this.on_export_clicked()}
           >
-            <i className="fa fa-plus" />
+            <i className="fa fa-download"></i>
             <span style={{ padding: "4px" }} />
-            Create New
+            {this.state.export_label}
           </CButton>
+          <CSVLink
+            headers={this.state.header}
+            filename="Export-CertificateType.csv"
+            data={this.state.export_all_data}
+            ref={(r) => (this.csvLink = r)}
+          ></CSVLink>
+          <ReactFileReader handleFiles={this.handleFiles} fileTypes={'.csv'}>
+            <CButton
+              color="info"
+              className="float-right"
+              style={{ margin: '0px 0px 0px 16px' }}
+            //style={{margin: '16px'}}
+            ><i className="fa fa-upload" /><span style={{ padding: '4px' }} />{this.state.import_label}</CButton>
+          </ReactFileReader>
         </div>
         <div>
           <CDataTable
             items={this.state.certificateTypesData}
-            fields={fields}
+            fields={this.state.fields}
             itemsPerPage={50}
             itemsPerPageSelect
             sorter
@@ -718,8 +793,7 @@ export default class AdminCertificateType extends Component {
   }
 
   getAllCertificateTypes() {
-    axios
-      .get(Config.ServerUri + "/get_all_certificateTypes")
+    axios.get(Config.ServerUri + '/get_all_certificateTypes')
       .then((res) => {
         this.setState({
           materialsData: res.data.materials,
@@ -730,8 +804,41 @@ export default class AdminCertificateType extends Component {
           unitsData: res.data.units,
           packingsData: res.data.packings,
         });
+        var certificate_list = [];
+        res.data.certificateTypes.map((certificate) => {
+          var client_name = '';
+          var material_name = '';
+          var packing_name = '';
+          var analysis = '';
+          if (certificate.client === '') {
+            client_name = 'Default';
+          }
+          res.data.clients.map((client) => {
+            if (client._id === certificate.client) {
+              client_name = client.name;
+            }
+          });
+          res.data.materials.map((material) => {
+            if (material._id === certificate.material) {
+              material_name = material.material;
+            }
+          });
+          res.data.packings.map((packing) => {
+            if (packing._id === certificate.packing) {
+              packing_name = packing.packingType;
+            }
+          });
+          var analysis_data = this.getAnalysises(certificate.analysises, certificate.material, certificate.client)
+          certificate_list.push({ 'certificateType_id': certificate.certificateType_id, 'material': material_name + '-' + client_name, 'certificateType': certificate.certificateType, 'packing': packing_name, 'analysises': analysis_data.trim(), 'remark': certificate.remark });
+        });
+        this.setState({
+          export_all_data: certificate_list
+        })
+
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   on_delete_clicked(id) {
@@ -742,9 +849,10 @@ export default class AdminCertificateType extends Component {
 
   on_create_clicked() {
     this.setState({
-      current_id: "",
-      certificateType: "",
-      remark: "",
+      current_id: '',
+      certificateType: '',
+      certificateType_id: '',
+      remark: '',
       analysises: [],
       _analysises: [],
       material: "",
@@ -782,6 +890,7 @@ export default class AdminCertificateType extends Component {
     this.setState({
       current_id: item._id,
       certificateType: item.certificateType,
+      certificateType_id: item.certificateType_id,
       remark: item.remark,
       analysises: analysises,
       _analysises: _analysises,
@@ -797,13 +906,11 @@ export default class AdminCertificateType extends Component {
 
   deleteCertificateType() {
     this.setModal_Delete(false);
-
-    axios
-      .post(Config.ServerUri + "/delete_certificateType", {
-        id: this.state.current_id,
-      })
+    axios.post(Config.ServerUri + '/delete_certificateType', {
+      id: this.state.current_id
+    })
       .then((res) => {
-        toast.success("CertificateType successfully deleted");
+        toast.success('CertificateType successfully deleted');
         this.setState({
           materialsData: res.data.materials,
           clientsData: res.data.clients,
@@ -811,10 +918,39 @@ export default class AdminCertificateType extends Component {
           objectivesData: res.data.objectives,
           analysisTypesData: res.data.analysises,
           unitsData: res.data.units,
-          packingsData: res.data.packings,
+          packingsData: res.data.packings
         });
+        var certificate_list = [];
+        res.data.certificateTypes.map((certificate) => {
+          var client_name = '';
+          var material_name = '';
+          var packing_name = '';
+          var analysis = '';
+          res.data.clients.map((client) => {
+            if (client._id === certificate.client) {
+              client_name = client.name;
+            }
+          });
+          res.data.materials.map((material) => {
+            if (material._id === certificate.material) {
+              material_name = material.material;
+            }
+          });
+          res.data.packings.map((packing) => {
+            if (packing._id === certificate.packing) {
+              packing_name = packing.packingType;
+            }
+          });
+          var analysis_data = this.getAnalysises(certificate.analysises, certificate.material, certificate.client)
+          certificate_list.push({ 'certificateType_id': certificate.certificateType_id, 'material': material_name + '-' + client_name, 'certificateType': certificate.certificateType, 'packing': packing_name, 'analysises': analysis_data.trim(), 'remark': certificate.remark });
+        });
+        this.setState({
+          export_all_data: certificate_list
+        })
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   createCertificateType(event) {
@@ -823,18 +959,17 @@ export default class AdminCertificateType extends Component {
     if (this.state.double_error !== "") return;
 
     this.setModal_Create(false);
-
-    axios
-      .post(Config.ServerUri + "/create_certificateType", {
-        material: this.state.material,
-        client: this.state.client,
-        certificateType: this.state.certificateType,
-        analysises: this.state.analysises,
-        remark: this.state.remark,
-        packing: this.state.packing,
-      })
+    axios.post(Config.ServerUri + '/create_certificateType', {
+      material: this.state.material,
+      client: this.state.client,
+      certificateType_id: this.state.certificateType_id,
+      certificateType: this.state.certificateType,
+      analysises: this.state.analysises,
+      remark: this.state.remark,
+      packing: this.state.packing,
+    })
       .then((res) => {
-        toast.success("CertificateType successfully created");
+        toast.success('CertificateType successfully created');
         this.setState({
           materialsData: res.data.materials,
           clientsData: res.data.clients,
@@ -842,31 +977,58 @@ export default class AdminCertificateType extends Component {
           objectivesData: res.data.objectives,
           analysisTypesData: res.data.analysises,
           unitsData: res.data.units,
-          packingsData: res.data.packings,
+          packingsData: res.data.packings
+        });
+        var certificate_list = [];
+        res.data.certificateTypes.map((certificate) => {
+          var client_name = '';
+          var material_name = '';
+          var packing_name = '';
+          var analysis = '';
+          res.data.clients.map((client) => {
+            if (client._id === certificate.client) {
+              client_name = client.name;
+            }
+          });
+          res.data.materials.map((material) => {
+            if (material._id === certificate.material) {
+              material_name = material.material;
+            }
+          });
+          res.data.packings.map((packing) => {
+            if (packing._id === certificate.packing) {
+              packing_name = packing.packingType;
+            }
+          });
+          var analysis_data = this.getAnalysises(certificate.analysises, certificate.material, certificate.client)
+          certificate_list.push({ 'certificateType_id': certificate.certificateType_id, 'material': material_name + '-' + client_name, 'certificateType': certificate.certificateType, 'packing': packing_name, 'analysises': analysis_data.trim(), 'remark': certificate.remark });
+        });
+        this.setState({
+          export_all_data: certificate_list
         });
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   updateCertificateType(event) {
     event.preventDefault();
 
     if (this.state.double_error !== "") return;
-
     this.setModal_Create(false);
-
-    axios
-      .post(Config.ServerUri + "/update_certificateType", {
-        id: this.state.current_id,
-        material: this.state.material,
-        client: this.state.client,
-        certificateType: this.state.certificateType,
-        analysises: this.state.analysises,
-        remark: this.state.remark,
-        packing: this.state.packing,
-      })
+    axios.post(Config.ServerUri + '/update_certificateType', {
+      id: this.state.current_id,
+      certificateType_id: this.state.certificateType_id,
+      material: this.state.material,
+      client: this.state.client,
+      certificateType: this.state.certificateType,
+      analysises: this.state.analysises,
+      remark: this.state.remark,
+      packing: this.state.packing,
+    })
       .then((res) => {
-        toast.success("CertificateType successfully updated");
+        toast.success('CertificateType successfully updated');
         this.setState({
           materialsData: res.data.materials,
           clientsData: res.data.clients,
@@ -874,10 +1036,39 @@ export default class AdminCertificateType extends Component {
           objectivesData: res.data.objectives,
           analysisTypesData: res.data.analysises,
           unitsData: res.data.units,
-          packingsData: res.data.packings,
+          packingsData: res.data.packings
+        });
+        var certificate_list = [];
+        res.data.certificateTypes.map((certificate) => {
+          var client_name = '';
+          var material_name = '';
+          var packing_name = '';
+          var analysis = '';
+          res.data.clients.map((client) => {
+            if (client._id === certificate.client) {
+              client_name = client.name;
+            }
+          });
+          res.data.materials.map((material) => {
+            if (material._id === certificate.material) {
+              material_name = material.material;
+            }
+          });
+          res.data.packings.map((packing) => {
+            if (packing._id === certificate.packing) {
+              packing_name = packing.packingType;
+            }
+          });
+          var analysis_data = this.getAnalysises(certificate.analysises, certificate.material, certificate.client)
+          certificate_list.push({ 'certificateType_id': certificate.certificateType_id, 'material': material_name + '-' + client_name, 'certificateType': certificate.certificateType, 'packing': packing_name, 'analysises': analysis_data.trim(), 'remark': certificate.remark });
+        });
+        this.setState({
+          export_all_data: certificate_list
         });
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   setModal_Delete(modal) {

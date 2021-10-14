@@ -121,15 +121,14 @@ const styles = StyleSheet.create({
 export default class InputLaboratory extends Component {
   constructor(props) {
     super(props);
+    console.log(props)
     this.getAllData = this.getAllData.bind(this);
     this.deleteInputLaboratory = this.deleteInputLaboratory.bind(this);
     this.createInputLaboratory = this.createInputLaboratory.bind(this);
     this.updateInputLaboratory = this.updateInputLaboratory.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
-    this.handleSelectChangeSampleType =
-      this.handleSelectChangeSampleType.bind(this);
-    this.handleSelectChangeMaterial =
-      this.handleSelectChangeMaterial.bind(this);
+    this.handleSelectChangeSampleType = this.handleSelectChangeSampleType.bind(this);
+    this.handleSelectChangeMaterial = this.handleSelectChangeMaterial.bind(this);
     this.handleSelectChangeClient = this.handleSelectChangeClient.bind(this);
     this.handleSearchAnalysisType = this.handleSearchAnalysisType.bind(this);
     this.handleSearchSampleType = this.handleSearchSampleType.bind(this);
@@ -219,8 +218,27 @@ export default class InputLaboratory extends Component {
       charge_value: new Date(),
       reason: [],
       chk_full: false,
-
       certificatedata: [],
+      analysisType_label: props.language_data.filter(item => item.label === 'analysis_type')[0][props.selected_language],
+      sampleType_label: props.language_data.filter(item => item.label === 'sample_type')[0][props.selected_language],
+      import_label: props.language_data.filter(item => item.label === 'import')[0][props.selected_language],
+      export_label: props.language_data.filter(item => item.label === 'export')[0][props.selected_language],
+      create_new_label: props.language_data.filter(item => item.label === 'create_new')[0][props.selected_language],
+      fields : [
+        { key: "due_date", label: props.language_data.filter(item => item.label === 'due_date')[0][props.selected_language] },
+        { key: "sample_type", label: props.language_data.filter(item => item.label === 'sample_type')[0][props.selected_language], sorter: false },
+        { key: "material", label: props.language_data.filter(item => item.label === 'material')[0][props.selected_language], sorter: false },
+        { key: "client", label: props.language_data.filter(item => item.label === 'client')[0][props.selected_language], sorter: false },
+        { key: "packing_type", label: props.language_data.filter(item => item.label === 'packing_type')[0][props.selected_language], sorter: false },
+        { key: "a_types", label: props.language_data.filter(item => item.label === 'analysis_type')[0][props.selected_language], sorter: false },
+        { key: "c_types", label: props.language_data.filter(item => item.label === 'certificate')[0][props.selected_language], sorter: false },
+        { key: "sending_date", label: props.language_data.filter(item => item.label === 'sending_date')[0][props.selected_language] },
+        { key: "sample_date", label: props.language_data.filter(item => item.label === 'sample_date')[0][props.selected_language] },
+        { key: "Weight", label:  props.language_data.filter(item => item.label === 'weight_actual')[0][props.selected_language] , sorter: false },
+        { key: "Charge", label:  props.language_data.filter(item => item.label === 'charge')[0][props.selected_language] , sorter: false },
+        { key: "remark", label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] , sorter: false },
+        { key: "buttonGroups", label: "", _style: { width: "84px" } },
+      ],
     };
   }
 
@@ -236,6 +254,32 @@ export default class InputLaboratory extends Component {
     this.getUserType();
   }
 
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.selected_language != this.props.selected_language) {
+      this.setState({
+        analysisType_label: nextProps.language_data.filter(item => item.label === 'analysis_type')[0][nextProps.selected_language],
+      sampleType_label: nextProps.language_data.filter(item => item.label === 'sample_type')[0][nextProps.selected_language],
+        import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
+        export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
+        create_new_label: nextProps.language_data.filter(item => item.label === 'create_new')[0][nextProps.selected_language],
+        fields : [
+          { key: "due_date", label: nextProps.language_data.filter(item => item.label === 'due_date')[0][nextProps.selected_language] },
+          { key: "sample_type", label: nextProps.language_data.filter(item => item.label === 'sample_type')[0][nextProps.selected_language], sorter: false },
+          { key: "material", label: nextProps.language_data.filter(item => item.label === 'material')[0][nextProps.selected_language], sorter: false },
+          { key: "client", label: nextProps.language_data.filter(item => item.label === 'client')[0][nextProps.selected_language], sorter: false },
+          { key: "packing_type", label: nextProps.language_data.filter(item => item.label === 'packing_type')[0][nextProps.selected_language], sorter: false },
+          { key: "a_types", label: nextProps.language_data.filter(item => item.label === 'analysis_type')[0][nextProps.selected_language], sorter: false },
+          { key: "c_types", label: nextProps.language_data.filter(item => item.label === 'certificate')[0][nextProps.selected_language], sorter: false },
+          { key: "sending_date", label: nextProps.language_data.filter(item => item.label === 'sending_date')[0][nextProps.selected_language] },
+          { key: "sample_date", label: nextProps.language_data.filter(item => item.label === 'sample_date')[0][nextProps.selected_language] },
+          { key: "Weight", label:  nextProps.language_data.filter(item => item.label === 'weight_actual')[0][nextProps.selected_language] , sorter: false },
+          { key: "Charge", label:  nextProps.language_data.filter(item => item.label === 'charge')[0][nextProps.selected_language] , sorter: false },
+          { key: "remark", label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] , sorter: false },
+          { key: "buttonGroups", label: "", _style: { width: "84px" } },
+        ],
+      })
+    }
+  }
   getAllData() {
     axios
       .get(Config.ServerUri + "/get_all_input_laboratory")
@@ -245,7 +289,7 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
     axios
       .get(Config.ServerUri + "/get_certificate")
       .then((res) => {
@@ -286,7 +330,7 @@ export default class InputLaboratory extends Component {
           sampleTypesData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   getAllAnalysisTypes() {
@@ -297,7 +341,7 @@ export default class InputLaboratory extends Component {
           analysisTypes: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   getAllMaterials() {
@@ -311,7 +355,7 @@ export default class InputLaboratory extends Component {
           unitsData: res.data.units,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   getAllClients() {
@@ -322,7 +366,7 @@ export default class InputLaboratory extends Component {
           clientsData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   getAllPackingTypes() {
@@ -333,7 +377,7 @@ export default class InputLaboratory extends Component {
           packingTypesData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   getAllCertificateTypes() {
@@ -344,7 +388,7 @@ export default class InputLaboratory extends Component {
           certificateTypesData: res.data.certificateTypes,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   on_delete_clicked(id) {
@@ -525,7 +569,7 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   deleteInputLaboratory() {
@@ -542,7 +586,7 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   createInputLaboratory(event) {
@@ -601,7 +645,7 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   updateInputLaboratory(event) {
@@ -652,7 +696,7 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   setModal_Delete(modal) {
@@ -1106,37 +1150,37 @@ export default class InputLaboratory extends Component {
       [data.id + "-" + data.analysis + "-" + data.obj_value + "-" + data.unit]:
         data._id,
       [data.id +
-      "-" +
-      data.label +
-      "-" +
-      data.unit +
-      "-" +
-      data.obj_value +
-      "-" +
-      data.analysis +
-      `[${data.min}, ${data.max}]`]: data.limitValue,
+        "-" +
+        data.label +
+        "-" +
+        data.unit +
+        "-" +
+        data.obj_value +
+        "-" +
+        data.analysis +
+        `[${data.min}, ${data.max}]`]: data.limitValue,
       [data.id +
-      "-" +
-      data.label +
-      "-" +
-      data.unit +
-      "-" +
-      data.obj_value +
-      "-" +
-      data.analysis +
-      `[${data.min}, ${data.max}]` +
-      "reason"]: reason,
+        "-" +
+        data.label +
+        "-" +
+        data.unit +
+        "-" +
+        data.obj_value +
+        "-" +
+        data.analysis +
+        `[${data.min}, ${data.max}]` +
+        "reason"]: reason,
       [data.id +
-      "-" +
-      data.label +
-      "-" +
-      data.unit +
-      "-" +
-      data.obj_value +
-      "-" +
-      data.analysis +
-      `[${data.min}, ${data.max}]` +
-      "checkbox"]: accept,
+        "-" +
+        data.label +
+        "-" +
+        data.unit +
+        "-" +
+        data.obj_value +
+        "-" +
+        data.analysis +
+        `[${data.min}, ${data.max}]` +
+        "checkbox"]: accept,
       [data.id + "-" + data.analysis + "-" + data.label + data.unit]: color,
     });
   }
@@ -1631,27 +1675,27 @@ export default class InputLaboratory extends Component {
     this.setState({
       [e.target.name]: value,
       [item.id +
-      "-" +
-      item.label +
-      "-" +
-      item.unit +
-      "-" +
-      item.value +
-      "-" +
-      item.analysis +
-      `[${item.min}, ${item.max}]` +
-      "reason"]: "",
+        "-" +
+        item.label +
+        "-" +
+        item.unit +
+        "-" +
+        item.value +
+        "-" +
+        item.analysis +
+        `[${item.min}, ${item.max}]` +
+        "reason"]: "",
       [item.id +
-      "-" +
-      item.label +
-      "-" +
-      item.unit +
-      "-" +
-      item.value +
-      "-" +
-      item.analysis +
-      `[${item.min}, ${item.max}]` +
-      "checkbox"]: false,
+        "-" +
+        item.label +
+        "-" +
+        item.unit +
+        "-" +
+        item.value +
+        "-" +
+        item.analysis +
+        `[${item.min}, ${item.max}]` +
+        "checkbox"]: false,
     });
   }
 
@@ -1663,37 +1707,37 @@ export default class InputLaboratory extends Component {
     objectives.map((item) => {
       this.setState({
         [item.id +
-        "-" +
-        item.label +
-        "-" +
-        item.unit +
-        "-" +
-        item.value +
-        "-" +
-        item.analysis +
-        `[${item.min}, ${item.max}]`]: "",
+          "-" +
+          item.label +
+          "-" +
+          item.unit +
+          "-" +
+          item.value +
+          "-" +
+          item.analysis +
+          `[${item.min}, ${item.max}]`]: "",
         [item.id +
-        "-" +
-        item.label +
-        "-" +
-        item.unit +
-        "-" +
-        item.value +
-        "-" +
-        item.analysis +
-        `[${item.min}, ${item.max}]` +
-        "reason"]: "",
+          "-" +
+          item.label +
+          "-" +
+          item.unit +
+          "-" +
+          item.value +
+          "-" +
+          item.analysis +
+          `[${item.min}, ${item.max}]` +
+          "reason"]: "",
         [item.id +
-        "-" +
-        item.label +
-        "-" +
-        item.unit +
-        "-" +
-        item.value +
-        "-" +
-        item.analysis +
-        `[${item.min}, ${item.max}]` +
-        "checkbox"]: false,
+          "-" +
+          item.label +
+          "-" +
+          item.unit +
+          "-" +
+          item.value +
+          "-" +
+          item.analysis +
+          `[${item.min}, ${item.max}]` +
+          "checkbox"]: false,
         [item.label]: false,
         [item.id + "-" + item.analysis + "-" + item.label + item.unit]: "black",
       });
@@ -1743,14 +1787,14 @@ export default class InputLaboratory extends Component {
         if (item.label !== label.label) {
           this.setState({
             [item.label +
-            "-" +
-            item.analysis +
-            "-" +
-            item.unit +
-            "-" +
-            item.value +
-            "-" +
-            item.id]: false,
+              "-" +
+              item.analysis +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.id]: false,
           });
         }
       });
@@ -1758,24 +1802,24 @@ export default class InputLaboratory extends Component {
       this.setState({
         objectiveHistory: res.data.objectivehistory,
         [label.label +
-        "-" +
-        label.analysis +
-        "-" +
-        label.unit +
-        "-" +
-        label.value +
-        "-" +
-        label.id]:
+          "-" +
+          label.analysis +
+          "-" +
+          label.unit +
+          "-" +
+          label.value +
+          "-" +
+          label.id]:
           !this.state[
-            label.label +
-              "-" +
-              label.analysis +
-              "-" +
-              label.unit +
-              "-" +
-              label.value +
-              "-" +
-              label.id
+          label.label +
+          "-" +
+          label.analysis +
+          "-" +
+          label.unit +
+          "-" +
+          label.value +
+          "-" +
+          label.id
           ],
         history_item: history_item,
       });
@@ -1791,44 +1835,44 @@ export default class InputLaboratory extends Component {
         label: item.label,
         value:
           this.state[
-            item.id +
-              "-" +
-              item.label +
-              "-" +
-              item.unit +
-              "-" +
-              item.value +
-              "-" +
-              item.analysis +
-              `[${item.min}, ${item.max}]`
+          item.id +
+          "-" +
+          item.label +
+          "-" +
+          item.unit +
+          "-" +
+          item.value +
+          "-" +
+          item.analysis +
+          `[${item.min}, ${item.max}]`
           ],
         reason:
           this.state[
-            item.id +
-              "-" +
-              item.label +
-              "-" +
-              item.unit +
-              "-" +
-              item.value +
-              "-" +
-              item.analysis +
-              `[${item.min}, ${item.max}]` +
-              "reason"
+          item.id +
+          "-" +
+          item.label +
+          "-" +
+          item.unit +
+          "-" +
+          item.value +
+          "-" +
+          item.analysis +
+          `[${item.min}, ${item.max}]` +
+          "reason"
           ],
         accept:
           this.state[
-            item.id +
-              "-" +
-              item.label +
-              "-" +
-              item.unit +
-              "-" +
-              item.value +
-              "-" +
-              item.analysis +
-              `[${item.min}, ${item.max}]` +
-              "checkbox"
+          item.id +
+          "-" +
+          item.label +
+          "-" +
+          item.unit +
+          "-" +
+          item.value +
+          "-" +
+          item.analysis +
+          `[${item.min}, ${item.max}]` +
+          "checkbox"
           ],
         id: item.id,
         analysis: item.analysis,
@@ -1876,37 +1920,37 @@ export default class InputLaboratory extends Component {
             [item.label]: false,
             comment: "",
             [item.id +
-            "-" +
-            item.label +
-            "-" +
-            item.unit +
-            "-" +
-            item.value +
-            "-" +
-            item.analysis +
-            `[${item.min}, ${item.max}]`]: "",
+              "-" +
+              item.label +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.analysis +
+              `[${item.min}, ${item.max}]`]: "",
             [item.id +
-            "-" +
-            item.label +
-            "-" +
-            item.unit +
-            "-" +
-            item.value +
-            "-" +
-            item.analysis +
-            `[${item.min}, ${item.max}]` +
-            "reason"]: "",
+              "-" +
+              item.label +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.analysis +
+              `[${item.min}, ${item.max}]` +
+              "reason"]: "",
             [item.id +
-            "-" +
-            item.label +
-            "-" +
-            item.unit +
-            "-" +
-            item.value +
-            "-" +
-            item.analysis +
-            `[${item.min}, ${item.max}]` +
-            "checkbox"]: false,
+              "-" +
+              item.label +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.analysis +
+              `[${item.min}, ${item.max}]` +
+              "checkbox"]: false,
             [item.id + "-" + item.analysis + "-" + item.label + item.unit]:
               "black",
           });
@@ -1955,27 +1999,27 @@ export default class InputLaboratory extends Component {
                           }
                           value={
                             this.state[
-                              item.id +
-                                "-" +
-                                item.label +
-                                "-" +
-                                item.unit +
-                                "-" +
-                                item.value +
-                                "-" +
-                                item.analysis +
-                                `[${item.min}, ${item.max}]`
+                            item.id +
+                            "-" +
+                            item.label +
+                            "-" +
+                            item.unit +
+                            "-" +
+                            item.value +
+                            "-" +
+                            item.analysis +
+                            `[${item.min}, ${item.max}]`
                             ]
                           }
                           style={{
                             color:
                               this.state[
-                                item.id +
-                                  "-" +
-                                  item.analysis +
-                                  "-" +
-                                  item.label +
-                                  item.unit
+                              item.id +
+                              "-" +
+                              item.analysis +
+                              "-" +
+                              item.label +
+                              item.unit
                               ],
                           }}
                           className="form-control-sm"
@@ -2008,31 +2052,31 @@ export default class InputLaboratory extends Component {
                           value={
                             this.state[
                               item.id +
-                                "-" +
-                                item.label +
-                                "-" +
-                                item.unit +
-                                "-" +
-                                item.value +
-                                "-" +
-                                item.analysis +
-                                `[${item.min}, ${item.max}]` +
-                                "reason"
+                              "-" +
+                              item.label +
+                              "-" +
+                              item.unit +
+                              "-" +
+                              item.value +
+                              "-" +
+                              item.analysis +
+                              `[${item.min}, ${item.max}]` +
+                              "reason"
                             ] === undefined
                               ? ""
                               : this.state[
-                                  item.id +
-                                    "-" +
-                                    item.label +
-                                    "-" +
-                                    item.unit +
-                                    "-" +
-                                    item.value +
-                                    "-" +
-                                    item.analysis +
-                                    `[${item.min}, ${item.max}]` +
-                                    "reason"
-                                ]
+                              item.id +
+                              "-" +
+                              item.label +
+                              "-" +
+                              item.unit +
+                              "-" +
+                              item.value +
+                              "-" +
+                              item.analysis +
+                              `[${item.min}, ${item.max}]` +
+                              "reason"
+                              ]
                           }
                           onChange={this.handleSeltectedChangeReason}
                         >
@@ -2076,6 +2120,35 @@ export default class InputLaboratory extends Component {
                           className={
                             this.state[
                               item.id +
+                              "-" +
+                              item.label +
+                              "-" +
+                              item.unit +
+                              "-" +
+                              item.value +
+                              "-" +
+                              item.analysis +
+                              `[${item.min}, ${item.max}]` +
+                              "checkbox"
+                            ] === true
+                              ? "chk clr-full"
+                              : "chk"
+                          }
+                          onClick={(e) => {
+                            this.setState({
+                              [item.id +
+                                "-" +
+                                item.label +
+                                "-" +
+                                item.unit +
+                                "-" +
+                                item.value +
+                                "-" +
+                                item.analysis +
+                                `[${item.min}, ${item.max}]` +
+                                "checkbox"]:
+                                !this.state[
+                                item.id +
                                 "-" +
                                 item.label +
                                 "-" +
@@ -2086,35 +2159,6 @@ export default class InputLaboratory extends Component {
                                 item.analysis +
                                 `[${item.min}, ${item.max}]` +
                                 "checkbox"
-                            ] === true
-                              ? "chk clr-full"
-                              : "chk"
-                          }
-                          onClick={(e) => {
-                            this.setState({
-                              [item.id +
-                              "-" +
-                              item.label +
-                              "-" +
-                              item.unit +
-                              "-" +
-                              item.value +
-                              "-" +
-                              item.analysis +
-                              `[${item.min}, ${item.max}]` +
-                              "checkbox"]:
-                                !this.state[
-                                  item.id +
-                                    "-" +
-                                    item.label +
-                                    "-" +
-                                    item.unit +
-                                    "-" +
-                                    item.value +
-                                    "-" +
-                                    item.analysis +
-                                    `[${item.min}, ${item.max}]` +
-                                    "checkbox"
                                 ],
                             });
                           }}
@@ -2127,14 +2171,14 @@ export default class InputLaboratory extends Component {
                   <CCol>
                     {this.state[
                       item.label +
-                        "-" +
-                        item.analysis +
-                        "-" +
-                        item.unit +
-                        "-" +
-                        item.value +
-                        "-" +
-                        item.id
+                      "-" +
+                      item.analysis +
+                      "-" +
+                      item.unit +
+                      "-" +
+                      item.value +
+                      "-" +
+                      item.id
                     ] === true ? (
                       <>
                         <CDataTable
@@ -2653,7 +2697,7 @@ export default class InputLaboratory extends Component {
                 textAlign: "right",
               }}
             >
-              Analysis Type
+              {this.state.analysisType_label}
             </CLabel>
             <CSelect
               style={{ maxWidth: "20%", margin: "0 20px" }}
@@ -2677,7 +2721,7 @@ export default class InputLaboratory extends Component {
                 textAlign: "right",
               }}
             >
-              Sample Type
+              {this.state.sampleType_label}
             </CLabel>
             <ReactFileReader handleFiles={this.handleFiles} fileTypes={".csv"}>
               <CButton
@@ -2687,7 +2731,7 @@ export default class InputLaboratory extends Component {
               >
                 <i className="fa fa-upload" />
                 <span style={{ padding: "4px" }} />
-                Import
+                {this.state.import_label}
               </CButton>
             </ReactFileReader>
             <CButton
@@ -2698,7 +2742,7 @@ export default class InputLaboratory extends Component {
             >
               <i className="fa fa-download"></i>
               <span style={{ padding: "4px" }} />
-              Export
+              {this.state.export_label}
             </CButton>
             <CSVLink
               headers={header}
@@ -2716,14 +2760,14 @@ export default class InputLaboratory extends Component {
             >
               <i className="fa fa-plus" />
               <span style={{ padding: "4px" }} />
-              Create New
+              {this.state.create_new_label}
             </CButton>
           </div>
         </div>
         <div id="tableInputLaboratory">
           <CDataTable
             items={filteredData}
-            fields={fields}
+            fields={this.state.fields}
             itemsPerPage={50}
             itemsPerPageSelect
             sorter

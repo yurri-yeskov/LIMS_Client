@@ -15,22 +15,15 @@ import {
   CValidFeedback,
   CInvalidFeedback,
   CLabel,
-  CInput,
-} from "@coreui/react";
+  CInput
+} from '@coreui/react'
 
+import { CSVLink } from "react-csv";
+import ReactFileReader from 'react-file-reader';
 import { toast } from "react-hot-toast";
 
 const axios = require("axios");
 const Config = require("../../Config.js");
-
-const fields = [
-  { key: "userName" },
-  { key: "email", sorter: false },
-  { key: "password", sorter: false },
-  { key: "userType" },
-  { key: "remark", sorter: false },
-  { key: "buttonGroups", label: "", _style: { width: "84px" } },
-];
 
 export default class AdminUser extends Component {
   constructor(props) {
@@ -39,6 +32,7 @@ export default class AdminUser extends Component {
     this.deleteUser = this.deleteUser.bind(this);
     this.createUser = this.createUser.bind(this);
     this.updateUser = this.updateUser.bind(this);
+    this.handleFiles = this.handleFiles.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
 
     this.state = {
@@ -47,20 +41,83 @@ export default class AdminUser extends Component {
       modal_delete: false,
       modal_create: false,
       current_id: null,
-      userName: "",
-      password: "",
-      email: "",
+      user_id: '',
+      userName: '',
+      password: '',
+      email: '',
       userType: 0,
       remark: "",
       _create: false,
-      double_error: "",
+      double_error: '',
+      export_all_data: [],
+      import_label: props.language_data.filter(item => item.label === 'import')[0][props.selected_language],
+      export_label: props.language_data.filter(item => item.label === 'export')[0][props.selected_language],
+      create_new_label: props.language_data.filter(item => item.label === 'create_new')[0][props.selected_language],
+      user_id_label: props.language_data.filter(item => item.label === 'user_id')[0][props.selected_language],
+      user_name_label: props.language_data.filter(item => item.label === 'user_name')[0][props.selected_language],
+      email_label: props.language_data.filter(item => item.label === 'email')[0][props.selected_language],
+      password_label: props.language_data.filter(item => item.label === 'password')[0][props.selected_language],
+      user_type_label: props.language_data.filter(item => item.label === 'user_type')[0][props.selected_language],
+      remark_label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language],
+      selected_language: props.selected_language,
+      fields: [
+        { key: 'user_id', label: props.language_data.filter(item => item.label === 'user_id')[0][props.selected_language] },
+        { key: 'userName', label: props.language_data.filter(item => item.label === 'user_name')[0][props.selected_language] },
+        { key: 'email', sorter: false, label: props.language_data.filter(item => item.label === 'email')[0][props.selected_language] },
+        { key: 'password', sorter: false, label: props.language_data.filter(item => item.label === 'password')[0][props.selected_language] },
+        { key: 'userType', label: props.language_data.filter(item => item.label === 'user_type')[0][props.selected_language] },
+        { key: 'remark', sorter: false, label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        { key: 'buttonGroups', label: '', _style: { width: '84px' } }
+      ],
+      header: [
+        { key: "user_id", label: props.language_data.filter(item => item.label === 'user_id')[0][props.selected_language] },
+        { key: "userName", label: props.language_data.filter(item => item.label === 'user_name')[0][props.selected_language] },
+        { key: "email", label: props.language_data.filter(item => item.label === 'email')[0][props.selected_language] },
+        { key: "password", label: props.language_data.filter(item => item.label === 'password')[0][props.selected_language] },
+        { key: "user_type", label: props.language_data.filter(item => item.label === 'user_type')[0][props.selected_language] },
+        { key: "remark", label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+      ],
     };
+
   }
 
   componentDidMount() {
     this.getAllUsers();
   }
 
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.selected_language != this.props.selected_language) {
+      this.setState({
+        import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
+        export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
+        create_new_label: nextProps.language_data.filter(item => item.label === 'create_new')[0][nextProps.selected_language],
+        user_id_label: nextProps.language_data.filter(item => item.label === 'user_id')[0][nextProps.selected_language],
+        user_name_label: nextProps.language_data.filter(item => item.label === 'user_name')[0][nextProps.selected_language],
+        email_label: nextProps.language_data.filter(item => item.label === 'email')[0][nextProps.selected_language],
+        password_label: nextProps.language_data.filter(item => item.label === 'password')[0][nextProps.selected_language],
+        user_type_label: nextProps.language_data.filter(item => item.label === 'user_type')[0][nextProps.selected_language],
+        remark_label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language],
+        selected_language: nextProps.selected_language,
+        fields: [
+          { key: 'user_id', label: nextProps.language_data.filter(item => item.label === 'user_id')[0][nextProps.selected_language] },
+          { key: 'userName', label: nextProps.language_data.filter(item => item.label === 'user_name')[0][nextProps.selected_language] },
+          { key: 'email', sorter: false, label: nextProps.language_data.filter(item => item.label === 'email')[0][nextProps.selected_language] },
+          { key: 'password', sorter: false, label: nextProps.language_data.filter(item => item.label === 'password')[0][nextProps.selected_language] },
+          { key: 'userType', label: nextProps.language_data.filter(item => item.label === 'user_type')[0][nextProps.selected_language] },
+          { key: 'remark', sorter: false, label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          { key: 'buttonGroups', label: '', _style: { width: '84px' } }
+        ],
+        header: [
+          { key: "user_id", label: nextProps.language_data.filter(item => item.label === 'user_id')[0][nextProps.selected_language] },
+          { key: "userName", label: nextProps.language_data.filter(item => item.label === 'user_name')[0][nextProps.selected_language] },
+          { key: "email", label: nextProps.language_data.filter(item => item.label === 'email')[0][nextProps.selected_language] },
+          { key: "password", label: nextProps.language_data.filter(item => item.label === 'password')[0][nextProps.selected_language] },
+          { key: "user_type", label: nextProps.language_data.filter(item => item.label === 'user_type')[0][nextProps.selected_language] },
+          { key: "remark", label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+        ],
+      })
+    }
+  }
   getUserType(userType) {
     var result = "Unknown";
     this.state.userTypesData.map((item, i) => {
@@ -68,6 +125,27 @@ export default class AdminUser extends Component {
       return true;
     });
     return result;
+  }
+
+  async on_export_clicked() {
+    await this.csvLink.link.click();
+  }
+
+  async handleFiles(files) {
+    var reader = new FileReader();
+    reader.readAsText(files[0]);
+    const result = await new Promise((resolve, reject) => {
+      reader.onload = function (e) {
+        resolve(reader.result);
+      }
+    })
+    axios.post(Config.ServerUri + '/upload_user_csv', {
+      data: result
+    })
+      .then((res) => {
+        this.setState({ usersData: res.data.users });
+        toast.success('User CSV file successfully imported');
+      });
   }
 
   handleInputChange(e) {
@@ -100,14 +178,17 @@ export default class AdminUser extends Component {
     return (
       <CCard>
         <CCardBody>
-          <CForm
-            className="was-validated"
-            onSubmit={
-              this.state._create === true ? this.createUser : this.updateUser
-            }
-          >
+          <CForm className="was-validated" onSubmit={this.state._create === true ? this.createUser : this.updateUser}>
             <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>User Name</CLabel>
+              <CLabel style={{ fontWeight: '500' }}>{this.state.user_id_label}</CLabel>
+              <CInput name="user_id" value={this.state.user_id} onChange={this.handleInputChange} required />
+              {
+                error === undefined || error === '' ? <div></div> :
+                  <div style={{ width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353' }}>{error}</div>
+              }
+            </CFormGroup>
+            <CFormGroup>
+              <CLabel style={{ fontWeight: "500" }}>{this.state.user_name_label}</CLabel>
               <CInput
                 name="userName"
                 value={this.state.userName}
@@ -130,7 +211,7 @@ export default class AdminUser extends Component {
               )}
             </CFormGroup>
             <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Email</CLabel>
+              <CLabel style={{ fontWeight: "500" }}>{this.state.email_label}</CLabel>
               <CInput
                 name="email"
                 type="email"
@@ -146,7 +227,7 @@ export default class AdminUser extends Component {
               </CValidFeedback>
             </CFormGroup>
             <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Password</CLabel>
+              <CLabel style={{ fontWeight: "500" }}>{this.state.password_label}</CLabel>
               <CInput
                 name="password"
                 value={this.state.password}
@@ -161,7 +242,7 @@ export default class AdminUser extends Component {
               </CValidFeedback>
             </CFormGroup>
             <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>User Type</CLabel>
+              <CLabel style={{ fontWeight: "500" }}>{this.state.user_type_label}</CLabel>
               <CSelect
                 custom
                 name="userType"
@@ -186,7 +267,7 @@ export default class AdminUser extends Component {
               </CValidFeedback>
             </CFormGroup>
             <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Remark</CLabel>
+              <CLabel style={{ fontWeight: "500" }}>{this.state.remark_label}</CLabel>
               <CInput
                 name="remark"
                 value={this.state.remark}
@@ -220,19 +301,42 @@ export default class AdminUser extends Component {
             className="float-right"
             style={{ margin: "0px 0px 0px 16px" }}
             //style={{margin: '16px'}}
-            onClick={() => {
-              this.on_create_clicked();
-            }}
-          >
-            <i className="fa fa-plus" />
-            <span style={{ padding: "4px" }} />
-            Create New
+            onClick={() => { this.on_create_clicked() }}
+          ><i className="fa fa-plus" /><span style={{ padding: '4px' }} />
+            {this.state.create_new_label}
           </CButton>
+
+          <CButton
+            color="info"
+            className="float-right"
+            style={{ margin: "0px 0px 0px 16px" }}
+            onClick={() => this.on_export_clicked()}
+          >
+            <i className="fa fa-download"></i>
+            <span style={{ padding: "4px" }} />
+            {this.state.export_label}
+          </CButton>
+          <CSVLink
+            headers={this.state.header}
+            filename="Export-User.csv"
+            data={this.state.export_all_data}
+            ref={(r) => (this.csvLink = r)}
+          ></CSVLink>
+          <ReactFileReader handleFiles={this.handleFiles} fileTypes={'.csv'}>
+            <CButton
+              color="info"
+              className="float-right"
+              style={{ margin: '0px 0px 0px 16px' }}
+            //style={{margin: '16px'}}
+            ><i className="fa fa-upload" /><span style={{ padding: '4px' }} />
+              {this.state.import_label}
+            </CButton>
+          </ReactFileReader>
         </div>
         <div>
           <CDataTable
             items={this.state.usersData}
-            fields={fields}
+            fields={this.state.fields}
             itemsPerPage={50}
             itemsPerPageSelect
             sorter
@@ -315,15 +419,23 @@ export default class AdminUser extends Component {
   }
 
   getAllUsers() {
-    axios
-      .get(Config.ServerUri + "/get_all_users")
+    axios.get(Config.ServerUri + '/get_all_users')
       .then((res) => {
+        var user_list = []
+        res.data.users.map((user) => {
+          var usertype = res.data.userTypes.filter((usertype) => usertype._id === user.userType);
+          user_list.push({ "user_id": user.user_id, "userName": user.userName, "email": user.email, "password": user.password, "user_type": usertype[0].userType, "remark": user.remark })
+        });
+
         this.setState({
+          export_all_data: user_list,
           usersData: res.data.users,
           userTypesData: res.data.userTypes,
         });
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   on_delete_clicked(id) {
@@ -334,12 +446,13 @@ export default class AdminUser extends Component {
 
   on_create_clicked() {
     this.setState({
-      current_id: "",
-      userName: "",
-      email: "",
-      password: "",
-      userType: "",
-      remark: "",
+      current_id: '',
+      user_id: '',
+      userName: '',
+      email: '',
+      password: '',
+      userType: '',
+      remark: '',
       _create: true,
       double_error: "",
     });
@@ -348,8 +461,10 @@ export default class AdminUser extends Component {
   }
 
   on_update_clicked(item) {
+    console.log(item);
     this.setState({
       current_id: item._id,
+      user_id: item.user_id,
       userName: item.userName,
       email: item.email,
       password: item.password,
@@ -365,18 +480,26 @@ export default class AdminUser extends Component {
   deleteUser() {
     this.setModal_Delete(false);
 
-    axios
-      .post(Config.ServerUri + "/delete_user", {
-        id: this.state.current_id,
-      })
+    axios.post(Config.ServerUri + '/delete_user', {
+      id: this.state.current_id
+    })
       .then((res) => {
-        toast.success("User successfully deleted");
+        toast.success('User successfully deleted');
+        var user_list = []
+        res.data.users.map((user) => {
+          var usertype = res.data.userTypes.filter((usertype) => usertype._id === user.userType);
+          user_list.push({ "user_id": user.user_id, "userName": user.userName, "email": user.email, "password": user.password, "user_type": usertype[0].userType, "remark": user.remark })
+        });
+
         this.setState({
+          export_all_data: user_list,
           usersData: res.data.users,
           userTypesData: res.data.userTypes,
         });
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   createUser(event) {
@@ -386,22 +509,31 @@ export default class AdminUser extends Component {
 
     this.setModal_Create(false);
 
-    axios
-      .post(Config.ServerUri + "/create_user", {
-        userName: this.state.userName,
-        email: this.state.email,
-        password: this.state.password,
-        userType: this.state.userType,
-        remark: this.state.remark,
-      })
+    axios.post(Config.ServerUri + '/create_user', {
+      user_id: this.state.user_id,
+      userName: this.state.userName,
+      email: this.state.email,
+      password: this.state.password,
+      userType: this.state.userType,
+      remark: this.state.remark
+    })
       .then((res) => {
-        toast.success("User successfully created");
+        toast.success('User successfully created');
+        var user_list = []
+        res.data.users.map((user) => {
+          var usertype = res.data.userTypes.filter((usertype) => usertype._id === user.userType);
+          user_list.push({ "user_id": user.user_id, "userName": user.userName, "email": user.email, "password": user.password, "user_type": usertype[0].userType, "remark": user.remark })
+        });
+
         this.setState({
+          export_all_data: user_list,
           usersData: res.data.users,
           userTypesData: res.data.userTypes,
         });
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   updateUser(event) {
@@ -410,24 +542,32 @@ export default class AdminUser extends Component {
     if (this.state.double_error !== "") return;
 
     this.setModal_Create(false);
-
-    axios
-      .post(Config.ServerUri + "/update_user", {
-        id: this.state.current_id,
-        userName: this.state.userName,
-        email: this.state.email,
-        password: this.state.password,
-        userType: this.state.userType,
-        remark: this.state.remark,
-      })
+    axios.post(Config.ServerUri + '/update_user', {
+      id: this.state.current_id,
+      user_id: this.state.user_id,
+      userName: this.state.userName,
+      email: this.state.email,
+      password: this.state.password,
+      userType: this.state.userType,
+      remark: this.state.remark
+    })
       .then((res) => {
-        toast.success("User successfully updated");
+        toast.success('User successfully updated');
+        var user_list = []
+        res.data.users.map((user) => {
+          var usertype = res.data.userTypes.filter((usertype) => usertype._id === user.userType);
+          user_list.push({ "user_id": user.user_id, "userName": user.userName, "email": user.email, "password": user.password, "user_type": usertype[0].userType, "remark": user.remark })
+        });
+
         this.setState({
+          export_all_data: user_list,
           usersData: res.data.users,
           userTypesData: res.data.userTypes,
         });
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   setModal_Delete(modal) {

@@ -17,50 +17,69 @@ import {
   CRow,
   CCol,
 } from "@coreui/react";
-
-import $ from "jquery";
+import $ from 'jquery';
 import { toast } from "react-hot-toast";
+import { CSVLink } from "react-csv";
+import ReactFileReader from 'react-file-reader';
+
 
 const axios = require("axios");
 const Config = require("../../Config.js");
 
 const fields = [
-  { key: "userType" },
-  { key: "labInput", label: "Input", sorter: false },
-  { key: "labAnalysis", label: "Analysis", sorter: false },
-  { key: "labAdmin", label: "Admin", sorter: false },
-  { key: "stockUser", label: "User", sorter: false },
-  { key: "stockAdmin", label: "Admin", sorter: false },
-  { key: "hsImport", label: "Import", sorter: false },
-  { key: "hsExport", label: "Export", sorter: false },
-  { key: "hsAdmin", label: "Admin", sorter: false },
-  { key: "geologyImport", label: "Import", sorter: false },
-  { key: "geologyExport", label: "Export", sorter: false },
-  { key: "geologyAdmin", label: "Admin", sorter: false },
-  { key: "remark", sorter: false },
-  {
-    key: "buttonGroups",
-    label: "",
-    _style: { width: "84px", display: "none" },
-  },
-];
+  { key: 'userType_id' },
+  { key: 'userType' },
+  { key: 'labInput', label: 'Input', sorter: false },
+  { key: 'labAnalysis', label: 'Analysis', sorter: false },
+  { key: 'labAdmin', label: 'Admin', sorter: false },
+  { key: 'stockUser', label: 'User', sorter: false },
+  { key: 'stockAdmin', label: 'Admin', sorter: false },
+  { key: 'hsImport', label: 'Import', sorter: false },
+  { key: 'hsExport', label: 'Export', sorter: false },
+  { key: 'hsAdmin', label: 'Admin', sorter: false },
+  { key: 'geologyImport', label: 'Import', sorter: false },
+  { key: 'geologyExport', label: 'Export', sorter: false },
+  { key: 'geologyAdmin', label: 'Admin', sorter: false },
+  { key: 'remark', sorter: false },
+  { key: 'buttonGroups', label: '', _style: { width: '84px', display: 'none' } }]
+
+const header = [
+  { key: "userType_id", label: "User Type ID" },
+  { key: "userType", label: "User Type" },
+  { key: "labInput", label: "Laboratory Input" },
+  { key: "labAnalysis", label: "Laboratory Analysis" },
+  { key: "labAdmin", label: "Laboratory Admin" },
+  { key: 'stockUser', label: 'Stock User' },
+  { key: 'stockAdmin', label: 'Stock Admin' },
+  { key: 'hsImport', label: 'HS Import' },
+  { key: 'hsExport', label: 'HS Export' },
+  { key: 'hsAdmin', label: 'HS Admin' },
+  { key: 'geologyImport', label: 'Geology Import' },
+  { key: 'geologyExport', label: 'Geology Export' },
+  { key: 'geologyAdmin', label: 'Geology Admin' },
+  { key: 'remark', label: 'Remark' },
+]
 
 export default class AdminUserType extends Component {
   constructor(props) {
     super(props);
+    console.log(props);
     this.getAllUserTypes = this.getAllUserTypes.bind(this);
     this.deleteUserType = this.deleteUserType.bind(this);
     this.createUserType = this.createUserType.bind(this);
     this.updateUserType = this.updateUserType.bind(this);
+    this.handleFiles = this.handleFiles.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
     this.handleSwitchChange = this.handleSwitchChange.bind(this);
 
     this.state = {
+      export_all_data: [],
       userTypesData: [],
       modal_delete: false,
       modal_create: false,
       current_id: null,
-      userType: "",
+      userType: '',
+      userType_id: '',
       labInput: false,
       labAnalysis: false,
       labAdmin: false,
@@ -75,13 +94,100 @@ export default class AdminUserType extends Component {
       remark: "",
       _create: false,
       double_error: "",
+      import_label: props.language_data.filter(item => item.label === 'import')[0][props.selected_language],
+      export_label: props.language_data.filter(item => item.label === 'export')[0][props.selected_language],
+      create_new_label: props.language_data.filter(item => item.label === 'create_new')[0][props.selected_language],
+      laboratory_label: props.language_data.filter(item => item.label === 'laboratory')[0][props.selected_language],
+      hs_label: props.language_data.filter(item => item.label === 'hs')[0][props.selected_language],
+      stock_management_label: props.language_data.filter(item => item.label === 'stock_management')[0][props.selected_language],
+      geology_label: props.language_data.filter(item => item.label === 'geology')[0][props.selected_language],
+      fields: [
+        { key: 'userType_id', label: props.language_data.filter(item => item.label === 'user_type_id')[0][props.selected_language] },
+        { key: 'userType', label: props.language_data.filter(item => item.label === 'user_type')[0][props.selected_language] },
+        { key: 'labInput', label: props.language_data.filter(item => item.label === 'input')[0][props.selected_language], sorter: false },
+        { key: 'labAnalysis', label: props.language_data.filter(item => item.label === 'analysis')[0][props.selected_language], sorter: false },
+        { key: 'labAdmin', label: props.language_data.filter(item => item.label === 'admin')[0][props.selected_language], sorter: false },
+        { key: 'stockUser', label: props.language_data.filter(item => item.label === 'user')[0][props.selected_language], sorter: false },
+        { key: 'stockAdmin', label: props.language_data.filter(item => item.label === 'admin')[0][props.selected_language], sorter: false },
+        { key: 'hsImport', label: props.language_data.filter(item => item.label === 'import')[0][props.selected_language], sorter: false },
+        { key: 'hsExport', label: props.language_data.filter(item => item.label === 'export')[0][props.selected_language], sorter: false },
+        { key: 'hsAdmin', label: props.language_data.filter(item => item.label === 'admin')[0][props.selected_language], sorter: false },
+        { key: 'geologyImport', label: props.language_data.filter(item => item.label === 'import')[0][props.selected_language], sorter: false },
+        { key: 'geologyExport', label: props.language_data.filter(item => item.label === 'export')[0][props.selected_language], sorter: false },
+        { key: 'geologyAdmin', label: props.language_data.filter(item => item.label === 'admin')[0][props.selected_language], sorter: false },
+        { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language], sorter: false },
+        { key: 'buttonGroups', label: '', _style: { width: '84px', display: 'none' } }
+      ],
+
+      header: [
+        { key: "userType_id", label: props.language_data.filter(item => item.label === 'user_type_id')[0][props.selected_language] },
+        { key: "userType", label: props.language_data.filter(item => item.label === 'user_type')[0][props.selected_language] },
+        { key: "labInput", label: props.language_data.filter(item => item.label === 'laboratory')[0][props.selected_language] + ' ' + props.language_data.filter(item => item.label === 'input')[0][props.selected_language] },
+        { key: "labAnalysis", label: props.language_data.filter(item => item.label === 'laboratory')[0][props.selected_language] + ' ' + props.language_data.filter(item => item.label === 'analysis')[0][props.selected_language] },
+        { key: "labAdmin", label: props.language_data.filter(item => item.label === 'laboratory')[0][props.selected_language] + ' ' + props.language_data.filter(item => item.label === 'admin')[0][props.selected_language] },
+        { key: 'stockUser', label: props.language_data.filter(item => item.label === 'stock')[0][props.selected_language] + ' ' + props.language_data.filter(item => item.label === 'user')[0][props.selected_language] },
+        { key: 'stockAdmin', label: props.language_data.filter(item => item.label === 'stock')[0][props.selected_language] + ' ' + props.language_data.filter(item => item.label === 'admin')[0][props.selected_language] },
+        { key: 'hsImport', label: props.language_data.filter(item => item.label === 'hs')[0][props.selected_language] + ' ' + props.language_data.filter(item => item.label === 'import')[0][props.selected_language] },
+        { key: 'hsExport', label: props.language_data.filter(item => item.label === 'hs')[0][props.selected_language] + ' ' + props.language_data.filter(item => item.label === 'export')[0][props.selected_language] },
+        { key: 'hsAdmin', label: props.language_data.filter(item => item.label === 'hs')[0][props.selected_language] + ' ' + props.language_data.filter(item => item.label === 'admin')[0][props.selected_language] },
+        { key: 'geologyImport', label: props.language_data.filter(item => item.label === 'geology')[0][props.selected_language] + ' ' + props.language_data.filter(item => item.label === 'import')[0][props.selected_language] },
+        { key: 'geologyExport', label: props.language_data.filter(item => item.label === 'geology')[0][props.selected_language] + ' ' + props.language_data.filter(item => item.label === 'export')[0][props.selected_language] },
+        { key: 'geologyAdmin', label: props.language_data.filter(item => item.label === 'geology')[0][props.selected_language] + ' ' + props.language_data.filter(item => item.label === 'admin')[0][props.selected_language] },
+        { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+      ]
     };
   }
 
   componentDidMount() {
     this.getAllUserTypes();
   }
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.selected_language != this.props.selected_language) {
+      this.setState({
+        import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
+        export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
+        create_new_label: nextProps.language_data.filter(item => item.label === 'create_new')[0][nextProps.selected_language],
+        laboratory_label: nextProps.language_data.filter(item => item.label === 'laboratory')[0][nextProps.selected_language],
+        hs_label: nextProps.language_data.filter(item => item.label === 'hs')[0][nextProps.selected_language],
+        stock_management_label: nextProps.language_data.filter(item => item.label === 'stock_management')[0][nextProps.selected_language],
+        geology_label: nextProps.language_data.filter(item => item.label === 'geology')[0][nextProps.selected_language],
+        fields: [
+          { key: 'userType_id', label: nextProps.language_data.filter(item => item.label === 'user_type_id')[0][nextProps.selected_language] },
+          { key: 'userType', label: nextProps.language_data.filter(item => item.label === 'user_type')[0][nextProps.selected_language] },
+          { key: 'labInput', label: nextProps.language_data.filter(item => item.label === 'input')[0][nextProps.selected_language], sorter: false },
+          { key: 'labAnalysis', label: nextProps.language_data.filter(item => item.label === 'analysis')[0][nextProps.selected_language], sorter: false },
+          { key: 'labAdmin', label: nextProps.language_data.filter(item => item.label === 'admin')[0][nextProps.selected_language], sorter: false },
+          { key: 'stockUser', label: nextProps.language_data.filter(item => item.label === 'user')[0][nextProps.selected_language], sorter: false },
+          { key: 'stockAdmin', label: nextProps.language_data.filter(item => item.label === 'admin')[0][nextProps.selected_language], sorter: false },
+          { key: 'hsImport', label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language], sorter: false },
+          { key: 'hsExport', label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language], sorter: false },
+          { key: 'hsAdmin', label: nextProps.language_data.filter(item => item.label === 'admin')[0][nextProps.selected_language], sorter: false },
+          { key: 'geologyImport', label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language], sorter: false },
+          { key: 'geologyExport', label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language], sorter: false },
+          { key: 'geologyAdmin', label: nextProps.language_data.filter(item => item.label === 'admin')[0][nextProps.selected_language], sorter: false },
+          { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language], sorter: false },
+          { key: 'buttonGroups', label: '', _style: { width: '84px', display: 'none' } }
+        ],
 
+        header: [
+          { key: "userType_id", label: nextProps.language_data.filter(item => item.label === 'user_type_id')[0][nextProps.selected_language] },
+          { key: "userType", label: nextProps.language_data.filter(item => item.label === 'user_type')[0][nextProps.selected_language] },
+          { key: "labInput", label: nextProps.language_data.filter(item => item.label === 'laboratory')[0][nextProps.selected_language] + ' ' + nextProps.language_data.filter(item => item.label === 'input')[0][nextProps.selected_language] },
+          { key: "labAnalysis", label: nextProps.language_data.filter(item => item.label === 'laboratory')[0][nextProps.selected_language] + ' ' + nextProps.language_data.filter(item => item.label === 'analysis')[0][nextProps.selected_language] },
+          { key: "labAdmin", label: nextProps.language_data.filter(item => item.label === 'laboratory')[0][nextProps.selected_language] + ' ' + nextProps.language_data.filter(item => item.label === 'admin')[0][nextProps.selected_language] },
+          { key: 'stockUser', label: nextProps.language_data.filter(item => item.label === 'stock')[0][nextProps.selected_language] + ' ' + nextProps.language_data.filter(item => item.label === 'user')[0][nextProps.selected_language] },
+          { key: 'stockAdmin', label: nextProps.language_data.filter(item => item.label === 'stock')[0][nextProps.selected_language] + ' ' + nextProps.language_data.filter(item => item.label === 'admin')[0][nextProps.selected_language] },
+          { key: 'hsImport', label: nextProps.language_data.filter(item => item.label === 'hs')[0][nextProps.selected_language] + ' ' + nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language] },
+          { key: 'hsExport', label: nextProps.language_data.filter(item => item.label === 'hs')[0][nextProps.selected_language] + ' ' + nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language] },
+          { key: 'hsAdmin', label: nextProps.language_data.filter(item => item.label === 'hs')[0][nextProps.selected_language] + ' ' + nextProps.language_data.filter(item => item.label === 'admin')[0][nextProps.selected_language] },
+          { key: 'geologyImport', label: nextProps.language_data.filter(item => item.label === 'geology')[0][nextProps.selected_language] + ' ' + nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language] },
+          { key: 'geologyExport', label: nextProps.language_data.filter(item => item.label === 'geology')[0][nextProps.selected_language] + ' ' + nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language] },
+          { key: 'geologyAdmin', label: nextProps.language_data.filter(item => item.label === 'geology')[0][nextProps.selected_language] + ' ' + nextProps.language_data.filter(item => item.label === 'admin')[0][nextProps.selected_language] },
+          { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+        ]
+      })
+    }
+  }
   handleInputChange(e) {
     var name = e.target.name;
     var value = e.target.value;
@@ -104,6 +210,29 @@ export default class AdminUserType extends Component {
     this.setState({
       [name]: value,
     });
+  }
+  async on_export_clicked() {
+    await this.csvLink.link.click();
+  }
+
+  async handleFiles(files) {
+    var reader = new FileReader();
+    reader.readAsText(files[0]);
+    const result = await new Promise((resolve, reject) => {
+      reader.onload = function (e) {
+        resolve(reader.result);
+      }
+    })
+    console.log(result);
+    axios.post(Config.ServerUri + '/upload_usertype_csv', {
+      data: result
+    })
+      .then((res) => {
+        this.setState({
+          userTypesData: res.data
+        });
+        toast.success('UserType CSV file successfully imported');
+      });
   }
 
   handleSwitchChange(e) {
@@ -188,6 +317,14 @@ export default class AdminUserType extends Component {
                 : this.updateUserType
             }
           >
+            <CFormGroup>
+              <CLabel style={{ fontWeight: '500' }}>UserType ID</CLabel>
+              <CInput name="userType_id" value={this.state.userType_id} onChange={this.handleInputChange} required />
+              {
+                error === undefined || error === '' ? <div></div> :
+                  <div style={{ width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353' }}>{error}</div>
+              }
+            </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>UserType</CLabel>
               <CInput
@@ -414,20 +551,18 @@ export default class AdminUserType extends Component {
   }
 
   renderTableHeaders() {
-    if ($("#insertedTr").length) return;
-
-    var trContent =
+    $("#insertedTr").remove();
+    const trContent =
       '<tr id="insertedTr"> \
       <th></th> \
-      <th colspan="3" style="text-align: center">Laboratory</th> \
-      <th colspan="2" style="text-align: center">Stock Management</th> \
-      <th colspan="3" style="text-align: center">Hs</th> \
-      <th colspan="3" style="text-align: center">Geology</th> \
+      <th></th> \
+      <th colspan="3" style="text-align: center">'+ this.state.laboratory_label + '</th> \
+      <th colspan="2" style="text-align: center">'+ this.state.stock_management_label + '</th> \
+      <th colspan="3" style="text-align: center">'+ this.state.hs_label + '</th> \
+      <th colspan="3" style="text-align: center">'+ this.state.geology_label + '</th> \
       <th></th> \
       <th rowspan="2"></th> \
     </tr>';
-    // <th rowspan="2" style="text-align: center; vertical-align: middle">User Type</th> \
-    // <th rowspan="2" style="text-align: center; vertical-align: middle">Remark</th> \
     $("#tableUserTypes").find("thead").find("tr").before(trContent);
   }
 
@@ -440,19 +575,38 @@ export default class AdminUserType extends Component {
             className="float-right"
             style={{ margin: "0px 0px 0px 16px" }}
             //style={{margin: '16px'}}
-            onClick={() => {
-              this.on_create_clicked();
-            }}
+            onClick={() => { this.on_create_clicked() }}
+          ><i className="fa fa-plus" /><span style={{ padding: '4px' }} />{this.state.create_new_label}</CButton>
+          <CButton
+            color="info"
+            className="float-right"
+            style={{ margin: "0px 0px 0px 16px" }}
+            onClick={() => this.on_export_clicked()}
           >
-            <i className="fa fa-plus" />
+            <i className="fa fa-download"></i>
             <span style={{ padding: "4px" }} />
-            Create New
+            {this.state.export_label}
           </CButton>
+          <CSVLink
+            headers={this.state.header}
+            filename="Export-UserType.csv"
+            data={this.state.export_all_data}
+            ref={(r) => (this.csvLink = r)}
+          ></CSVLink>
+          <ReactFileReader handleFiles={this.handleFiles} fileTypes={'.csv'}>
+            <CButton
+              color="info"
+              className="float-right"
+              style={{ margin: '0px 0px 0px 16px' }}
+            //style={{margin: '16px'}}
+            ><i className="fa fa-upload" /><span style={{ padding: '4px' }} />{this.state.import_label}</CButton>
+          </ReactFileReader>
         </div>
+
         <div id="tableUserTypes">
           <CDataTable
             items={this.state.userTypesData}
-            fields={fields}
+            fields={this.state.fields}
             itemsPerPage={50}
             itemsPerPageSelect
             sorter
@@ -656,7 +810,7 @@ export default class AdminUserType extends Component {
             }}
           />
         </div>
-        {this.renderTableHeaders()}
+        {this.renderTableHeaders(this.state)}
         <CModal
           style={{ width: "40vw" }}
           show={this.state.modal_delete}
@@ -703,14 +857,20 @@ export default class AdminUserType extends Component {
   }
 
   getAllUserTypes() {
-    axios
-      .get(Config.ServerUri + "/get_all_userTypes")
+    axios.get(Config.ServerUri + '/get_all_userTypes')
       .then((res) => {
+        var usertype_list = []
+        res.data.map((usertype) => {
+          usertype_list.push({ "userType_id": usertype.userType_id, "userType": usertype.userType, "labInput": usertype.labInput, "labAnalysis": usertype.labAnalysis, "labAdmin": usertype.labAdmin, "stockUser": usertype.stockUser, "stockAdmin": usertype.stockAdmin, "hsImport": usertype.hsImport, "hsExport": usertype.hsExport, "hsAdmin": usertype.hsAdmin, "geologyImport": usertype.geologyImport, "geologyExport": usertype.geologyExport, "geologyAdmin": usertype.geologyAdmin, "remark": usertype.remark })
+        });
         this.setState({
           userTypesData: res.data,
+          export_all_data: usertype_list,
         });
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   on_delete_clicked(id) {
@@ -721,8 +881,9 @@ export default class AdminUserType extends Component {
 
   on_create_clicked() {
     this.setState({
-      current_id: "",
-      userType: "",
+      current_id: '',
+      userType: '',
+      userType_id: '',
       labInput: false,
       labAnalysis: false,
       labAdmin: false,
@@ -746,6 +907,7 @@ export default class AdminUserType extends Component {
     this.setState({
       current_id: item._id,
       userType: item.userType,
+      userType_id: item.userType_id,
       labInput: item.labInput,
       labAnalysis: item.labAnalysis,
       labAdmin: item.labAdmin,
@@ -767,83 +929,97 @@ export default class AdminUserType extends Component {
 
   deleteUserType() {
     this.setModal_Delete(false);
-
-    axios
-      .post(Config.ServerUri + "/delete_userType", {
-        id: this.state.current_id,
-      })
+    axios.post(Config.ServerUri + '/delete_userType', {
+      id: this.state.current_id
+    })
       .then((res) => {
-        toast.success("UserType successfully deleted");
+        toast.success('UserType successfully deleted');
+        var usertype_list = []
+        res.data.map((usertype) => {
+          usertype_list.push({ "userType_id": usertype.userType_id, "userType": usertype.userType, "labInput": usertype.labInput, "labAnalysis": usertype.labAnalysis, "labAdmin": usertype.labAdmin, "stockUser": usertype.stockUser, "stockAdmin": usertype.stockAdmin, "hsImport": usertype.hsImport, "hsExport": usertype.hsExport, "hsAdmin": usertype.hsAdmin, "geologyImport": usertype.geologyImport, "geologyExport": usertype.geologyExport, "geologyAdmin": usertype.geologyAdmin, "remark": usertype.remark })
+        });
         this.setState({
           userTypesData: res.data,
+          export_all_data: usertype_list,
         });
+
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   createUserType(event) {
     event.preventDefault();
-
     if (this.state.double_error !== "") return;
-
     this.setModal_Create(false);
-
-    axios
-      .post(Config.ServerUri + "/create_userType", {
-        userType: this.state.userType,
-        labInput: this.state.labInput,
-        labAnalysis: this.state.labAnalysis,
-        labAdmin: this.state.labAdmin,
-        stockUser: this.state.stockUser,
-        stockAdmin: this.state.stockAdmin,
-        hsImport: this.state.hsImport,
-        hsExport: this.state.hsExport,
-        hsAdmin: this.state.hsAdmin,
-        geologyImport: this.state.geologyImport,
-        geologyExport: this.state.geologyExport,
-        geologyAdmin: this.state.geologyAdmin,
-        remark: this.state.remark,
-      })
+    axios.post(Config.ServerUri + '/create_userType', {
+      userType_id: this.state.userType_id,
+      userType: this.state.userType,
+      labInput: this.state.labInput,
+      labAnalysis: this.state.labAnalysis,
+      labAdmin: this.state.labAdmin,
+      stockUser: this.state.stockUser,
+      stockAdmin: this.state.stockAdmin,
+      hsImport: this.state.hsImport,
+      hsExport: this.state.hsExport,
+      hsAdmin: this.state.hsAdmin,
+      geologyImport: this.state.geologyImport,
+      geologyExport: this.state.geologyExport,
+      geologyAdmin: this.state.geologyAdmin,
+      remark: this.state.remark
+    })
       .then((res) => {
-        toast.success("UserType successfully created");
+        toast.success('UserType successfully created');
+        var usertype_list = []
+        res.data.map((usertype) => {
+          usertype_list.push({ "userType_id": usertype.userType_id, "userType": usertype.userType, "labInput": usertype.labInput, "labAnalysis": usertype.labAnalysis, "labAdmin": usertype.labAdmin, "stockUser": usertype.stockUser, "stockAdmin": usertype.stockAdmin, "hsImport": usertype.hsImport, "hsExport": usertype.hsExport, "hsAdmin": usertype.hsAdmin, "geologyImport": usertype.geologyImport, "geologyExport": usertype.geologyExport, "geologyAdmin": usertype.geologyAdmin, "remark": usertype.remark })
+        });
         this.setState({
           userTypesData: res.data,
+          export_all_data: usertype_list,
         });
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   updateUserType(event) {
     event.preventDefault();
-
     if (this.state.double_error !== "") return;
-
     this.setModal_Create(false);
-
-    axios
-      .post(Config.ServerUri + "/update_userType", {
-        id: this.state.current_id,
-        userType: this.state.userType,
-        labInput: this.state.labInput,
-        labAnalysis: this.state.labAnalysis,
-        labAdmin: this.state.labAdmin,
-        stockUser: this.state.stockUser,
-        stockAdmin: this.state.stockAdmin,
-        hsImport: this.state.hsImport,
-        hsExport: this.state.hsExport,
-        hsAdmin: this.state.hsAdmin,
-        geologyImport: this.state.geologyImport,
-        geologyExport: this.state.geologyExport,
-        geologyAdmin: this.state.geologyAdmin,
-        remark: this.state.remark,
-      })
+    axios.post(Config.ServerUri + '/update_userType', {
+      id: this.state.current_id,
+      userType_id: this.state.userType_id,
+      userType: this.state.userType,
+      labInput: this.state.labInput,
+      labAnalysis: this.state.labAnalysis,
+      labAdmin: this.state.labAdmin,
+      stockUser: this.state.stockUser,
+      stockAdmin: this.state.stockAdmin,
+      hsImport: this.state.hsImport,
+      hsExport: this.state.hsExport,
+      hsAdmin: this.state.hsAdmin,
+      geologyImport: this.state.geologyImport,
+      geologyExport: this.state.geologyExport,
+      geologyAdmin: this.state.geologyAdmin,
+      remark: this.state.remark
+    })
       .then((res) => {
-        toast.success("UserType successfully updated");
+        toast.success('UserType successfully updated');
+        var usertype_list = []
+        res.data.map((usertype) => {
+          usertype_list.push({ "userType_id": usertype.userType_id, "userType": usertype.userType, "labInput": usertype.labInput, "labAnalysis": usertype.labAnalysis, "labAdmin": usertype.labAdmin, "stockUser": usertype.stockUser, "stockAdmin": usertype.stockAdmin, "hsImport": usertype.hsImport, "hsExport": usertype.hsExport, "hsAdmin": usertype.hsAdmin, "geologyImport": usertype.geologyImport, "geologyExport": usertype.geologyExport, "geologyAdmin": usertype.geologyAdmin, "remark": usertype.remark })
+        });
         this.setState({
           userTypesData: res.data,
+          export_all_data: usertype_list,
         });
       })
-      .catch((error) => {});
+      .catch((error) => {
+
+      })
   }
 
   setModal_Delete(modal) {

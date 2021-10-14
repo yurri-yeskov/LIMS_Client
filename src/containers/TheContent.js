@@ -8,6 +8,8 @@ import { CContainer, CFade } from '@coreui/react'
 
 // routes config
 import routes from '../routes'
+import { useSelector } from 'react-redux'
+import { getCurrentLanugage , getLanguageData} from 'src/store/reducer'
 
 const loading = (
   <div className="pt-3 text-center">
@@ -16,6 +18,8 @@ const loading = (
 )
 
 const TheContent = () => {
+  const selected_language = useSelector(state => getCurrentLanugage(state));
+  const language_data = useSelector(state => getLanguageData(state));
   return (
     <main className="c-main">
       <CContainer fluid>
@@ -28,9 +32,10 @@ const TheContent = () => {
                   path={route.path}
                   exact={route.exact}
                   name={route.name}
+                  
                   render={props => (
-                    <CFade>
-                      <route.component {...props} />
+                    <CFade >
+                      <route.component {...props} selected_language = {selected_language} language_data = {language_data} />
                     </CFade>
                   )} />
               )

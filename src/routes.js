@@ -39,7 +39,8 @@ const Users = React.lazy(() => import('./views/users/Users'));
 const User = React.lazy(() => import('./views/users/User'));
 
 const Administration = React.lazy(() => import('./views/LIMS/Administration'));
-const InputLaboratory = React.lazy(() => import ('./views/LIMS/InputLaboratory')) 
+const InputLaboratory = React.lazy(() => import ('./views/LIMS/InputLaboratory'));
+const AnalysisLaboratory = React.lazy(() => import ('./views/LIMS/AnalysisLaboratory')); 
 
 const routes = [
   { path: '/', exact: true, name: 'Home' },
@@ -83,7 +84,8 @@ const routes = [
   { path: '/users', exact: true,  name: 'Users', component: Users },
   { path: '/users/:id', exact: true, name: 'User Details', component: User },
   { path: '/administration', exact: true, name: 'Administration', component: Administration },
-  { path: '/input/laboratory', exact: true, name: 'InputLaboratory', component: InputLaboratory }
+  { path: '/input/laboratory', exact: true, name: 'InputLaboratory', component: InputLaboratory },
+  { path: '/analysis/laboratory', exact: true, name: 'AnalysisLaboratory', component: AnalysisLaboratory }
 ];
 
 export default routes;
