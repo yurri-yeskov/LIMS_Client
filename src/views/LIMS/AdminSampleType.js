@@ -20,8 +20,7 @@ import {
 
 import { toast } from "react-hot-toast";
 import { CSVLink } from "react-csv";
-import ReactFileReader from 'react-file-reader';
-
+import ReactFileReader from "react-file-reader";
 
 const axios = require("axios");
 const Config = require("../../Config.js");
@@ -43,8 +42,8 @@ export default class AdminSampleType extends Component {
       modal_delete: false,
       modal_create: false,
       current_id: null,
-      sampleType: '',
-      sampleType_id: '',
+      sampleType: "",
+      sampleType_id: "",
       material: false,
       client: false,
       packingType: false,
@@ -58,39 +57,192 @@ export default class AdminSampleType extends Component {
       remark: "",
       _create: false,
       double_error: "",
-      import_label: props.language_data.filter(item => item.label === 'import')[0][props.selected_language],
-      export_label: props.language_data.filter(item => item.label === 'export')[0][props.selected_language],
-      create_new_label: props.language_data.filter(item => item.label === 'create_new')[0][props.selected_language],
+      import_label: props.language_data.filter(
+        (item) => item.label === "import"
+      )[0][props.selected_language],
+      export_label: props.language_data.filter(
+        (item) => item.label === "export"
+      )[0][props.selected_language],
+      create_new_label: props.language_data.filter(
+        (item) => item.label === "create_new"
+      )[0][props.selected_language],
       fields: [
-        { key: 'sampleType_id', label: props.language_data.filter(item => item.label === 'sample_type_id')[0][props.selected_language] },
-        { key: 'sampleType', label: props.language_data.filter(item => item.label === 'sample_type')[0][props.selected_language] },
-        { key: 'material', sorter: false, label: props.language_data.filter(item => item.label === 'material')[0][props.selected_language] },
-        { key: 'client', sorter: false, label: props.language_data.filter(item => item.label === 'client')[0][props.selected_language] },
-        { key: 'packingType', sorter: false, label: props.language_data.filter(item => item.label === 'packing_type')[0][props.selected_language] },
-        { key: 'dueDate', sorter: false, label: props.language_data.filter(item => item.label === 'due_date')[0][props.selected_language] },
-        { key: 'sampleDate', sorter: false, label: props.language_data.filter(item => item.label === 'sample_date')[0][props.selected_language] },
-        { key: 'sendingDate', sorter: false, label: props.language_data.filter(item => item.label === 'sending_date')[0][props.selected_language] },
-        { key: 'analysisType', sorter: false, label: props.language_data.filter(item => item.label === 'analysis_type')[0][props.selected_language] },
-        { key: 'incomingProduct', sorter: false, label: props.language_data.filter(item => item.label === 'incoming_product')[0][props.selected_language] },
-        { key: 'distributor', sorter: false, label: props.language_data.filter(item => item.label === 'distributor')[0][props.selected_language] },
-        { key: 'certificateType', sorter: false, label: props.language_data.filter(item => item.label === 'certificate_type')[0][props.selected_language] },
-        { key: 'remark', sorter: false, label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
-        { key: 'buttonGroups', label: '', _style: { width: '84px' } }
+        {
+          key: "sampleType_id",
+          label: props.language_data.filter(
+            (item) => item.label === "sample_type_id"
+          )[0][props.selected_language],
+        },
+        {
+          key: "sampleType",
+          label: props.language_data.filter(
+            (item) => item.label === "sample_type"
+          )[0][props.selected_language],
+        },
+        {
+          key: "stockSample",
+          label: props.language_data.filter(
+            (item) => item.label === "stock_sample"
+          )[0][props.selected_language],
+        },
+        {
+          key: "material",
+          sorter: false,
+          label: props.language_data.filter(
+            (item) => item.label === "material"
+          )[0][props.selected_language],
+        },
+        {
+          key: "client",
+          sorter: false,
+          label: props.language_data.filter(
+            (item) => item.label === "client"
+          )[0][props.selected_language],
+        },
+        {
+          key: "packingType",
+          sorter: false,
+          label: props.language_data.filter(
+            (item) => item.label === "packing_type"
+          )[0][props.selected_language],
+        },
+        {
+          key: "dueDate",
+          sorter: false,
+          label: props.language_data.filter(
+            (item) => item.label === "due_date"
+          )[0][props.selected_language],
+        },
+        {
+          key: "sampleDate",
+          sorter: false,
+          label: props.language_data.filter(
+            (item) => item.label === "sample_date"
+          )[0][props.selected_language],
+        },
+        {
+          key: "sendingDate",
+          sorter: false,
+          label: props.language_data.filter(
+            (item) => item.label === "sending_date"
+          )[0][props.selected_language],
+        },
+        {
+          key: "analysisType",
+          sorter: false,
+          label: props.language_data.filter(
+            (item) => item.label === "analysis_type"
+          )[0][props.selected_language],
+        },
+        {
+          key: "incomingProduct",
+          sorter: false,
+          label: props.language_data.filter(
+            (item) => item.label === "incoming_product"
+          )[0][props.selected_language],
+        },
+        {
+          key: "distributor",
+          sorter: false,
+          label: props.language_data.filter(
+            (item) => item.label === "distributor"
+          )[0][props.selected_language],
+        },
+        {
+          key: "certificateType",
+          sorter: false,
+          label: props.language_data.filter(
+            (item) => item.label === "certificate_type"
+          )[0][props.selected_language],
+        },
+        {
+          key: "remark",
+          sorter: false,
+          label: props.language_data.filter(
+            (item) => item.label === "remark"
+          )[0][props.selected_language],
+        },
+        { key: "buttonGroups", label: "", _style: { width: "84px" } },
       ],
       header: [
-        { key: 'sampleType_id', label: props.language_data.filter(item => item.label === 'sample_type_id')[0][props.selected_language] },
-        { key: 'sampleType', label: props.language_data.filter(item => item.label === 'sample_type')[0][props.selected_language] },
-        { key: 'material', label: props.language_data.filter(item => item.label === 'material')[0][props.selected_language] },
-        { key: 'client', label: props.language_data.filter(item => item.label === 'client')[0][props.selected_language] },
-        { key: 'packingType', label: props.language_data.filter(item => item.label === 'packing_type')[0][props.selected_language] },
-        { key: 'dueDate', label: props.language_data.filter(item => item.label === 'due_date')[0][props.selected_language] },
-        { key: 'sampleDate', label: props.language_data.filter(item => item.label === 'sample_date')[0][props.selected_language] },
-        { key: 'sendingDate', label: props.language_data.filter(item => item.label === 'sending_date')[0][props.selected_language] },
-        { key: 'analysisType', label: props.language_data.filter(item => item.label === 'analysis_type')[0][props.selected_language] },
-        { key: 'incomingProduct', label: props.language_data.filter(item => item.label === 'incoming_product')[0][props.selected_language] },
-        { key: 'distributor', label: props.language_data.filter(item => item.label === 'distributor')[0][props.selected_language] },
-        { key: 'certificateType', label: props.language_data.filter(item => item.label === 'certificate_type')[0][props.selected_language] },
-        { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        {
+          key: "sampleType_id",
+          label: props.language_data.filter(
+            (item) => item.label === "sample_type_id"
+          )[0][props.selected_language],
+        },
+        {
+          key: "sampleType",
+          label: props.language_data.filter(
+            (item) => item.label === "sample_type"
+          )[0][props.selected_language],
+        },
+        {
+          key: "material",
+          label: props.language_data.filter(
+            (item) => item.label === "material"
+          )[0][props.selected_language],
+        },
+        {
+          key: "client",
+          label: props.language_data.filter(
+            (item) => item.label === "client"
+          )[0][props.selected_language],
+        },
+        {
+          key: "packingType",
+          label: props.language_data.filter(
+            (item) => item.label === "packing_type"
+          )[0][props.selected_language],
+        },
+        {
+          key: "dueDate",
+          label: props.language_data.filter(
+            (item) => item.label === "due_date"
+          )[0][props.selected_language],
+        },
+        {
+          key: "sampleDate",
+          label: props.language_data.filter(
+            (item) => item.label === "sample_date"
+          )[0][props.selected_language],
+        },
+        {
+          key: "sendingDate",
+          label: props.language_data.filter(
+            (item) => item.label === "sending_date"
+          )[0][props.selected_language],
+        },
+        {
+          key: "analysisType",
+          label: props.language_data.filter(
+            (item) => item.label === "analysis_type"
+          )[0][props.selected_language],
+        },
+        {
+          key: "incomingProduct",
+          label: props.language_data.filter(
+            (item) => item.label === "incoming_product"
+          )[0][props.selected_language],
+        },
+        {
+          key: "distributor",
+          label: props.language_data.filter(
+            (item) => item.label === "distributor"
+          )[0][props.selected_language],
+        },
+        {
+          key: "certificateType",
+          label: props.language_data.filter(
+            (item) => item.label === "certificate_type"
+          )[0][props.selected_language],
+        },
+        {
+          key: "remark",
+          label: props.language_data.filter(
+            (item) => item.label === "remark"
+          )[0][props.selected_language],
+        },
       ],
     };
   }
@@ -102,41 +254,194 @@ export default class AdminSampleType extends Component {
   componentWillReceiveProps(nextProps) {
     if (nextProps.selected_language != this.props.selected_language) {
       this.setState({
-        import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
-        export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
-        create_new_label: nextProps.language_data.filter(item => item.label === 'create_new')[0][nextProps.selected_language],
+        import_label: nextProps.language_data.filter(
+          (item) => item.label === "import"
+        )[0][nextProps.selected_language],
+        export_label: nextProps.language_data.filter(
+          (item) => item.label === "export"
+        )[0][nextProps.selected_language],
+        create_new_label: nextProps.language_data.filter(
+          (item) => item.label === "create_new"
+        )[0][nextProps.selected_language],
         fields: [
-          { key: 'sampleType_id', label: nextProps.language_data.filter(item => item.label === 'sample_type_id')[0][nextProps.selected_language] },
-          { key: 'sampleType', label: nextProps.language_data.filter(item => item.label === 'sample_type')[0][nextProps.selected_language] },
-          { key: 'material', sorter: false, label: nextProps.language_data.filter(item => item.label === 'material')[0][nextProps.selected_language] },
-          { key: 'client', sorter: false, label: nextProps.language_data.filter(item => item.label === 'client')[0][nextProps.selected_language] },
-          { key: 'packingType', sorter: false, label: nextProps.language_data.filter(item => item.label === 'packing_type')[0][nextProps.selected_language] },
-          { key: 'dueDate', sorter: false, label: nextProps.language_data.filter(item => item.label === 'due_date')[0][nextProps.selected_language] },
-          { key: 'sampleDate', sorter: false, label: nextProps.language_data.filter(item => item.label === 'sample_date')[0][nextProps.selected_language] },
-          { key: 'sendingDate', sorter: false, label: nextProps.language_data.filter(item => item.label === 'sending_date')[0][nextProps.selected_language] },
-          { key: 'analysisType', sorter: false, label: nextProps.language_data.filter(item => item.label === 'analysis_type')[0][nextProps.selected_language] },
-          { key: 'incomingProduct', sorter: false, label: nextProps.language_data.filter(item => item.label === 'incoming_product')[0][nextProps.selected_language] },
-          { key: 'distributor', sorter: false, label: nextProps.language_data.filter(item => item.label === 'distributor')[0][nextProps.selected_language] },
-          { key: 'certificateType', sorter: false, label: nextProps.language_data.filter(item => item.label === 'certificate_type')[0][nextProps.selected_language] },
-          { key: 'remark', sorter: false, label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
-          { key: 'buttonGroups', label: '', _style: { width: '84px' } }
+          {
+            key: "sampleType_id",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "sample_type_id"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "sampleType",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "sample_type"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "stockSample",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "stock_sample"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "material",
+            sorter: false,
+            label: nextProps.language_data.filter(
+              (item) => item.label === "material"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "client",
+            sorter: false,
+            label: nextProps.language_data.filter(
+              (item) => item.label === "client"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "packingType",
+            sorter: false,
+            label: nextProps.language_data.filter(
+              (item) => item.label === "packing_type"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "dueDate",
+            sorter: false,
+            label: nextProps.language_data.filter(
+              (item) => item.label === "due_date"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "sampleDate",
+            sorter: false,
+            label: nextProps.language_data.filter(
+              (item) => item.label === "sample_date"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "sendingDate",
+            sorter: false,
+            label: nextProps.language_data.filter(
+              (item) => item.label === "sending_date"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "analysisType",
+            sorter: false,
+            label: nextProps.language_data.filter(
+              (item) => item.label === "analysis_type"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "incomingProduct",
+            sorter: false,
+            label: nextProps.language_data.filter(
+              (item) => item.label === "incoming_product"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "distributor",
+            sorter: false,
+            label: nextProps.language_data.filter(
+              (item) => item.label === "distributor"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "certificateType",
+            sorter: false,
+            label: nextProps.language_data.filter(
+              (item) => item.label === "certificate_type"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "remark",
+            sorter: false,
+            label: nextProps.language_data.filter(
+              (item) => item.label === "remark"
+            )[0][nextProps.selected_language],
+          },
+          { key: "buttonGroups", label: "", _style: { width: "84px" } },
         ],
         header: [
-          { key: 'sampleType_id', label: nextProps.language_data.filter(item => item.label === 'sample_type_id')[0][nextProps.selected_language] },
-          { key: 'sampleType', label: nextProps.language_data.filter(item => item.label === 'sample_type')[0][nextProps.selected_language] },
-          { key: 'material', label: nextProps.language_data.filter(item => item.label === 'material')[0][nextProps.selected_language] },
-          { key: 'client', label: nextProps.language_data.filter(item => item.label === 'client')[0][nextProps.selected_language] },
-          { key: 'packingType', label: nextProps.language_data.filter(item => item.label === 'packing_type')[0][nextProps.selected_language] },
-          { key: 'dueDate', label: nextProps.language_data.filter(item => item.label === 'due_date')[0][nextProps.selected_language] },
-          { key: 'sampleDate', label: nextProps.language_data.filter(item => item.label === 'sample_date')[0][nextProps.selected_language] },
-          { key: 'sendingDate', label: nextProps.language_data.filter(item => item.label === 'sending_date')[0][nextProps.selected_language] },
-          { key: 'analysisType', label: nextProps.language_data.filter(item => item.label === 'analysis_type')[0][nextProps.selected_language] },
-          { key: 'incomingProduct', label: nextProps.language_data.filter(item => item.label === 'incoming_product')[0][nextProps.selected_language] },
-          { key: 'distributor', label: nextProps.language_data.filter(item => item.label === 'distributor')[0][nextProps.selected_language] },
-          { key: 'certificateType', label: nextProps.language_data.filter(item => item.label === 'certificate_type')[0][nextProps.selected_language] },
-          { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          {
+            key: "sampleType_id",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "sample_type_id"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "sampleType",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "sample_type"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "material",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "material"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "client",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "client"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "packingType",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "packing_type"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "dueDate",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "due_date"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "sampleDate",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "sample_date"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "sendingDate",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "sending_date"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "analysisType",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "analysis_type"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "incomingProduct",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "incoming_product"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "distributor",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "distributor"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "certificateType",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "certificate_type"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "remark",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "remark"
+            )[0][nextProps.selected_language],
+          },
         ],
-      })
+      });
     }
   }
   async on_export_clicked() {
@@ -149,16 +454,17 @@ export default class AdminSampleType extends Component {
     const result = await new Promise((resolve, reject) => {
       reader.onload = function (e) {
         resolve(reader.result);
-      }
-    })
-    axios.post(Config.ServerUri + '/upload_sampletype_csv', {
-      data: result
-    })
+      };
+    });
+    axios
+      .post(Config.ServerUri + "/upload_sampletype_csv", {
+        data: result,
+      })
       .then((res) => {
         this.setState({
-          sampleTypesData: res.data
+          sampleTypesData: res.data,
         });
-        toast.success('Sample Type CSV file successfully imported');
+        toast.success("Sample Type CSV file successfully imported");
       });
   }
 
@@ -210,12 +516,27 @@ export default class AdminSampleType extends Component {
             }
           >
             <CFormGroup>
-              <CLabel style={{ fontWeight: '500' }}>SampleType ID</CLabel>
-              <CInput name="sampleType_id" value={this.state.sampleType_id} onChange={this.handleInputChange} required />
-              {
-                error === undefined || error === '' ? <div></div> :
-                  <div style={{ width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353' }}>{error}</div>
-              }
+              <CLabel style={{ fontWeight: "500" }}>SampleType ID</CLabel>
+              <CInput
+                name="sampleType_id"
+                value={this.state.sampleType_id}
+                onChange={this.handleInputChange}
+                required
+              />
+              {error === undefined || error === "" ? (
+                <div></div>
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    marginTop: "0.25rem",
+                    fontSize: "80%",
+                    color: "#e55353",
+                  }}
+                >
+                  {error}
+                </div>
+              )}
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>SampleType</CLabel>
@@ -243,6 +564,20 @@ export default class AdminSampleType extends Component {
             <CFormGroup>
               <CRow>
                 <CCol md="3">
+                  <CLabel style={{ fontWeight: "500" }}>Stock Sample</CLabel>
+                </CCol>
+                <CCol md="3">
+                  <CSwitch
+                    name="stockSample"
+                    shape={"pill"}
+                    color={"info"}
+                    labelOn={"\u2713"}
+                    labelOff={"\u2715"}
+                    checked={this.state.stockSample}
+                    onChange={this.handleSwitchChange}
+                  />
+                </CCol>
+                <CCol md="3">
                   <CLabel style={{ fontWeight: "500" }}>Material</CLabel>
                 </CCol>
                 <CCol md="3">
@@ -256,6 +591,10 @@ export default class AdminSampleType extends Component {
                     onChange={this.handleSwitchChange}
                   />
                 </CCol>
+              </CRow>
+            </CFormGroup>
+            <CFormGroup>
+              <CRow>
                 <CCol md="3">
                   <CLabel style={{ fontWeight: "500" }}>Client</CLabel>
                 </CCol>
@@ -270,10 +609,6 @@ export default class AdminSampleType extends Component {
                     onChange={this.handleSwitchChange}
                   />
                 </CCol>
-              </CRow>
-            </CFormGroup>
-            <CFormGroup>
-              <CRow>
                 <CCol md="3">
                   <CLabel style={{ fontWeight: "500" }}>Packing Type</CLabel>
                 </CCol>
@@ -288,6 +623,10 @@ export default class AdminSampleType extends Component {
                     onChange={this.handleSwitchChange}
                   />
                 </CCol>
+              </CRow>
+            </CFormGroup>
+            <CFormGroup>
+              <CRow>
                 <CCol md="3">
                   <CLabel style={{ fontWeight: "500" }}>Due Date</CLabel>
                 </CCol>
@@ -302,10 +641,6 @@ export default class AdminSampleType extends Component {
                     onChange={this.handleSwitchChange}
                   />
                 </CCol>
-              </CRow>
-            </CFormGroup>
-            <CFormGroup>
-              <CRow>
                 <CCol md="3">
                   <CLabel style={{ fontWeight: "500" }}>Sample Date</CLabel>
                 </CCol>
@@ -320,6 +655,10 @@ export default class AdminSampleType extends Component {
                     onChange={this.handleSwitchChange}
                   />
                 </CCol>
+              </CRow>
+            </CFormGroup>
+            <CFormGroup>
+              <CRow>
                 <CCol md="3">
                   <CLabel style={{ fontWeight: "500" }}>Sending Date</CLabel>
                 </CCol>
@@ -334,10 +673,6 @@ export default class AdminSampleType extends Component {
                     onChange={this.handleSwitchChange}
                   />
                 </CCol>
-              </CRow>
-            </CFormGroup>
-            <CFormGroup>
-              <CRow>
                 <CCol md="3">
                   <CLabel style={{ fontWeight: "500" }}>Analysis Type</CLabel>
                 </CCol>
@@ -352,6 +687,10 @@ export default class AdminSampleType extends Component {
                     onChange={this.handleSwitchChange}
                   />
                 </CCol>
+              </CRow>
+            </CFormGroup>
+            <CFormGroup>
+              <CRow>
                 <CCol md="3">
                   <CLabel style={{ fontWeight: "500" }}>
                     Incoming Product
@@ -368,10 +707,6 @@ export default class AdminSampleType extends Component {
                     onChange={this.handleSwitchChange}
                   />
                 </CCol>
-              </CRow>
-            </CFormGroup>
-            <CFormGroup>
-              <CRow>
                 <CCol md="3">
                   <CLabel style={{ fontWeight: "500" }}>Distributor</CLabel>
                 </CCol>
@@ -386,6 +721,10 @@ export default class AdminSampleType extends Component {
                     onChange={this.handleSwitchChange}
                   />
                 </CCol>
+              </CRow>
+            </CFormGroup>
+            <CFormGroup>
+              <CRow>
                 <CCol md="3">
                   <CLabel style={{ fontWeight: "500" }}>
                     Certificate Type
@@ -439,8 +778,14 @@ export default class AdminSampleType extends Component {
             className="float-right"
             style={{ margin: "0px 0px 0px 16px" }}
             //style={{margin: '16px'}}
-            onClick={() => { this.on_create_clicked() }}
-          ><i className="fa fa-plus" /><span style={{ padding: '4px' }} />{this.state.create_new_label}</CButton>
+            onClick={() => {
+              this.on_create_clicked();
+            }}
+          >
+            <i className="fa fa-plus" />
+            <span style={{ padding: "4px" }} />
+            {this.state.create_new_label}
+          </CButton>
           <CButton
             color="info"
             className="float-right"
@@ -457,13 +802,15 @@ export default class AdminSampleType extends Component {
             data={this.state.export_all_data}
             ref={(r) => (this.csvLink = r)}
           ></CSVLink>
-          <ReactFileReader handleFiles={this.handleFiles} fileTypes={'.csv'}>
+          <ReactFileReader handleFiles={this.handleFiles} fileTypes={".csv"}>
             <CButton
               color="info"
               className="float-right"
-              style={{ margin: '0px 0px 0px 16px' }}
-            //style={{margin: '16px'}}
-            ><i className="fa fa-upload" /><span style={{ padding: '4px' }} />
+              style={{ margin: "0px 0px 0px 16px" }}
+              //style={{margin: '16px'}}
+            >
+              <i className="fa fa-upload" />
+              <span style={{ padding: "4px" }} />
               {this.state.import_label}
             </CButton>
           </ReactFileReader>
@@ -480,6 +827,21 @@ export default class AdminSampleType extends Component {
             hover
             clickableRows
             scopedSlots={{
+              stockSample: (item) => {
+                return (
+                  <td style={{ textAlign: "center" }}>
+                    <CSwitch
+                      className={"mx-1"}
+                      shape={"pill"}
+                      color={"info"}
+                      labelOn={"\u2713"}
+                      labelOff={"\u2715"}
+                      checked={item.stockSample}
+                      disabled
+                    />
+                  </td>
+                );
+              },
               material: (item) => {
                 return (
                   <td style={{ textAlign: "center" }}>
@@ -707,20 +1069,34 @@ export default class AdminSampleType extends Component {
   }
 
   getAllSampleTypes() {
-    axios.get(Config.ServerUri + '/get_all_sampleTypes')
+    axios
+      .get(Config.ServerUri + "/get_all_sampleTypes")
       .then((res) => {
         var sampletype_list = [];
         res.data.map((sampletype) => {
-          sampletype_list.push({ "sampleType_id": sampletype.sampleType_id, "sampleType": sampletype.sampleType, "material": sampletype.material, "client": sampletype.client, "packingType": sampletype.packingType, "dueDate": sampletype.dueDate, "sampleDate": sampletype.sampleDate, "sendingDate": sampletype.sendingDate, "analysisType": sampletype.analysisType, "incomingProduct": sampletype.incomingProduct, "distributor": sampletype.distributor, "certificateType": sampletype.certificateType, "remark": sampletype.remark })
+          sampletype_list.push({
+            sampleType_id: sampletype.sampleType_id,
+            sampleType: sampletype.sampleType,
+            stockSample: sampletype.stockSample,
+            material: sampletype.material,
+            client: sampletype.client,
+            packingType: sampletype.packingType,
+            dueDate: sampletype.dueDate,
+            sampleDate: sampletype.sampleDate,
+            sendingDate: sampletype.sendingDate,
+            analysisType: sampletype.analysisType,
+            incomingProduct: sampletype.incomingProduct,
+            distributor: sampletype.distributor,
+            certificateType: sampletype.certificateType,
+            remark: sampletype.remark,
+          });
         });
         this.setState({
           export_all_data: sampletype_list,
-          sampleTypesData: res.data
+          sampleTypesData: res.data,
         });
       })
-      .catch((error) => {
-
-      })
+      .catch((error) => {});
   }
 
   on_delete_clicked(id) {
@@ -731,9 +1107,10 @@ export default class AdminSampleType extends Component {
 
   on_create_clicked() {
     this.setState({
-      current_id: '',
-      sampleType: '',
-      sampleType_id: '',
+      current_id: "",
+      sampleType: "",
+      sampleType_id: "",
+      stockSample: false,
       material: false,
       client: false,
       packingType: false,
@@ -757,6 +1134,7 @@ export default class AdminSampleType extends Component {
       current_id: item._id,
       sampleType: item.sampleType,
       sampleType_id: item.sampleType_id,
+      stockSample: item.stockSample,
       material: item.material,
       client: item.client,
       packingType: item.packingType,
@@ -777,23 +1155,37 @@ export default class AdminSampleType extends Component {
 
   deleteSampleType() {
     this.setModal_Delete(false);
-    axios.post(Config.ServerUri + '/delete_sampleType', {
-      id: this.state.current_id
-    })
+    axios
+      .post(Config.ServerUri + "/delete_sampleType", {
+        id: this.state.current_id,
+      })
       .then((res) => {
-        toast.success('SampleType successfully deleted');
+        toast.success("SampleType successfully deleted");
         var sampletype_list = [];
         res.data.map((sampletype) => {
-          sampletype_list.push({ "sampleType_id": sampletype.sampleType_id, "sampleType": sampletype.sampleType, "material": sampletype.material, "client": sampletype.client, "packingType": sampletype.packingType, "dueDate": sampletype.dueDate, "sampleDate": sampletype.sampleDate, "sendingDate": sampletype.sendingDate, "analysisType": sampletype.analysisType, "incomingProduct": sampletype.incomingProduct, "distributor": sampletype.distributor, "certificateType": sampletype.certificateType, "remark": sampletype.remark })
+          sampletype_list.push({
+            sampleType_id: sampletype.sampleType_id,
+            sampleType: sampletype.sampleType,
+            stockSample: sampletype.stockSample,
+            material: sampletype.material,
+            client: sampletype.client,
+            packingType: sampletype.packingType,
+            dueDate: sampletype.dueDate,
+            sampleDate: sampletype.sampleDate,
+            sendingDate: sampletype.sendingDate,
+            analysisType: sampletype.analysisType,
+            incomingProduct: sampletype.incomingProduct,
+            distributor: sampletype.distributor,
+            certificateType: sampletype.certificateType,
+            remark: sampletype.remark,
+          });
         });
         this.setState({
           export_all_data: sampletype_list,
-          sampleTypesData: res.data
+          sampleTypesData: res.data,
         });
       })
-      .catch((error) => {
-
-      })
+      .catch((error) => {});
   }
 
   createSampleType(event) {
@@ -803,35 +1195,50 @@ export default class AdminSampleType extends Component {
 
     this.setModal_Create(false);
 
-    axios.post(Config.ServerUri + '/create_sampleType', {
-      sampleType_id: this.state.sampleType_id,
-      sampleType: this.state.sampleType,
-      material: this.state.material,
-      client: this.state.client,
-      packingType: this.state.packingType,
-      dueDate: this.state.dueDate,
-      sendingDate: this.state.sendingDate,
-      sampleDate: this.state.sampleDate,
-      analysisType: this.state.analysisType,
-      incomingProduct: this.state.incomingProduct,
-      distributor: this.state.distributor,
-      certificateType: this.state.certificateType,
-      remark: this.state.remark
-    })
+    axios
+      .post(Config.ServerUri + "/create_sampleType", {
+        sampleType_id: this.state.sampleType_id,
+        sampleType: this.state.sampleType,
+        stockSample: this.state.stockSample,
+        material: this.state.material,
+        client: this.state.client,
+        packingType: this.state.packingType,
+        dueDate: this.state.dueDate,
+        sendingDate: this.state.sendingDate,
+        sampleDate: this.state.sampleDate,
+        analysisType: this.state.analysisType,
+        incomingProduct: this.state.incomingProduct,
+        distributor: this.state.distributor,
+        certificateType: this.state.certificateType,
+        remark: this.state.remark,
+      })
       .then((res) => {
-        toast.success('SampleType successfully created');
+        toast.success("SampleType successfully created");
         var sampletype_list = [];
         res.data.map((sampletype) => {
-          sampletype_list.push({ "sampleType_id": sampletype.sampleType_id, "sampleType": sampletype.sampleType, "material": sampletype.material, "client": sampletype.client, "packingType": sampletype.packingType, "dueDate": sampletype.dueDate, "sampleDate": sampletype.sampleDate, "sendingDate": sampletype.sendingDate, "analysisType": sampletype.analysisType, "incomingProduct": sampletype.incomingProduct, "distributor": sampletype.distributor, "certificateType": sampletype.certificateType, "remark": sampletype.remark })
+          sampletype_list.push({
+            sampleType_id: sampletype.sampleType_id,
+            sampleType: sampletype.sampleType,
+            stockSample: sampletype.stockSample,
+            material: sampletype.material,
+            client: sampletype.client,
+            packingType: sampletype.packingType,
+            dueDate: sampletype.dueDate,
+            sampleDate: sampletype.sampleDate,
+            sendingDate: sampletype.sendingDate,
+            analysisType: sampletype.analysisType,
+            incomingProduct: sampletype.incomingProduct,
+            distributor: sampletype.distributor,
+            certificateType: sampletype.certificateType,
+            remark: sampletype.remark,
+          });
         });
         this.setState({
           export_all_data: sampletype_list,
-          sampleTypesData: res.data
+          sampleTypesData: res.data,
         });
       })
-      .catch((error) => {
-
-      })
+      .catch((error) => {});
   }
 
   updateSampleType(event) {
@@ -841,36 +1248,51 @@ export default class AdminSampleType extends Component {
 
     this.setModal_Create(false);
 
-    axios.post(Config.ServerUri + '/update_sampleType', {
-      id: this.state.current_id,
-      sampleType: this.state.sampleType,
-      sampleType_id: this.state.sampleType_id,
-      material: this.state.material,
-      client: this.state.client,
-      packingType: this.state.packingType,
-      dueDate: this.state.dueDate,
-      sendingDate: this.state.sendingDate,
-      sampleDate: this.state.sampleDate,
-      analysisType: this.state.analysisType,
-      incomingProduct: this.state.incomingProduct,
-      distributor: this.state.distributor,
-      certificateType: this.state.certificateType,
-      remark: this.state.remark
-    })
+    axios
+      .post(Config.ServerUri + "/update_sampleType", {
+        id: this.state.current_id,
+        sampleType: this.state.sampleType,
+        sampleType_id: this.state.sampleType_id,
+        stockSample: this.state.stockSample,
+        material: this.state.material,
+        client: this.state.client,
+        packingType: this.state.packingType,
+        dueDate: this.state.dueDate,
+        sendingDate: this.state.sendingDate,
+        sampleDate: this.state.sampleDate,
+        analysisType: this.state.analysisType,
+        incomingProduct: this.state.incomingProduct,
+        distributor: this.state.distributor,
+        certificateType: this.state.certificateType,
+        remark: this.state.remark,
+      })
       .then((res) => {
-        toast.success('SampleType successfully updated');
+        toast.success("SampleType successfully updated");
         var sampletype_list = [];
         res.data.map((sampletype) => {
-          sampletype_list.push({ "sampleType_id": sampletype.sampleType_id, "sampleType": sampletype.sampleType, "material": sampletype.material, "client": sampletype.client, "packingType": sampletype.packingType, "dueDate": sampletype.dueDate, "sampleDate": sampletype.sampleDate, "sendingDate": sampletype.sendingDate, "analysisType": sampletype.analysisType, "incomingProduct": sampletype.incomingProduct, "distributor": sampletype.distributor, "certificateType": sampletype.certificateType, "remark": sampletype.remark })
+          sampletype_list.push({
+            sampleType_id: sampletype.sampleType_id,
+            sampleType: sampletype.sampleType,
+            stockSample: sampletype.stockSample,
+            material: sampletype.material,
+            client: sampletype.client,
+            packingType: sampletype.packingType,
+            dueDate: sampletype.dueDate,
+            sampleDate: sampletype.sampleDate,
+            sendingDate: sampletype.sendingDate,
+            analysisType: sampletype.analysisType,
+            incomingProduct: sampletype.incomingProduct,
+            distributor: sampletype.distributor,
+            certificateType: sampletype.certificateType,
+            remark: sampletype.remark,
+          });
         });
         this.setState({
           export_all_data: sampletype_list,
-          sampleTypesData: res.data
+          sampleTypesData: res.data,
         });
       })
-      .catch((error) => {
-
-      })
+      .catch((error) => {});
   }
 
   setModal_Delete(modal) {

@@ -9,11 +9,11 @@ import {
   CModalFooter,
   CModalHeader,
   CButton,
-  CSelect,
   CForm,
   CFormGroup,
   CLabel,
   CInput,
+  CSelect,
   CCol,
   CRow,
   CTextarea,
@@ -28,6 +28,7 @@ import {
   Col,
   List,
   Drawer,
+  notification,
   Select,
   DatePicker as AtndDatePicker,
 } from "antd";
@@ -52,6 +53,7 @@ const fields = [
   { key: "sending_date", label: "Sending Date" },
   { key: "sample_date", label: "Sample Date" },
   { key: "Weight", label: "Weight(actual)", sorter: false },
+  { key: "material_left", label: "Material left", sorter: false },
   { key: "Charge", label: "Charge", sorter: false },
   { key: "remark", label: "Remark", sorter: false },
   { key: "buttonGroups", label: "", _style: { width: "84px" } },
@@ -121,14 +123,16 @@ const styles = StyleSheet.create({
 export default class InputLaboratory extends Component {
   constructor(props) {
     super(props);
-    console.log(props)
     this.getAllData = this.getAllData.bind(this);
     this.deleteInputLaboratory = this.deleteInputLaboratory.bind(this);
     this.createInputLaboratory = this.createInputLaboratory.bind(this);
     this.updateInputLaboratory = this.updateInputLaboratory.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
-    this.handleSelectChangeSampleType = this.handleSelectChangeSampleType.bind(this);
-    this.handleSelectChangeMaterial = this.handleSelectChangeMaterial.bind(this);
+    this.handleSelectChangeSampleType =
+      this.handleSelectChangeSampleType.bind(this);
+    this.handleSelectChangeMaterial =
+      this.handleSelectChangeMaterial.bind(this);
+    this.PlusStockdata = this.PlusStockdata.bind(this);
     this.handleSelectChangeClient = this.handleSelectChangeClient.bind(this);
     this.handleSearchAnalysisType = this.handleSearchAnalysisType.bind(this);
     this.handleSearchSampleType = this.handleSearchSampleType.bind(this);
@@ -151,9 +155,14 @@ export default class InputLaboratory extends Component {
     this.onChangeValue = this.onChangeValue.bind(this);
     this.renderWeightDetail = this.renderWeightDetail.bind(this);
     this.renderChargeDetail = this.renderChargeDetail.bind(this);
+    this.renderStockDetail = this.renderStockDetail.bind(this);
     this.onChangeweight = this.onChangeweight.bind(this);
     this.on_export_clicked = this.on_export_clicked.bind(this);
+    this.onChangeStock = this.onChangeStock.bind(this);
+    this.onChange_material = this.onChange_material.bind(this);
     this.state = {
+      mat_left: 0,
+      stock_data: [""],
       c_rowdata: [],
       selectCertificate: "",
       pdfcolumns: [],
@@ -215,28 +224,125 @@ export default class InputLaboratory extends Component {
       charge_id: "",
       charge_history: "",
       charge_table_flag: false,
+      stock_flag: false,
+      stock_sample: "",
       charge_value: new Date(),
+      stock_modal_flag: false,
       reason: [],
+      opt_material: [],
       chk_full: false,
       certificatedata: [],
-      analysisType_label: props.language_data.filter(item => item.label === 'analysis_type')[0][props.selected_language],
-      sampleType_label: props.language_data.filter(item => item.label === 'sample_type')[0][props.selected_language],
-      import_label: props.language_data.filter(item => item.label === 'import')[0][props.selected_language],
-      export_label: props.language_data.filter(item => item.label === 'export')[0][props.selected_language],
-      create_new_label: props.language_data.filter(item => item.label === 'create_new')[0][props.selected_language],
-      fields : [
-        { key: "due_date", label: props.language_data.filter(item => item.label === 'due_date')[0][props.selected_language] },
-        { key: "sample_type", label: props.language_data.filter(item => item.label === 'sample_type')[0][props.selected_language], sorter: false },
-        { key: "material", label: props.language_data.filter(item => item.label === 'material')[0][props.selected_language], sorter: false },
-        { key: "client", label: props.language_data.filter(item => item.label === 'client')[0][props.selected_language], sorter: false },
-        { key: "packing_type", label: props.language_data.filter(item => item.label === 'packing_type')[0][props.selected_language], sorter: false },
-        { key: "a_types", label: props.language_data.filter(item => item.label === 'analysis_type')[0][props.selected_language], sorter: false },
-        { key: "c_types", label: props.language_data.filter(item => item.label === 'certificate')[0][props.selected_language], sorter: false },
-        { key: "sending_date", label: props.language_data.filter(item => item.label === 'sending_date')[0][props.selected_language] },
-        { key: "sample_date", label: props.language_data.filter(item => item.label === 'sample_date')[0][props.selected_language] },
-        { key: "Weight", label:  props.language_data.filter(item => item.label === 'weight_actual')[0][props.selected_language] , sorter: false },
-        { key: "Charge", label:  props.language_data.filter(item => item.label === 'charge')[0][props.selected_language] , sorter: false },
-        { key: "remark", label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] , sorter: false },
+      analysisType_label: props.language_data.filter(
+        (item) => item.label === "analysis_type"
+      )[0][props.selected_language],
+      sampleType_label: props.language_data.filter(
+        (item) => item.label === "sample_type"
+      )[0][props.selected_language],
+      import_label: props.language_data.filter(
+        (item) => item.label === "import"
+      )[0][props.selected_language],
+      export_label: props.language_data.filter(
+        (item) => item.label === "export"
+      )[0][props.selected_language],
+      create_new_label: props.language_data.filter(
+        (item) => item.label === "create_new"
+      )[0][props.selected_language],
+      fields: [
+        {
+          key: "due_date",
+          label: props.language_data.filter(
+            (item) => item.label === "due_date"
+          )[0][props.selected_language],
+        },
+        {
+          key: "sample_type",
+          label: props.language_data.filter(
+            (item) => item.label === "sample_type"
+          )[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "material",
+          label: props.language_data.filter(
+            (item) => item.label === "material"
+          )[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "client",
+          label: props.language_data.filter(
+            (item) => item.label === "client"
+          )[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "packing_type",
+          label: props.language_data.filter(
+            (item) => item.label === "packing_type"
+          )[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "a_types",
+          label: props.language_data.filter(
+            (item) => item.label === "analysis_type"
+          )[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "c_types",
+          label: props.language_data.filter(
+            (item) => item.label === "certificate"
+          )[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "sending_date",
+          label: props.language_data.filter(
+            (item) => item.label === "sending_date"
+          )[0][props.selected_language],
+        },
+        {
+          key: "sample_date",
+          label: props.language_data.filter(
+            (item) => item.label === "sample_date"
+          )[0][props.selected_language],
+        },
+        {
+          key: "Weight",
+          label: props.language_data.filter(
+            (item) => item.label === "weight_actual"
+          )[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "material_left",
+          label: props.language_data.filter(
+            (item) => item.label === "material_left"
+          )[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "Charge",
+          label: props.language_data.filter(
+            (item) => item.label === "charge"
+          )[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "stockSample",
+          label: props.language_data.filter(
+            (item) => item.label === "stock_sample"
+          )[0][props.selected_language],
+          sorter: false,
+        },
+        {
+          key: "remark",
+          label: props.language_data.filter(
+            (item) => item.label === "remark"
+          )[0][props.selected_language],
+          sorter: false,
+        },
         { key: "buttonGroups", label: "", _style: { width: "84px" } },
       ],
     };
@@ -257,27 +363,113 @@ export default class InputLaboratory extends Component {
   componentWillReceiveProps(nextProps) {
     if (nextProps.selected_language != this.props.selected_language) {
       this.setState({
-        analysisType_label: nextProps.language_data.filter(item => item.label === 'analysis_type')[0][nextProps.selected_language],
-      sampleType_label: nextProps.language_data.filter(item => item.label === 'sample_type')[0][nextProps.selected_language],
-        import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
-        export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
-        create_new_label: nextProps.language_data.filter(item => item.label === 'create_new')[0][nextProps.selected_language],
-        fields : [
-          { key: "due_date", label: nextProps.language_data.filter(item => item.label === 'due_date')[0][nextProps.selected_language] },
-          { key: "sample_type", label: nextProps.language_data.filter(item => item.label === 'sample_type')[0][nextProps.selected_language], sorter: false },
-          { key: "material", label: nextProps.language_data.filter(item => item.label === 'material')[0][nextProps.selected_language], sorter: false },
-          { key: "client", label: nextProps.language_data.filter(item => item.label === 'client')[0][nextProps.selected_language], sorter: false },
-          { key: "packing_type", label: nextProps.language_data.filter(item => item.label === 'packing_type')[0][nextProps.selected_language], sorter: false },
-          { key: "a_types", label: nextProps.language_data.filter(item => item.label === 'analysis_type')[0][nextProps.selected_language], sorter: false },
-          { key: "c_types", label: nextProps.language_data.filter(item => item.label === 'certificate')[0][nextProps.selected_language], sorter: false },
-          { key: "sending_date", label: nextProps.language_data.filter(item => item.label === 'sending_date')[0][nextProps.selected_language] },
-          { key: "sample_date", label: nextProps.language_data.filter(item => item.label === 'sample_date')[0][nextProps.selected_language] },
-          { key: "Weight", label:  nextProps.language_data.filter(item => item.label === 'weight_actual')[0][nextProps.selected_language] , sorter: false },
-          { key: "Charge", label:  nextProps.language_data.filter(item => item.label === 'charge')[0][nextProps.selected_language] , sorter: false },
-          { key: "remark", label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] , sorter: false },
+        analysisType_label: nextProps.language_data.filter(
+          (item) => item.label === "analysis_type"
+        )[0][nextProps.selected_language],
+        sampleType_label: nextProps.language_data.filter(
+          (item) => item.label === "sample_type"
+        )[0][nextProps.selected_language],
+        import_label: nextProps.language_data.filter(
+          (item) => item.label === "import"
+        )[0][nextProps.selected_language],
+        export_label: nextProps.language_data.filter(
+          (item) => item.label === "export"
+        )[0][nextProps.selected_language],
+        create_new_label: nextProps.language_data.filter(
+          (item) => item.label === "create_new"
+        )[0][nextProps.selected_language],
+        fields: [
+          {
+            key: "due_date",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "due_date"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "sample_type",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "sample_type"
+            )[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "material",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "material"
+            )[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "client",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "client"
+            )[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "packing_type",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "packing_type"
+            )[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "a_types",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "analysis_type"
+            )[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "c_types",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "certificate"
+            )[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "sending_date",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "sending_date"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "sample_date",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "sample_date"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "Weight",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "weight_actual"
+            )[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "Charge",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "charge"
+            )[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "stockSample",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "stock_sample"
+            )[0][nextProps.selected_language],
+            sorter: false,
+          },
+          {
+            key: "remark",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "remark"
+            )[0][nextProps.selected_language],
+            sorter: false,
+          },
           { key: "buttonGroups", label: "", _style: { width: "84px" } },
         ],
-      })
+      });
     }
   }
   getAllData() {
@@ -289,7 +481,7 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => { });
+      .catch((error) => {});
     axios
       .get(Config.ServerUri + "/get_certificate")
       .then((res) => {
@@ -330,7 +522,7 @@ export default class InputLaboratory extends Component {
           sampleTypesData: res.data,
         });
       })
-      .catch((error) => { });
+      .catch((error) => {});
   }
 
   getAllAnalysisTypes() {
@@ -341,7 +533,7 @@ export default class InputLaboratory extends Component {
           analysisTypes: res.data,
         });
       })
-      .catch((error) => { });
+      .catch((error) => {});
   }
 
   getAllMaterials() {
@@ -355,7 +547,7 @@ export default class InputLaboratory extends Component {
           unitsData: res.data.units,
         });
       })
-      .catch((error) => { });
+      .catch((error) => {});
   }
 
   getAllClients() {
@@ -366,7 +558,7 @@ export default class InputLaboratory extends Component {
           clientsData: res.data,
         });
       })
-      .catch((error) => { });
+      .catch((error) => {});
   }
 
   getAllPackingTypes() {
@@ -377,7 +569,7 @@ export default class InputLaboratory extends Component {
           packingTypesData: res.data,
         });
       })
-      .catch((error) => { });
+      .catch((error) => {});
   }
 
   getAllCertificateTypes() {
@@ -388,7 +580,7 @@ export default class InputLaboratory extends Component {
           certificateTypesData: res.data.certificateTypes,
         });
       })
-      .catch((error) => { });
+      .catch((error) => {});
   }
 
   on_delete_clicked(id) {
@@ -416,6 +608,14 @@ export default class InputLaboratory extends Component {
       weight_comment = temp.comment;
     });
 
+    this.state.sampleTypesData.map((sample) => {
+      if (sample.sampleType === item.sample_type) {
+        if (sample.stockSample === true) {
+          this.setState({ stock_flag: true });
+        }
+      }
+    });
+
     this.setState({
       weight_history: item.Weight,
       weight_acutal_value: weight,
@@ -424,6 +624,21 @@ export default class InputLaboratory extends Component {
       weight_flag: true,
       parent_id: item._id,
     });
+  }
+
+  onChangeStock(e) {
+    const { stock_data } = this.state;
+    stock_data[e.target.name] = e.target.value;
+    var num = 0;
+    stock_data.map((v) => {
+      num = Number(num) + Number(v);
+    });
+
+    if (num > this.state.material_left) {
+      alert("the sum of input values must smaller than Material left.");
+    } else {
+      this.setState({ stock_data });
+    }
   }
 
   getUnitName(id) {
@@ -501,11 +716,16 @@ export default class InputLaboratory extends Component {
       order_id: "",
       pos_id: "",
       weight: "",
+      stock_flag: false,
     });
 
     this.setModal_Create(true);
   }
-
+  PlusStockdata() {
+    const { stock_data } = this.state;
+    stock_data.push("");
+    this.setState({ stock_data });
+  }
   on_update_clicked(item) {
     this.setState({
       current_id: item._id,
@@ -569,7 +789,7 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => { });
+      .catch((error) => {});
   }
 
   deleteInputLaboratory() {
@@ -586,7 +806,65 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => { });
+      .catch((error) => {});
+  }
+
+  on_add_material(item) {
+    if (item.Weight.length == 0) {
+      notification.warning({
+        message: "Warning",
+        description: "Please Input Charge!",
+        className: "not-css",
+      });
+      return;
+    } else if (item.Charge.length == 0) {
+      notification.warning({
+        message: "Warning",
+        description: "Please Input Charge!",
+        className: "not-css",
+      });
+      return;
+    }
+    let opt_material = [];
+    let material = item.Weight[item.Weight.length - 1].weight;
+    this.state.sampleTypesData.map((sample) => {
+      if (sample.sampleType == item.sample_type && sample.stockSample == true) {
+        opt_material.push(
+          item.material +
+            " " +
+            item.client +
+            " " +
+            item.Charge[item.Charge.length - 1].charge +
+            "  " +
+            item.Weight[item.Weight.length - 1].weight
+        );
+      } else {
+        this.state.filteredData.map((temp) => {
+          if (
+            temp.material == item.material &&
+            sample.sampleType == item.sample_type
+          ) {
+            opt_material.push(
+              temp.material +
+                " " +
+                temp.client +
+                " " +
+                temp.Charge[temp.Charge.length - 1].charge +
+                " " +
+                temp.Weight[temp.Weight.length - 1].weight
+            );
+          }
+        });
+      }
+    });
+
+    this.setState({
+      _id: item._id,
+      stock_modal_flag: true,
+      opt_material: opt_material,
+      stock_data: [""],
+      material_left: material,
+    });
   }
 
   createInputLaboratory(event) {
@@ -645,7 +923,7 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => { });
+      .catch((error) => {});
   }
 
   updateInputLaboratory(event) {
@@ -696,7 +974,7 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => { });
+      .catch((error) => {});
   }
 
   setModal_Delete(modal) {
@@ -1043,17 +1321,23 @@ export default class InputLaboratory extends Component {
   }
 
   onSaveWeight = () => {
+    let material_left = "";
+    if (this.state.stock_flag === true) {
+      material_left = this.state.weight_acutal_value;
+    }
     var data = {
       parent_id: this.state.parent_id,
       id: this.state.weight_id,
       weight: this.state.weight_acutal_value,
     };
     var token = localStorage.getItem("token");
+
     axios
       .post(Config.ServerUri + "/add_weight", {
         data,
         comment: this.state.weight_comment,
         token: token,
+        material_left: material_left,
       })
       .then((res) => {
         this.setState({
@@ -1093,6 +1377,30 @@ export default class InputLaboratory extends Component {
       charge_comment: "",
       charge_table_flag: false,
     });
+  }
+
+  onChange_material(e) {
+    this.setState({ stock_sample: e.target.value });
+  }
+
+  onSaveStock() {
+    const { stock_data } = this.state;
+    axios
+      .post(Config.ServerUri + "/add_mat", {
+        mat_left: stock_data.sort(function (a, b) {
+          return b - a;
+        })[0],
+        stock_sample: this.state.stock_sample,
+        _id: this.state._id,
+      })
+      .then((res) => {
+        this.setState({
+          allData: res.data,
+          filteredData: res.data,
+          stock_modal_flag: false,
+        });
+      })
+      .catch((err) => console.log(err));
   }
 
   async onRowClicked(item, analysis) {
@@ -1150,37 +1458,37 @@ export default class InputLaboratory extends Component {
       [data.id + "-" + data.analysis + "-" + data.obj_value + "-" + data.unit]:
         data._id,
       [data.id +
-        "-" +
-        data.label +
-        "-" +
-        data.unit +
-        "-" +
-        data.obj_value +
-        "-" +
-        data.analysis +
-        `[${data.min}, ${data.max}]`]: data.limitValue,
+      "-" +
+      data.label +
+      "-" +
+      data.unit +
+      "-" +
+      data.obj_value +
+      "-" +
+      data.analysis +
+      `[${data.min}, ${data.max}]`]: data.limitValue,
       [data.id +
-        "-" +
-        data.label +
-        "-" +
-        data.unit +
-        "-" +
-        data.obj_value +
-        "-" +
-        data.analysis +
-        `[${data.min}, ${data.max}]` +
-        "reason"]: reason,
+      "-" +
+      data.label +
+      "-" +
+      data.unit +
+      "-" +
+      data.obj_value +
+      "-" +
+      data.analysis +
+      `[${data.min}, ${data.max}]` +
+      "reason"]: reason,
       [data.id +
-        "-" +
-        data.label +
-        "-" +
-        data.unit +
-        "-" +
-        data.obj_value +
-        "-" +
-        data.analysis +
-        `[${data.min}, ${data.max}]` +
-        "checkbox"]: accept,
+      "-" +
+      data.label +
+      "-" +
+      data.unit +
+      "-" +
+      data.obj_value +
+      "-" +
+      data.analysis +
+      `[${data.min}, ${data.max}]` +
+      "checkbox"]: accept,
       [data.id + "-" + data.analysis + "-" + data.label + data.unit]: color,
     });
   }
@@ -1200,6 +1508,11 @@ export default class InputLaboratory extends Component {
   charge_data_cancel() {
     this.setState({ charge_flag: false, charge_table_flag: false });
   }
+
+  stock_modal_cancel() {
+    this.setState({ stock_modal_flag: false, stock_data: [""] });
+  }
+
   certificate_modal_state = (data, v) => {
     var objectives = [];
     this.state.analysisData.map((item) => {
@@ -1217,12 +1530,6 @@ export default class InputLaboratory extends Component {
                           obj.obj === temp0._id + "-" + ind &&
                           obj.client === data.client_id
                         ) {
-                          console.log(item0);
-                          console.log(obj);
-                          console.log(data);
-                          console.log(v);
-                          console.log(item0);
-                          console.log(mat);
                           objectives.push({
                             label: temp0.objective,
                             value: temp0._id,
@@ -1332,6 +1639,57 @@ export default class InputLaboratory extends Component {
               ) : (
                 <></>
               )}
+            </CFormGroup>
+          </CForm>
+        </CCardBody>
+      </CCard>
+    );
+  }
+
+  renderStockDetail() {
+    return (
+      <CCard>
+        <CCardBody>
+          <CForm>
+            <CFormGroup>
+              <div
+                style={{
+                  marginTop: "5px",
+                  display: "flex",
+                }}
+              >
+                <div style={{ width: "50%" }}>
+                  <CSelect
+                    onChange={this.onChange_material}
+                    value={this.state.stock_sample}
+                  >
+                    {this.state.opt_material.map((item, index) => (
+                      <option key={index} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </CSelect>
+                </div>
+                <div style={{ width: "5%" }} />
+                <div style={{ width: "45%" }}>
+                  {this.state.stock_data.map((v, item) => (
+                    <CInput
+                      name={item}
+                      style={{ marginBottom: "10px" }}
+                      value={v}
+                      onChange={(e) => this.onChangeStock(e)}
+                    />
+                  ))}
+                </div>
+              </div>
+              <CRow>
+                <CCol md="10"></CCol>
+                <CCol md="2">
+                  <CButton color="info" onClick={() => this.PlusStockdata()}>
+                    Add
+                  </CButton>
+                </CCol>
+              </CRow>
             </CFormGroup>
           </CForm>
         </CCardBody>
@@ -1675,27 +2033,27 @@ export default class InputLaboratory extends Component {
     this.setState({
       [e.target.name]: value,
       [item.id +
-        "-" +
-        item.label +
-        "-" +
-        item.unit +
-        "-" +
-        item.value +
-        "-" +
-        item.analysis +
-        `[${item.min}, ${item.max}]` +
-        "reason"]: "",
+      "-" +
+      item.label +
+      "-" +
+      item.unit +
+      "-" +
+      item.value +
+      "-" +
+      item.analysis +
+      `[${item.min}, ${item.max}]` +
+      "reason"]: "",
       [item.id +
-        "-" +
-        item.label +
-        "-" +
-        item.unit +
-        "-" +
-        item.value +
-        "-" +
-        item.analysis +
-        `[${item.min}, ${item.max}]` +
-        "checkbox"]: false,
+      "-" +
+      item.label +
+      "-" +
+      item.unit +
+      "-" +
+      item.value +
+      "-" +
+      item.analysis +
+      `[${item.min}, ${item.max}]` +
+      "checkbox"]: false,
     });
   }
 
@@ -1707,37 +2065,37 @@ export default class InputLaboratory extends Component {
     objectives.map((item) => {
       this.setState({
         [item.id +
-          "-" +
-          item.label +
-          "-" +
-          item.unit +
-          "-" +
-          item.value +
-          "-" +
-          item.analysis +
-          `[${item.min}, ${item.max}]`]: "",
+        "-" +
+        item.label +
+        "-" +
+        item.unit +
+        "-" +
+        item.value +
+        "-" +
+        item.analysis +
+        `[${item.min}, ${item.max}]`]: "",
         [item.id +
-          "-" +
-          item.label +
-          "-" +
-          item.unit +
-          "-" +
-          item.value +
-          "-" +
-          item.analysis +
-          `[${item.min}, ${item.max}]` +
-          "reason"]: "",
+        "-" +
+        item.label +
+        "-" +
+        item.unit +
+        "-" +
+        item.value +
+        "-" +
+        item.analysis +
+        `[${item.min}, ${item.max}]` +
+        "reason"]: "",
         [item.id +
-          "-" +
-          item.label +
-          "-" +
-          item.unit +
-          "-" +
-          item.value +
-          "-" +
-          item.analysis +
-          `[${item.min}, ${item.max}]` +
-          "checkbox"]: false,
+        "-" +
+        item.label +
+        "-" +
+        item.unit +
+        "-" +
+        item.value +
+        "-" +
+        item.analysis +
+        `[${item.min}, ${item.max}]` +
+        "checkbox"]: false,
         [item.label]: false,
         [item.id + "-" + item.analysis + "-" + item.label + item.unit]: "black",
       });
@@ -1787,14 +2145,14 @@ export default class InputLaboratory extends Component {
         if (item.label !== label.label) {
           this.setState({
             [item.label +
-              "-" +
-              item.analysis +
-              "-" +
-              item.unit +
-              "-" +
-              item.value +
-              "-" +
-              item.id]: false,
+            "-" +
+            item.analysis +
+            "-" +
+            item.unit +
+            "-" +
+            item.value +
+            "-" +
+            item.id]: false,
           });
         }
       });
@@ -1802,24 +2160,24 @@ export default class InputLaboratory extends Component {
       this.setState({
         objectiveHistory: res.data.objectivehistory,
         [label.label +
-          "-" +
-          label.analysis +
-          "-" +
-          label.unit +
-          "-" +
-          label.value +
-          "-" +
-          label.id]:
+        "-" +
+        label.analysis +
+        "-" +
+        label.unit +
+        "-" +
+        label.value +
+        "-" +
+        label.id]:
           !this.state[
-          label.label +
-          "-" +
-          label.analysis +
-          "-" +
-          label.unit +
-          "-" +
-          label.value +
-          "-" +
-          label.id
+            label.label +
+              "-" +
+              label.analysis +
+              "-" +
+              label.unit +
+              "-" +
+              label.value +
+              "-" +
+              label.id
           ],
         history_item: history_item,
       });
@@ -1835,44 +2193,44 @@ export default class InputLaboratory extends Component {
         label: item.label,
         value:
           this.state[
-          item.id +
-          "-" +
-          item.label +
-          "-" +
-          item.unit +
-          "-" +
-          item.value +
-          "-" +
-          item.analysis +
-          `[${item.min}, ${item.max}]`
+            item.id +
+              "-" +
+              item.label +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.analysis +
+              `[${item.min}, ${item.max}]`
           ],
         reason:
           this.state[
-          item.id +
-          "-" +
-          item.label +
-          "-" +
-          item.unit +
-          "-" +
-          item.value +
-          "-" +
-          item.analysis +
-          `[${item.min}, ${item.max}]` +
-          "reason"
+            item.id +
+              "-" +
+              item.label +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.analysis +
+              `[${item.min}, ${item.max}]` +
+              "reason"
           ],
         accept:
           this.state[
-          item.id +
-          "-" +
-          item.label +
-          "-" +
-          item.unit +
-          "-" +
-          item.value +
-          "-" +
-          item.analysis +
-          `[${item.min}, ${item.max}]` +
-          "checkbox"
+            item.id +
+              "-" +
+              item.label +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.analysis +
+              `[${item.min}, ${item.max}]` +
+              "checkbox"
           ],
         id: item.id,
         analysis: item.analysis,
@@ -1920,37 +2278,37 @@ export default class InputLaboratory extends Component {
             [item.label]: false,
             comment: "",
             [item.id +
-              "-" +
-              item.label +
-              "-" +
-              item.unit +
-              "-" +
-              item.value +
-              "-" +
-              item.analysis +
-              `[${item.min}, ${item.max}]`]: "",
+            "-" +
+            item.label +
+            "-" +
+            item.unit +
+            "-" +
+            item.value +
+            "-" +
+            item.analysis +
+            `[${item.min}, ${item.max}]`]: "",
             [item.id +
-              "-" +
-              item.label +
-              "-" +
-              item.unit +
-              "-" +
-              item.value +
-              "-" +
-              item.analysis +
-              `[${item.min}, ${item.max}]` +
-              "reason"]: "",
+            "-" +
+            item.label +
+            "-" +
+            item.unit +
+            "-" +
+            item.value +
+            "-" +
+            item.analysis +
+            `[${item.min}, ${item.max}]` +
+            "reason"]: "",
             [item.id +
-              "-" +
-              item.label +
-              "-" +
-              item.unit +
-              "-" +
-              item.value +
-              "-" +
-              item.analysis +
-              `[${item.min}, ${item.max}]` +
-              "checkbox"]: false,
+            "-" +
+            item.label +
+            "-" +
+            item.unit +
+            "-" +
+            item.value +
+            "-" +
+            item.analysis +
+            `[${item.min}, ${item.max}]` +
+            "checkbox"]: false,
             [item.id + "-" + item.analysis + "-" + item.label + item.unit]:
               "black",
           });
@@ -1999,27 +2357,27 @@ export default class InputLaboratory extends Component {
                           }
                           value={
                             this.state[
-                            item.id +
-                            "-" +
-                            item.label +
-                            "-" +
-                            item.unit +
-                            "-" +
-                            item.value +
-                            "-" +
-                            item.analysis +
-                            `[${item.min}, ${item.max}]`
+                              item.id +
+                                "-" +
+                                item.label +
+                                "-" +
+                                item.unit +
+                                "-" +
+                                item.value +
+                                "-" +
+                                item.analysis +
+                                `[${item.min}, ${item.max}]`
                             ]
                           }
                           style={{
                             color:
                               this.state[
-                              item.id +
-                              "-" +
-                              item.analysis +
-                              "-" +
-                              item.label +
-                              item.unit
+                                item.id +
+                                  "-" +
+                                  item.analysis +
+                                  "-" +
+                                  item.label +
+                                  item.unit
                               ],
                           }}
                           className="form-control-sm"
@@ -2052,31 +2410,31 @@ export default class InputLaboratory extends Component {
                           value={
                             this.state[
                               item.id +
-                              "-" +
-                              item.label +
-                              "-" +
-                              item.unit +
-                              "-" +
-                              item.value +
-                              "-" +
-                              item.analysis +
-                              `[${item.min}, ${item.max}]` +
-                              "reason"
+                                "-" +
+                                item.label +
+                                "-" +
+                                item.unit +
+                                "-" +
+                                item.value +
+                                "-" +
+                                item.analysis +
+                                `[${item.min}, ${item.max}]` +
+                                "reason"
                             ] === undefined
                               ? ""
                               : this.state[
-                              item.id +
-                              "-" +
-                              item.label +
-                              "-" +
-                              item.unit +
-                              "-" +
-                              item.value +
-                              "-" +
-                              item.analysis +
-                              `[${item.min}, ${item.max}]` +
-                              "reason"
-                              ]
+                                  item.id +
+                                    "-" +
+                                    item.label +
+                                    "-" +
+                                    item.unit +
+                                    "-" +
+                                    item.value +
+                                    "-" +
+                                    item.analysis +
+                                    `[${item.min}, ${item.max}]` +
+                                    "reason"
+                                ]
                           }
                           onChange={this.handleSeltectedChangeReason}
                         >
@@ -2120,35 +2478,6 @@ export default class InputLaboratory extends Component {
                           className={
                             this.state[
                               item.id +
-                              "-" +
-                              item.label +
-                              "-" +
-                              item.unit +
-                              "-" +
-                              item.value +
-                              "-" +
-                              item.analysis +
-                              `[${item.min}, ${item.max}]` +
-                              "checkbox"
-                            ] === true
-                              ? "chk clr-full"
-                              : "chk"
-                          }
-                          onClick={(e) => {
-                            this.setState({
-                              [item.id +
-                                "-" +
-                                item.label +
-                                "-" +
-                                item.unit +
-                                "-" +
-                                item.value +
-                                "-" +
-                                item.analysis +
-                                `[${item.min}, ${item.max}]` +
-                                "checkbox"]:
-                                !this.state[
-                                item.id +
                                 "-" +
                                 item.label +
                                 "-" +
@@ -2159,6 +2488,35 @@ export default class InputLaboratory extends Component {
                                 item.analysis +
                                 `[${item.min}, ${item.max}]` +
                                 "checkbox"
+                            ] === true
+                              ? "chk clr-full"
+                              : "chk"
+                          }
+                          onClick={(e) => {
+                            this.setState({
+                              [item.id +
+                              "-" +
+                              item.label +
+                              "-" +
+                              item.unit +
+                              "-" +
+                              item.value +
+                              "-" +
+                              item.analysis +
+                              `[${item.min}, ${item.max}]` +
+                              "checkbox"]:
+                                !this.state[
+                                  item.id +
+                                    "-" +
+                                    item.label +
+                                    "-" +
+                                    item.unit +
+                                    "-" +
+                                    item.value +
+                                    "-" +
+                                    item.analysis +
+                                    `[${item.min}, ${item.max}]` +
+                                    "checkbox"
                                 ],
                             });
                           }}
@@ -2171,14 +2529,14 @@ export default class InputLaboratory extends Component {
                   <CCol>
                     {this.state[
                       item.label +
-                      "-" +
-                      item.analysis +
-                      "-" +
-                      item.unit +
-                      "-" +
-                      item.value +
-                      "-" +
-                      item.id
+                        "-" +
+                        item.analysis +
+                        "-" +
+                        item.unit +
+                        "-" +
+                        item.value +
+                        "-" +
+                        item.id
                     ] === true ? (
                       <>
                         <CDataTable
@@ -2807,6 +3165,16 @@ export default class InputLaboratory extends Component {
                     <td>
                       <div style={{ display: "flex" }}>
                         <CButton
+                          color="warning"
+                          size="sm"
+                          onClick={() => {
+                            this.on_add_material(item);
+                          }}
+                        >
+                          M
+                        </CButton>
+                        <span style={{ padding: "4px" }} />
+                        <CButton
                           color="info"
                           size="sm"
                           onClick={() => {
@@ -3051,6 +3419,20 @@ export default class InputLaboratory extends Component {
                   );
                 }
               },
+              material_left: (item) => {
+                if (item.material_left === "") {
+                  return <td></td>;
+                } else {
+                  return <td>{item.material_left}</td>;
+                }
+              },
+              stockSample: (item) => {
+                if (item.stockSample === "") {
+                  return <td></td>;
+                } else {
+                  return <td>{item.stockSample}</td>;
+                }
+              },
             }}
           />
         </div>
@@ -3154,6 +3536,29 @@ export default class InputLaboratory extends Component {
             </CButton>
             <CButton
               onClick={() => this.charge_data_cancel()}
+              color="secondary"
+            >
+              Cancel
+            </CButton>
+          </CModalFooter>
+        </CModal>
+
+        <CModal
+          show={this.state.stock_modal_flag}
+          onClose={() => this.stock_modal_cancel()}
+          style={{ width: "40vw" }}
+          closeOnBackdrop={false}
+        >
+          <CModalHeader>
+            <CModalTitle>Stock Sample</CModalTitle>
+          </CModalHeader>
+          <CModalBody>{this.renderStockDetail()}</CModalBody>
+          <CModalFooter>
+            <CButton color="info" onClick={() => this.onSaveStock()}>
+              OK
+            </CButton>
+            <CButton
+              onClick={() => this.stock_modal_cancel()}
               color="secondary"
             >
               Cancel
