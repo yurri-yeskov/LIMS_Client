@@ -79,12 +79,7 @@ export default class AdminSampleType extends Component {
             (item) => item.label === "sample_type"
           )[0][props.selected_language],
         },
-        {
-          key: "stockSample",
-          label: props.language_data.filter(
-            (item) => item.label === "stock_sample"
-          )[0][props.selected_language],
-        },
+
         {
           key: "material",
           sorter: false,
@@ -104,6 +99,12 @@ export default class AdminSampleType extends Component {
           sorter: false,
           label: props.language_data.filter(
             (item) => item.label === "packing_type"
+          )[0][props.selected_language],
+        },
+        {
+          key: "stockSample",
+          label: props.language_data.filter(
+            (item) => item.label === "stock_sample"
           )[0][props.selected_language],
         },
         {
@@ -564,20 +565,6 @@ export default class AdminSampleType extends Component {
             <CFormGroup>
               <CRow>
                 <CCol md="3">
-                  <CLabel style={{ fontWeight: "500" }}>Stock Sample</CLabel>
-                </CCol>
-                <CCol md="3">
-                  <CSwitch
-                    name="stockSample"
-                    shape={"pill"}
-                    color={"info"}
-                    labelOn={"\u2713"}
-                    labelOff={"\u2715"}
-                    checked={this.state.stockSample}
-                    onChange={this.handleSwitchChange}
-                  />
-                </CCol>
-                <CCol md="3">
                   <CLabel style={{ fontWeight: "500" }}>Material</CLabel>
                 </CCol>
                 <CCol md="3">
@@ -591,10 +578,6 @@ export default class AdminSampleType extends Component {
                     onChange={this.handleSwitchChange}
                   />
                 </CCol>
-              </CRow>
-            </CFormGroup>
-            <CFormGroup>
-              <CRow>
                 <CCol md="3">
                   <CLabel style={{ fontWeight: "500" }}>Client</CLabel>
                 </CCol>
@@ -609,6 +592,10 @@ export default class AdminSampleType extends Component {
                     onChange={this.handleSwitchChange}
                   />
                 </CCol>
+              </CRow>
+            </CFormGroup>
+            <CFormGroup>
+              <CRow>
                 <CCol md="3">
                   <CLabel style={{ fontWeight: "500" }}>Packing Type</CLabel>
                 </CCol>
@@ -620,6 +607,21 @@ export default class AdminSampleType extends Component {
                     labelOn={"\u2713"}
                     labelOff={"\u2715"}
                     checked={this.state.packingType}
+                    onChange={this.handleSwitchChange}
+                  />
+                </CCol>
+
+                <CCol md="3">
+                  <CLabel style={{ fontWeight: "500" }}>Stock Sample</CLabel>
+                </CCol>
+                <CCol md="3">
+                  <CSwitch
+                    name="stockSample"
+                    shape={"pill"}
+                    color={"info"}
+                    labelOn={"\u2713"}
+                    labelOff={"\u2715"}
+                    checked={this.state.stockSample}
                     onChange={this.handleSwitchChange}
                   />
                 </CCol>
@@ -827,21 +829,6 @@ export default class AdminSampleType extends Component {
             hover
             clickableRows
             scopedSlots={{
-              stockSample: (item) => {
-                return (
-                  <td style={{ textAlign: "center" }}>
-                    <CSwitch
-                      className={"mx-1"}
-                      shape={"pill"}
-                      color={"info"}
-                      labelOn={"\u2713"}
-                      labelOff={"\u2715"}
-                      checked={item.stockSample}
-                      disabled
-                    />
-                  </td>
-                );
-              },
               material: (item) => {
                 return (
                   <td style={{ textAlign: "center" }}>
@@ -882,6 +869,21 @@ export default class AdminSampleType extends Component {
                       labelOn={"\u2713"}
                       labelOff={"\u2715"}
                       checked={item.packingType}
+                      disabled
+                    />
+                  </td>
+                );
+              },
+              stockSample: (item) => {
+                return (
+                  <td style={{ textAlign: "center" }}>
+                    <CSwitch
+                      className={"mx-1"}
+                      shape={"pill"}
+                      color={"info"}
+                      labelOn={"\u2713"}
+                      labelOff={"\u2715"}
+                      checked={item.stockSample}
                       disabled
                     />
                   </td>

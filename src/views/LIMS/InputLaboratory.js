@@ -160,7 +160,19 @@ export default class InputLaboratory extends Component {
     this.on_export_clicked = this.on_export_clicked.bind(this);
     this.onChangeStock = this.onChangeStock.bind(this);
     this.onChange_material = this.onChange_material.bind(this);
+    this.DeleteItem = this.DeleteItem.bind(this);
+
     this.state = {
+      analysisType: [],
+      certificate: [],
+      realarr: [],
+      selfree: 0,
+      selfid: "",
+      param: "single",
+      stock_disable_arr: [],
+      formatValue: 0,
+      stockid: 0,
+      freeValue: 0,
       mat_left: 0,
       stock_data: [""],
       c_rowdata: [],
@@ -222,6 +234,7 @@ export default class InputLaboratory extends Component {
       weight: "",
       weight_table_flag: false,
       charge_id: "",
+      mat: [],
       charge_history: "",
       charge_table_flag: false,
       stock_flag: false,
@@ -232,21 +245,24 @@ export default class InputLaboratory extends Component {
       opt_material: [],
       chk_full: false,
       certificatedata: [],
-      analysisType_label: props.language_data.filter(
-        (item) => item.label === "analysis_type"
-      )[0][props.selected_language],
-      sampleType_label: props.language_data.filter(
-        (item) => item.label === "sample_type"
-      )[0][props.selected_language],
-      import_label: props.language_data.filter(
-        (item) => item.label === "import"
-      )[0][props.selected_language],
-      export_label: props.language_data.filter(
-        (item) => item.label === "export"
-      )[0][props.selected_language],
-      create_new_label: props.language_data.filter(
-        (item) => item.label === "create_new"
-      )[0][props.selected_language],
+      addId: "",
+      addVal: "",
+      preId: "",
+      // analysisType_label: props.language_data.filter(
+      //   (item) => item.label === "analysis_type"
+      // )[0][props.selected_language],
+      // sampleType_label: props.language_data.filter(
+      //   (item) => item.label === "sample_type"
+      // )[0][props.selected_language],
+      // import_label: props.language_data.filter(
+      //   (item) => item.label === "import"
+      // )[0][props.selected_language],
+      // export_label: props.language_data.filter(
+      //   (item) => item.label === "export"
+      // )[0][props.selected_language],
+      // create_new_label: props.language_data.filter(
+      //   (item) => item.label === "create_new"
+      // )[0][props.selected_language],
       fields: [
         {
           key: "due_date",
@@ -626,19 +642,21 @@ export default class InputLaboratory extends Component {
     });
   }
 
-  onChangeStock(e) {
-    const { stock_data } = this.state;
+  onChangeStock(e, item) {
+    const { stock_data, mat } = this.state;
     stock_data[e.target.name] = e.target.value;
-    var num = 0;
-    stock_data.map((v) => {
-      num = Number(num) + Number(v);
-    });
 
-    if (num > this.state.material_left) {
-      alert("the sum of input values must smaller than Material left.");
-    } else {
-      this.setState({ stock_data });
+    var num = 0;
+    stock_data.map((e) => {
+      num = Number(num) + Number(e);
+    });
+    if (this.state.param == "single") {
+      if (num > this.state.freeValue) {
+        alert("the sum of input values must smaller than Material left.");
+        stock_data[item] = "";
+      }
     }
+    this.setState({ stock_data });
   }
 
   getUnitName(id) {
@@ -722,10 +740,166 @@ export default class InputLaboratory extends Component {
     this.setModal_Create(true);
   }
   PlusStockdata() {
-    const { stock_data } = this.state;
-    stock_data.push("");
-    this.setState({ stock_data });
+    const { stock_data, mat, stock_disable_arr, stock_sample } = this.state;
+    var flag = 0;
+    var num = 0;
+    stock_data.map((e) => {
+      if (e == "") {
+        flag = 0;
+      } else {
+        num = Number(num) + Number(e);
+        flag = 1;
+      }
+    });
+    var sumVal = 0;
+    if (flag == 0) {
+      alert("Input Invalid");
+    } else if (num == this.state.selfree) {
+      alert("Do not Add");
+    } else {
+      if (this.state.param == "single") {
+        if (num > this.state.selfree) {
+          alert("the sum of input values must smaller than Material left.");
+        } else {
+          stock_disable_arr[mat.length - 1] = false;
+          stock_disable_arr.push(true);
+          var endSelVal = mat[mat.length - 1];
+          axios
+            .post(Config.ServerUri + "/add_mat", {
+              mat_left: stock_data[stock_data.length - 1],
+              _id: this.state.stockid,
+            })
+            .then((res) => {
+              this.setState({
+                allData: res.data,
+                filteredData: res.data,
+                stock_modal_flag: true,
+                stock_disable_arr,
+              });
+            })
+            .catch((err) => console.log(err));
+          this.setState({ mat, stock_data, stock_disable_arr });
+        }
+      } else {
+        var arr = {
+          id: this.state.stockid.toString(),
+          val: stock_data[stock_data.length - 1],
+        };
+        if (this.state.realarr.length == 0) {
+          if (arr.val > this.state.selfree) {
+            alert("the sum of input values must smaller than Material left.");
+          } else {
+            this.state.realarr.push(arr);
+          }
+        } else {
+          this.state.realarr.push(arr);
+          this.state.realarr.map((e) => {
+            if (e.id.toString() == this.state.stockid) {
+              sumVal += Number(e.val);
+            }
+          });
+        }
+      }
+    }
+
+    this.state.allData.map((e) => {
+      if (e._id == this.state.stockid) {
+        this.state.analysisType = e.a_types.toString();
+        this.state.certificate = e.c_types.toString();
+      }
+    });
+
+    if (sumVal > this.state.selfree) {
+      alert("the sum of input values must smaller than Material left.");
+    } else {
+      axios
+        .post(Config.ServerUri + "/sample_mat", {
+          mat_left: stock_data[stock_data.length - 1],
+          sampleinfo: stock_sample,
+          selfid: this.state.selfid,
+          stockid: this.state.stockid,
+          analysisType: this.state.analysisType,
+          certificate: this.state.certificate,
+        })
+        .then((res) => {
+          console.log(res.data);
+          this.setState({
+            stock_modal_flag: true,
+            allData: res.data,
+            filteredData: res.data,
+            stock_disable_arr,
+          });
+        })
+        .catch((err) => console.log(err));
+      stock_disable_arr[mat.length - 1] = false;
+      stock_disable_arr.push(true);
+      var endSelVal = mat[mat.length - 1];
+      axios
+        .post(Config.ServerUri + "/add_mat", {
+          mat_left: stock_data[stock_data.length - 1],
+          _id: this.state.stockid,
+        })
+        .then((res) => {
+          this.setState({
+            allData: res.data,
+            filteredData: res.data,
+            stock_modal_flag: true,
+            stock_disable_arr,
+          });
+        })
+        .catch((err) => console.log(err));
+      this.setState({ mat, stock_data, stock_disable_arr });
+      mat.push(endSelVal);
+      stock_data.push("");
+    }
   }
+
+  DeleteItem(item) {
+    const { mat, stock_data, stock_disable_arr, stock_sample } = this.state;
+    stock_disable_arr.splice(item, 1);
+    let getid = mat[item].split(",")[0].split(" ")[
+      mat[item].split(",")[0].split(" ").length - 1
+    ];
+    let getValue = stock_data[item];
+    axios
+      .post(Config.ServerUri + "/del_mat", {
+        mat_left: getValue,
+        _id: getid,
+      })
+      .then((res) => {
+        this.setState({
+          allData: res.data,
+          filteredData: res.data,
+          stock_disable_arr,
+        });
+      })
+      .catch((err) => console.log(err));
+
+    axios
+      .post(Config.ServerUri + "/remove_mat", {
+        mat_left: stock_data[stock_data.length - 1],
+        sampleinfo: stock_sample,
+        selfid: this.state.selfid,
+        stockid: this.state.stockid,
+      })
+      .then((res) => {
+        this.setState({
+          allData: res.data,
+          filteredData: res.data,
+          stock_disable_arr,
+        });
+      })
+      .catch((err) => console.log(err));
+
+    if (stock_data.length == 1) {
+      alert("Not Remove");
+    } else {
+      mat.splice(item, 1);
+      stock_data.splice(item, 1);
+      this.setState({ mat, stock_data, stock_disable_arr });
+    }
+  }
+
   on_update_clicked(item) {
     this.setState({
       current_id: item._id,
@@ -810,60 +984,127 @@ export default class InputLaboratory extends Component {
   }
 
   on_add_material(item) {
-    if (item.Weight.length == 0) {
-      notification.warning({
-        message: "Warning",
-        description: "Please Input Charge!",
-        className: "not-css",
-      });
-      return;
-    } else if (item.Charge.length == 0) {
-      notification.warning({
-        message: "Warning",
-        description: "Please Input Charge!",
-        className: "not-css",
-      });
-      return;
-    }
-    let opt_material = [];
-    let material = item.Weight[item.Weight.length - 1].weight;
-    this.state.sampleTypesData.map((sample) => {
-      if (sample.sampleType == item.sample_type && sample.stockSample == true) {
-        opt_material.push(
-          item.material +
-            " " +
-            item.client +
-            " " +
-            item.Charge[item.Charge.length - 1].charge +
-            "  " +
-            item.Weight[item.Weight.length - 1].weight
-        );
-      } else {
-        this.state.filteredData.map((temp) => {
-          if (
-            temp.material == item.material &&
-            sample.sampleType == item.sample_type
-          ) {
-            opt_material.push(
-              temp.material +
-                " " +
-                temp.client +
-                " " +
-                temp.Charge[temp.Charge.length - 1].charge +
-                " " +
-                temp.Weight[temp.Weight.length - 1].weight
-            );
-          }
-        });
+    var ty = item.sample_type;
+    var vv = this.state.sampleTypesData.map((v) => {
+      if (v.sampleType == ty) {
+        if (v.stockSample == true) {
+          return true;
+        } else {
+          return false;
+        }
       }
     });
+    var opt_material = [];
+    let material = item.material_left;
+    vv = vv.filter((re) => re != undefined);
+    if (vv[0] == true) {
+      if (item.Weight.length == 0) {
+        notification.warning({
+          message: "Warning",
+          description: "Please Input Charge!",
+          className: "not-css",
+        });
+        return;
+      } else if (item.Charge.length == 0) {
+        notification.warning({
+          message: "Warning",
+          description: "Please Input Charge!",
+          className: "not-css",
+        });
+        return;
+      }
+      this.setState({ param: "single" });
+      this.state.sampleTypesData.map((sample) => {
+        if (
+          sample.sampleType == item.sample_type &&
+          sample.stockSample == true
+        ) {
+          opt_material.push(
+            item.material +
+              " " +
+              item.client +
+              " " +
+              item.Charge[item.Charge.length - 1].charge +
+              "  " +
+              item.material_left +
+              " " +
+              item._id
+          );
+          var ee = "";
+          ee += opt_material.map((e) => {
+            return e;
+          });
+          this.setState({
+            stockid: item._id,
+            freeValue: material,
+            mat: [ee],
+          });
+        }
+      });
+    } else {
+      this.setState({ param: "multi", selfid: item._id });
+      var valary = [];
+      var stex = "";
+      var formatValue = [];
+      this.state.sampleTypesData.map((sample) => {
+        if (sample.stockSample == true) {
+          this.state.filteredData.map((temp) => {
+            if (sample.sampleType === temp.sample_type) {
+              if (item.material == temp.material) {
+                if (sample.stockSample === true) {
+                  opt_material.push(
+                    temp.material +
+                      " " +
+                      temp.client +
+                      " " +
+                      temp.Charge[temp.Charge.length - 1].charge +
+                      " " +
+                      temp.material_left +
+                      " " +
+                      temp._id
+                  );
 
+                  if (formatValue == "") {
+                    formatValue.push(temp.material_left);
+                  } else {
+                    return;
+                  }
+                  if (valary == "") {
+                    valary.push(temp._id);
+                    stex =
+                      temp.material +
+                      " " +
+                      temp.client +
+                      " " +
+                      temp.Charge[temp.Charge.length - 1].charge;
+                  } else {
+                    return;
+                  }
+                }
+              }
+            }
+          });
+        }
+      });
+      var ee = "";
+      ee += opt_material.map((e) => {
+        return e;
+      });
+      const { mat } = this.state;
+      mat.push(ee);
+      this.setState({
+        stockid: valary,
+        mat,
+        freeValue: formatValue,
+        selfree: formatValue,
+        stock_sample: stex,
+      });
+    }
     this.setState({
-      _id: item._id,
       stock_modal_flag: true,
       opt_material: opt_material,
       stock_data: [""],
-      material_left: material,
+      stock_disable_arr: [true],
     });
   }
 
@@ -1379,28 +1620,77 @@ export default class InputLaboratory extends Component {
     });
   }
 
-  onChange_material(e) {
-    this.setState({ stock_sample: e.target.value });
+  onChange_material(e, i) {
+    const { mat } = this.state;
+    var da = mat[i].split(",");
+    var ddd = da.filter((v) => v != e.target.value);
+    ddd.unshift(e.target.value);
+    mat[i] = ddd.toString();
+    var pattern = e.target.value.toString().split(" ");
+    var free = e.target.value
+      .toString()
+      .substr(0, e.target.value.toString().lastIndexOf(" "));
+    var real = free.toString().substr(0, free.toString().lastIndexOf(" "));
+    var selfreeValue = free.toString().split(" ");
+    var stockid = pattern[pattern.length - 1];
+    this.setState({
+      stockid: stockid,
+      stock_sample: real,
+      selfree: selfreeValue[selfreeValue.length - 1],
+    });
   }
 
   onSaveStock() {
-    const { stock_data } = this.state;
-    axios
-      .post(Config.ServerUri + "/add_mat", {
-        mat_left: stock_data.sort(function (a, b) {
-          return b - a;
-        })[0],
-        stock_sample: this.state.stock_sample,
-        _id: this.state._id,
-      })
-      .then((res) => {
-        this.setState({
-          allData: res.data,
-          filteredData: res.data,
-          stock_modal_flag: false,
-        });
-      })
-      .catch((err) => console.log(err));
+    this.setState({ stock_modal_flag: false });
+    const { stock_data, stock_sample } = this.state;
+
+    if (this.state.param == "single") {
+      axios
+        .post(Config.ServerUri + "/add_mat", {
+          mat_left: stock_data[stock_data.length - 1],
+          _id: this.state.stockid,
+        })
+        .then((res) => {
+          this.setState({
+            allData: res.data,
+            filteredData: res.data,
+            stock_modal_flag: false,
+            mat: [],
+          });
+        })
+        .catch((err) => console.log(err));
+    } else {
+      axios
+        .post(Config.ServerUri + "/add_mat", {
+          mat_left: stock_data[stock_data.length - 1],
+          _id: this.state.stockid,
+        })
+        .then((res) => {
+          this.setState({
+            allData: res.data,
+            filteredData: res.data,
+            stock_modal_flag: false,
+            mat: [],
+          });
+        })
+        .catch((err) => console.log(err));
+      axios
+        .post(Config.ServerUri + "/sample_mat", {
+          mat_left: stock_data[stock_data.length - 1],
+          sampleinfo: stock_sample,
+          selfid: this.state.selfid,
+          stockid: this.state.stockid,
+        })
+        .then((res) => {
+          this.setState({
+            allData: res.data,
+            filteredData: res.data,
+            stock_modal_flag: false,
+            mat: [],
+          });
+        })
+        .catch((err) => console.log(err));
+    }
   }
 
   async onRowClicked(item, analysis) {
@@ -1419,7 +1709,6 @@ export default class InputLaboratory extends Component {
     await axios.get(Config.ServerUri + "/get_all_reason").then((res) => {
       reason = res.data;
     });
-
     this.setState({
       laboratory: item._id,
       a_types: item.a_types,
@@ -1433,14 +1722,17 @@ export default class InputLaboratory extends Component {
   }
 
   onChangeValue(data) {
+    console.log(data);
     var color = "";
     var accept = false;
     var reason = "";
     if (data.accept) {
+      console.log(111);
       accept = data.accept;
     }
 
     if (data.reason) {
+      console.log(222);
       reason = data.reason;
     }
 
@@ -1451,6 +1743,7 @@ export default class InputLaboratory extends Component {
     }
 
     if (data.accept === true) {
+      console.log(555);
       color = "#2eb85c";
     }
 
@@ -1510,7 +1803,7 @@ export default class InputLaboratory extends Component {
   }
 
   stock_modal_cancel() {
-    this.setState({ stock_modal_flag: false, stock_data: [""] });
+    this.setState({ stock_modal_flag: false, stock_data: [""], mat: [] });
   }
 
   certificate_modal_state = (data, v) => {
@@ -1658,38 +1951,77 @@ export default class InputLaboratory extends Component {
                   display: "flex",
                 }}
               >
-                <div style={{ width: "50%" }}>
-                  <CSelect
-                    onChange={this.onChange_material}
-                    value={this.state.stock_sample}
+                <div style={{ width: "65%" }}>
+                  <CLabel
+                    style={{ float: "left" }}
+                    onClick={this.charge_history_table}
                   >
-                    {this.state.opt_material.map((item, index) => (
-                      <option key={index} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </CSelect>
+                    Stock Sample
+                  </CLabel>
+                  {this.state.mat.map((v, i) => (
+                    <CSelect
+                      onChange={(v) => this.onChange_material(v, i)}
+                      value={v}
+                      disabled={!this.state.stock_disable_arr[i]}
+                      style={{ marginBottom: "10px" }}
+                    >
+                      {v
+                        .toString()
+                        .split(",")
+                        .map((v1) => (
+                          <option key={i} value={v1}>
+                            {isNaN(v1.toString().split(" "))
+                              ? v1.substr(0, v1.lastIndexOf(" "))
+                              : v1}
+                          </option>
+                        ))}
+                    </CSelect>
+                  ))}
                 </div>
                 <div style={{ width: "5%" }} />
                 <div style={{ width: "45%" }}>
+                  <CLabel
+                    style={{ float: "left" }}
+                    onClick={this.charge_history_table}
+                  >
+                    Weight
+                  </CLabel>
                   {this.state.stock_data.map((v, item) => (
                     <CInput
                       name={item}
+                      disabled={!this.state.stock_disable_arr[item]}
                       style={{ marginBottom: "10px" }}
                       value={v}
-                      onChange={(e) => this.onChangeStock(e)}
+                      onChange={(e) => this.onChangeStock(e, item)}
                     />
                   ))}
                 </div>
-              </div>
-              <CRow>
-                <CCol md="10"></CCol>
-                <CCol md="2">
-                  <CButton color="info" onClick={() => this.PlusStockdata()}>
+                <div style={{ width: "3%" }} />
+                <div style={{ width: "3%", marginTop: "20px" }}>
+                  {[...Array(this.state.stock_data.length - 1)].map(
+                    (v, item) => (
+                      <CButton
+                        style={{ marginBottom: "10px" }}
+                        color="danger"
+                        onClick={() => this.DeleteItem(item)}
+                        className="btndel"
+                      >
+                        <i className="fa fa-trash" />
+                      </CButton>
+                    )
+                  )}
+                </div>
+                <div style={{ width: "5%" }} />
+                <div style={{ width: "7%", marginTop: "20px" }}>
+                  <CButton
+                    color="info"
+                    onClick={() => this.PlusStockdata()}
+                    className="btnadd"
+                  >
                     Add
                   </CButton>
-                </CCol>
-              </CRow>
+                </div>
+              </div>
             </CFormGroup>
           </CForm>
         </CCardBody>
@@ -3089,6 +3421,7 @@ export default class InputLaboratory extends Component {
               >
                 <i className="fa fa-upload" />
                 <span style={{ padding: "4px" }} />
+                upload
                 {this.state.import_label}
               </CButton>
             </ReactFileReader>
@@ -3100,6 +3433,7 @@ export default class InputLaboratory extends Component {
             >
               <i className="fa fa-download"></i>
               <span style={{ padding: "4px" }} />
+              download
               {this.state.export_label}
             </CButton>
             <CSVLink
@@ -3118,6 +3452,7 @@ export default class InputLaboratory extends Component {
             >
               <i className="fa fa-plus" />
               <span style={{ padding: "4px" }} />
+              create
               {this.state.create_new_label}
             </CButton>
           </div>
@@ -3213,7 +3548,7 @@ export default class InputLaboratory extends Component {
 
                 return (
                   <td>
-                    <div style={{ display: "flex" }}>
+                    <div style={{ display: "column" }}>
                       {item.a_types.map((v, k) => {
                         if (data.length === 0) {
                           return (
@@ -3247,6 +3582,7 @@ export default class InputLaboratory extends Component {
                               analysis_history.push(data[i]);
                             }
                           }
+                          // console.log(111, analysis_history);
 
                           color = "";
                           analysis_history.map((temp, index) => {
@@ -3427,10 +3763,18 @@ export default class InputLaboratory extends Component {
                 }
               },
               stockSample: (item) => {
-                if (item.stockSample === "") {
+                if (item.stockSample[0] == "") {
                   return <td></td>;
                 } else {
-                  return <td>{item.stockSample}</td>;
+                  return (
+                    <td>
+                      <ul>
+                        {item.stockSample.map((v) => {
+                          return <li>{v.val}</li>;
+                        })}
+                      </ul>
+                    </td>
+                  );
                 }
               },
             }}
