@@ -165,7 +165,12 @@ export default class InputLaboratory extends Component {
     this.state = {
       analysisType: [],
       certificate: [],
+      lotcharge: "",
+      lotupdatedate: "",
+      lotuser: "",
       realarr: [],
+      multiarr: [],
+      onlynumarr: [],
       selfree: 0,
       selfid: "",
       param: "single",
@@ -643,19 +648,19 @@ export default class InputLaboratory extends Component {
   }
 
   onChangeStock(e, item) {
-    const { stock_data, mat } = this.state;
+    const { stock_data } = this.state;
     stock_data[e.target.name] = e.target.value;
 
-    var num = 0;
-    stock_data.map((e) => {
-      num = Number(num) + Number(e);
-    });
-    if (this.state.param == "single") {
-      if (num > this.state.freeValue) {
-        alert("the sum of input values must smaller than Material left.");
-        stock_data[item] = "";
-      }
-    }
+    // var num = 0;
+    // stock_data.map((e) => {
+    //   num = Number(num) + Number(e);
+    // });
+    // if (this.state.param == "single") {
+    //   if (num > this.state.freeValue) {
+    //     alert("the sum of input values must smaller than Material left.");
+    //     stock_data[item] = "";
+    //   }
+    // }
     this.setState({ stock_data });
   }
 
@@ -675,7 +680,7 @@ export default class InputLaboratory extends Component {
     return "";
   }
 
-  onClick_charge(item) {
+  onClick_charge(item, chargedate) {
     var charge_value = new Date();
     var charge_id = "";
     var charge_comment = "";
@@ -691,7 +696,7 @@ export default class InputLaboratory extends Component {
 
     this.setState({
       charge_history: item.Charge,
-      charge_value: charge_value,
+      charge_value: chargedate,
       weigt_comment: charge_comment,
       charge_id: charge_id,
       charge_flag: true,
@@ -743,6 +748,7 @@ export default class InputLaboratory extends Component {
     const { stock_data, mat, stock_disable_arr, stock_sample } = this.state;
     var flag = 0;
     var num = 0;
+
     stock_data.map((e) => {
       if (e == "") {
         flag = 0;
@@ -751,153 +757,146 @@ export default class InputLaboratory extends Component {
         flag = 1;
       }
     });
-    var sumVal = 0;
-    if (flag == 0) {
-      alert("Input Invalid");
-    } else if (num == this.state.selfree) {
-      alert("Do not Add");
-    } else {
-      if (this.state.param == "single") {
-        if (num > this.state.selfree) {
-          alert("the sum of input values must smaller than Material left.");
-        } else {
-          stock_disable_arr[mat.length - 1] = false;
-          stock_disable_arr.push(true);
-          var endSelVal = mat[mat.length - 1];
-          axios
-            .post(Config.ServerUri + "/add_mat", {
-              mat_left: stock_data[stock_data.length - 1],
-              _id: this.state.stockid,
-            })
-            .then((res) => {
-              this.setState({
-                allData: res.data,
-                filteredData: res.data,
-                stock_modal_flag: true,
-                stock_disable_arr,
-              });
-            })
-            .catch((err) => console.log(err));
-          this.setState({ mat, stock_data, stock_disable_arr });
-        }
+    if (this.state.param == "single") {
+      if (flag == 0) {
+        notification.warning({
+          message: "Error",
+          description: "Please enter your data!",
+          className: "not-css",
+        });
+        return;
+      } else if (num > this.state.freeValue) {
+        notification.warning({
+          message: "Error",
+          description: "Value exceeded!",
+          className: "not-css",
+        });
+        return;
+      } else if (num == this.state.freeValue) {
+        notification.warning({
+          message: "Error",
+          description: "Do Not Add",
+          className: "not-css",
+        });
+        return;
       } else {
-        var arr = {
-          id: this.state.stockid.toString(),
-          val: stock_data[stock_data.length - 1],
-        };
-        if (this.state.realarr.length == 0) {
-          if (arr.val > this.state.selfree) {
-            alert("the sum of input values must smaller than Material left.");
-          } else {
-            this.state.realarr.push(arr);
+      }
+    } else {
+      var sumVal = 0;
+      var numarr = {
+        id: this.state.stockid,
+        val: stock_data[stock_data.length - 1],
+      };
+      this.state.onlynumarr.push(numarr);
+      if (flag == 0) {
+        notification.warning({
+          message: "Error",
+          description: "Please enter your data!",
+          className: "not-css",
+        });
+        return;
+      } else if (
+        stock_data[stock_data.length - 1] > Number(this.state.selfree)
+      ) {
+        notification.warning({
+          message: "Error",
+          description: "Value exceeded!",
+          className: "not-css",
+        });
+        this.state.onlynumarr.splice(this.state.onlynumarr.length - 1);
+        return;
+      } else {
+        this.state.onlynumarr.map((e) => {
+          if (e.id.toString() == this.state.stockid.toString()) {
+            sumVal += Number(e.val);
           }
-        } else {
-          this.state.realarr.push(arr);
-          this.state.realarr.map((e) => {
-            if (e.id.toString() == this.state.stockid) {
-              sumVal += Number(e.val);
-            }
+        });
+        if (sumVal > Number(this.state.selfree)) {
+          notification.warning({
+            message: "Error",
+            description: "Value exceeded!",
+            className: "not-css",
           });
+          this.state.onlynumarr.splice(this.state.onlynumarr.length - 1);
+          return;
+        } else if (sumVal == Number(this.state.selfree)) {
+          notification.warning({
+            message: "Error",
+            description: "Do Not Add",
+            className: "not-css",
+          });
+          this.state.onlynumarr.splice(this.state.onlynumarr.length - 1);
+          return;
+        } else {
+          if (this.state.multiarr.length == 0) {
+            this.state.multiarr.push(numarr);
+          } else {
+            if (
+              this.state.multiarr.filter(
+                (vv) => vv.id == this.state.stockid.toString()
+              ).length == 0
+            ) {
+              this.state.multiarr.push(numarr);
+            } else {
+              this.state.multiarr.map((v) => {
+                if (v.id.toString() == this.state.stockid.toString()) {
+                  v.val = Number(numarr.val) + Number(v.val);
+                }
+              });
+            }
+          }
         }
       }
     }
-
-    this.state.allData.map((e) => {
-      if (e._id == this.state.stockid) {
-        this.state.analysisType = e.a_types.toString();
-        this.state.certificate = e.c_types.toString();
-      }
-    });
-
-    if (sumVal > this.state.selfree) {
-      alert("the sum of input values must smaller than Material left.");
-    } else {
-      axios
-        .post(Config.ServerUri + "/sample_mat", {
-          mat_left: stock_data[stock_data.length - 1],
-          sampleinfo: stock_sample,
-          selfid: this.state.selfid,
-          stockid: this.state.stockid,
-          analysisType: this.state.analysisType,
-          certificate: this.state.certificate,
-        })
-        .then((res) => {
-          console.log(res.data);
-          this.setState({
-            stock_modal_flag: true,
-            allData: res.data,
-            filteredData: res.data,
-            stock_disable_arr,
-          });
-        })
-        .catch((err) => console.log(err));
-      stock_disable_arr[mat.length - 1] = false;
-      stock_disable_arr.push(true);
-      var endSelVal = mat[mat.length - 1];
-      axios
-        .post(Config.ServerUri + "/add_mat", {
-          mat_left: stock_data[stock_data.length - 1],
-          _id: this.state.stockid,
-        })
-        .then((res) => {
-          this.setState({
-            allData: res.data,
-            filteredData: res.data,
-            stock_modal_flag: true,
-            stock_disable_arr,
-          });
-        })
-        .catch((err) => console.log(err));
-      this.setState({ mat, stock_data, stock_disable_arr });
-      mat.push(endSelVal);
-      stock_data.push("");
-    }
+    stock_disable_arr[mat.length - 1] = false;
+    stock_disable_arr.push(true);
+    var endSelVal = mat[mat.length - 1];
+    mat.push(endSelVal);
+    stock_data.push("");
+    this.setState({ mat, stock_data, stock_disable_arr });
   }
 
   DeleteItem(item) {
-    const { mat, stock_data, stock_disable_arr, stock_sample } = this.state;
+    const { mat, stock_data, stock_disable_arr, onlynumarr } = this.state;
     stock_disable_arr.splice(item, 1);
-    let getid = mat[item].split(",")[0].split(" ")[
-      mat[item].split(",")[0].split(" ").length - 1
-    ];
-    let getValue = stock_data[item];
-    axios
-      .post(Config.ServerUri + "/del_mat", {
-        mat_left: getValue,
-        _id: getid,
-      })
-      .then((res) => {
-        this.setState({
-          allData: res.data,
-          filteredData: res.data,
-          stock_disable_arr,
-        });
-      })
-      .catch((err) => console.log(err));
+    mat.splice(item, 1);
+    stock_data.splice(item, 1);
+    onlynumarr.splice(item, 1);
+    this.setState({ mat, stock_data, stock_disable_arr, onlynumarr });
 
-    axios
-      .post(Config.ServerUri + "/remove_mat", {
-        mat_left: stock_data[stock_data.length - 1],
-        sampleinfo: stock_sample,
-        selfid: this.state.selfid,
-        stockid: this.state.stockid,
-      })
-      .then((res) => {
-        this.setState({
-          allData: res.data,
-          filteredData: res.data,
-          stock_disable_arr,
-        });
-      })
-      .catch((err) => console.log(err));
+    // let getid = mat[item].split(",")[0].split(" ")[
+    //   mat[item].split(",")[0].split(" ").length - 1
+    // ];
+    // let getValue = stock_data[item];
+    // axios
+    //   .post(Config.ServerUri + "/del_mat", {
+    //     mat_left: getValue,
+    //     _id: getid,
+    //   })
+    //   .then((res) => {
+    //     this.setState({
+    //       allData: res.data,
+    //       filteredData: res.data,
+    //       stock_disable_arr,
+    //     });
+    //   })
+    //   .catch((err) => console.log(err));
 
-    if (stock_data.length == 1) {
-      alert("Not Remove");
-    } else {
-      mat.splice(item, 1);
-      stock_data.splice(item, 1);
-      this.setState({ mat, stock_data, stock_disable_arr });
-    }
+    // axios
+    //   .post(Config.ServerUri + "/remove_mat", {
+    //     mat_left: stock_data[stock_data.length - 1],
+    //     sampleinfo: stock_sample,
+    //     selfid: this.state.selfid,
+    //     stockid: this.state.stockid,
+    //   })
+    //   .then((res) => {
+    //     this.setState({
+    //       allData: res.data,
+    //       filteredData: res.data,
+    //       stock_disable_arr,
+    //     });
+    //   })
+    //   .catch((err) => console.log(err));
   }
 
   on_update_clicked(item) {
@@ -1641,55 +1640,119 @@ export default class InputLaboratory extends Component {
   }
 
   onSaveStock() {
-    this.setState({ stock_modal_flag: false });
-    const { stock_data, stock_sample } = this.state;
-
+    const { stock_data, stock_sample, stock_disable_arr } = this.state;
+    var flag = 0;
+    var num = 0;
+    stock_data.map((e) => {
+      if (e == "") {
+        flag = 0;
+      } else {
+        num = Number(num) + Number(e);
+        flag = 1;
+      }
+    });
+    // Single
     if (this.state.param == "single") {
-      axios
-        .post(Config.ServerUri + "/add_mat", {
-          mat_left: stock_data[stock_data.length - 1],
-          _id: this.state.stockid,
-        })
-        .then((res) => {
-          this.setState({
-            allData: res.data,
-            filteredData: res.data,
-            stock_modal_flag: false,
-            mat: [],
-          });
-        })
-        .catch((err) => console.log(err));
+      if (flag == 0) {
+        notification.warning({
+          message: "Error",
+          description: "Please enter your data!",
+          className: "not-css",
+        });
+        return;
+      } else if (num > this.state.freeValue) {
+        notification.warning({
+          message: "Error",
+          description: "Value exceeded!",
+          className: "not-css",
+        });
+        return;
+      } else {
+        axios
+          .post(Config.ServerUri + "/add_mat", {
+            totalValue: num,
+            _id: this.state.stockid,
+          })
+          .then((res) => {
+            this.setState({
+              allData: res.data,
+              filteredData: res.data,
+              mat: [],
+              stock_modal_flag: false,
+              multiarr: [],
+            });
+          })
+          .catch((err) => console.log(err));
+      }
+      // Multiple
     } else {
-      axios
-        .post(Config.ServerUri + "/add_mat", {
-          mat_left: stock_data[stock_data.length - 1],
-          _id: this.state.stockid,
-        })
-        .then((res) => {
-          this.setState({
-            allData: res.data,
-            filteredData: res.data,
-            stock_modal_flag: false,
-            mat: [],
-          });
-        })
-        .catch((err) => console.log(err));
-      axios
-        .post(Config.ServerUri + "/sample_mat", {
-          mat_left: stock_data[stock_data.length - 1],
-          sampleinfo: stock_sample,
-          selfid: this.state.selfid,
-          stockid: this.state.stockid,
-        })
-        .then((res) => {
-          this.setState({
-            allData: res.data,
-            filteredData: res.data,
-            stock_modal_flag: false,
-            mat: [],
-          });
-        })
-        .catch((err) => console.log(err));
+      console.log(this.state.multiarr);
+      var tSum = 0;
+      this.state.multiarr.map((m) => {
+        this.state.onlynumarr.map((o) => {
+          if (m.id == o.id) {
+            tSum += Number(o.val);
+            m.num = tSum;
+          }
+        });
+      });
+      if (stock_data[stock_data.length - 1] != "") {
+        notification.warning({
+          message: "Error",
+          description: "Click the Add button and then click the OK button.",
+          className: "not-css",
+        });
+        return;
+      } else {
+        axios
+          .post(Config.ServerUri + "/add_multi_mat", {
+            sendarrval: this.state.multiarr,
+            lastid: this.state.stockid,
+            lastval: stock_data[stock_data.length - 1],
+          })
+          .then((res) => {
+            this.setState({
+              allData: res.data,
+              filteredData: res.data,
+              mat: [],
+              stock_modal_flag: false,
+              multiarr: [],
+              onlynumarr: [],
+            });
+          })
+          .catch((err) => console.log(err));
+
+        this.state.allData.map((e) => {
+          if (e._id == this.state.stockid) {
+            this.state.analysisType = e.a_types.toString();
+            this.state.certificate = e.c_types.toString();
+            this.state.lotcharge = e.Charge[0].charge;
+            this.state.lotupdatedate = e.Charge[0].update_date;
+            this.state.lotuser = e.Charge[0].user._id;
+          }
+        });
+        axios
+          .post(Config.ServerUri + "/sample_mat", {
+            mat_left: stock_data[stock_data.length - 1],
+            sampleinfo: stock_sample,
+            selfid: this.state.selfid,
+            stockid: this.state.stockid,
+            analysisType: this.state.analysisType,
+            certificate: this.state.certificate,
+            lotcharge: this.state.lotcharge,
+            lotupdatedate: this.state.lotupdatedate,
+            lotuser: this.state.lotuser,
+            tSum: tSum,
+          })
+          .then((res) => {
+            this.setState({
+              allData: res.data,
+              filteredData: res.data,
+              stock_disable_arr,
+            });
+          })
+          .catch((err) => console.log(err));
+      }
     }
   }
 
@@ -1997,7 +2060,7 @@ export default class InputLaboratory extends Component {
                   ))}
                 </div>
                 <div style={{ width: "3%" }} />
-                <div style={{ width: "3%", marginTop: "20px" }}>
+                <div style={{ width: "5%", marginTop: "20px" }}>
                   {[...Array(this.state.stock_data.length - 1)].map(
                     (v, item) => (
                       <CButton
@@ -2011,17 +2074,15 @@ export default class InputLaboratory extends Component {
                     )
                   )}
                 </div>
-                <div style={{ width: "5%" }} />
-                <div style={{ width: "7%", marginTop: "20px" }}>
-                  <CButton
-                    color="info"
-                    onClick={() => this.PlusStockdata()}
-                    className="btnadd"
-                  >
+              </div>
+              <CRow>
+                <CCol md="10"></CCol>
+                <CCol md="2">
+                  <CButton color="info" onClick={() => this.PlusStockdata()}>
                     Add
                   </CButton>
-                </div>
-              </div>
+                </CCol>
+              </CRow>
             </CFormGroup>
           </CForm>
         </CCardBody>
@@ -3742,15 +3803,15 @@ export default class InputLaboratory extends Component {
                     </td>
                   );
                 } else {
-                  var charge = "";
-                  item.Charge.map((item) => {
-                    charge = item.charge;
-                  });
                   return (
                     <td>
-                      <CButton onClick={() => this.onClick_charge(item)}>
-                        {charge}
-                      </CButton>
+                      {item.Charge.map((v) => (
+                        <CButton
+                          onClick={() => this.onClick_charge(item, v.charge)}
+                        >
+                          {v.charge}
+                        </CButton>
+                      ))}
                     </td>
                   );
                 }
