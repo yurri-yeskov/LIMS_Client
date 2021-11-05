@@ -163,9 +163,27 @@ export default class InputLaboratory extends Component {
     this.DeleteItem = this.DeleteItem.bind(this);
 
     this.state = {
+      acceptValue: true,
+      reasonValue: "",
+      limitValue: "",
+      unitValue: "",
+      heardertitle: "",
+      objectName: "",
+      minValue: 0,
+      maxValue: 0,
+      madaldata: [],
+      each_stock_element: [],
+      onlyselfid: "",
+      arrid: [],
+      testarr: [],
       analysisType: [],
       certificate: [],
+      lotcharge: [],
+      lotupdatedate: [],
+      lotuser: [],
       realarr: [],
+      multiarr: [],
+      onlynumarr: [],
       selfree: 0,
       selfid: "",
       param: "single",
@@ -193,6 +211,7 @@ export default class InputLaboratory extends Component {
       modal_create: false,
       modal_detail: false,
       certificateVisible: false,
+      multimodal: false,
       current_id: null,
       material: "",
       client: "",
@@ -238,7 +257,7 @@ export default class InputLaboratory extends Component {
       charge_history: "",
       charge_table_flag: false,
       stock_flag: false,
-      stock_sample: "",
+      stock_sample: [],
       charge_value: new Date(),
       stock_modal_flag: false,
       reason: [],
@@ -643,19 +662,19 @@ export default class InputLaboratory extends Component {
   }
 
   onChangeStock(e, item) {
-    const { stock_data, mat } = this.state;
+    const { stock_data } = this.state;
     stock_data[e.target.name] = e.target.value;
 
-    var num = 0;
-    stock_data.map((e) => {
-      num = Number(num) + Number(e);
-    });
-    if (this.state.param == "single") {
-      if (num > this.state.freeValue) {
-        alert("the sum of input values must smaller than Material left.");
-        stock_data[item] = "";
-      }
-    }
+    // var num = 0;
+    // stock_data.map((e) => {
+    //   num = Number(num) + Number(e);
+    // });
+    // if (this.state.param == "single") {
+    //   if (num > this.state.freeValue) {
+    //     alert("the sum of input values must smaller than Material left.");
+    //     stock_data[item] = "";
+    //   }
+    // }
     this.setState({ stock_data });
   }
 
@@ -675,7 +694,7 @@ export default class InputLaboratory extends Component {
     return "";
   }
 
-  onClick_charge(item) {
+  onClick_charge(item, chargedate) {
     var charge_value = new Date();
     var charge_id = "";
     var charge_comment = "";
@@ -691,7 +710,7 @@ export default class InputLaboratory extends Component {
 
     this.setState({
       charge_history: item.Charge,
-      charge_value: charge_value,
+      charge_value: chargedate,
       weigt_comment: charge_comment,
       charge_id: charge_id,
       charge_flag: true,
@@ -740,9 +759,14 @@ export default class InputLaboratory extends Component {
     this.setModal_Create(true);
   }
   PlusStockdata() {
-    const { stock_data, mat, stock_disable_arr, stock_sample } = this.state;
+    const { stock_data, mat, stock_disable_arr, each_stock_element } =
+      this.state;
     var flag = 0;
     var num = 0;
+    each_stock_element.push({
+      id: this.state.stockid,
+      val: stock_data[stock_data.length - 1],
+    });
     stock_data.map((e) => {
       if (e == "") {
         flag = 0;
@@ -751,153 +775,122 @@ export default class InputLaboratory extends Component {
         flag = 1;
       }
     });
-    var sumVal = 0;
-    if (flag == 0) {
-      alert("Input Invalid");
-    } else if (num == this.state.selfree) {
-      alert("Do not Add");
-    } else {
-      if (this.state.param == "single") {
-        if (num > this.state.selfree) {
-          alert("the sum of input values must smaller than Material left.");
-        } else {
-          stock_disable_arr[mat.length - 1] = false;
-          stock_disable_arr.push(true);
-          var endSelVal = mat[mat.length - 1];
-          axios
-            .post(Config.ServerUri + "/add_mat", {
-              mat_left: stock_data[stock_data.length - 1],
-              _id: this.state.stockid,
-            })
-            .then((res) => {
-              this.setState({
-                allData: res.data,
-                filteredData: res.data,
-                stock_modal_flag: true,
-                stock_disable_arr,
-              });
-            })
-            .catch((err) => console.log(err));
-          this.setState({ mat, stock_data, stock_disable_arr });
-        }
+    if (this.state.param == "single") {
+      if (flag == 0) {
+        notification.warning({
+          message: "Error",
+          description: "Please enter your data!",
+          className: "not-css",
+        });
+        return;
+      } else if (num > this.state.freeValue) {
+        notification.warning({
+          message: "Error",
+          description: "Value exceeded!",
+          className: "not-css",
+        });
+        return;
+      } else if (num == this.state.freeValue) {
+        notification.warning({
+          message: "Error",
+          description: "Do Not Add",
+          className: "not-css",
+        });
+        return;
       } else {
-        var arr = {
-          id: this.state.stockid.toString(),
-          val: stock_data[stock_data.length - 1],
-        };
-        if (this.state.realarr.length == 0) {
-          if (arr.val > this.state.selfree) {
-            alert("the sum of input values must smaller than Material left.");
-          } else {
-            this.state.realarr.push(arr);
+      }
+    } else {
+      var sumVal = 0;
+      var numarr = {
+        id: this.state.stockid,
+        val: stock_data[stock_data.length - 1],
+      };
+      // console.log(numarr);
+
+      this.state.onlynumarr.push(numarr);
+      if (flag == 0) {
+        notification.warning({
+          message: "Error",
+          description: "Please enter your data!",
+          className: "not-css",
+        });
+        return;
+      } else if (
+        stock_data[stock_data.length - 1] > Number(this.state.selfree)
+      ) {
+        notification.warning({
+          message: "Error",
+          description: "Value exceeded!",
+          className: "not-css",
+        });
+        this.state.onlynumarr.splice(this.state.onlynumarr.length - 1);
+        return;
+      } else {
+        this.state.onlynumarr.map((e) => {
+          if (e.id.toString() == this.state.stockid.toString()) {
+            sumVal += Number(e.val);
           }
-        } else {
-          this.state.realarr.push(arr);
-          this.state.realarr.map((e) => {
-            if (e.id.toString() == this.state.stockid) {
-              sumVal += Number(e.val);
-            }
+        });
+        if (sumVal > Number(this.state.selfree)) {
+          notification.warning({
+            message: "Error",
+            description: "Value exceeded!",
+            className: "not-css",
           });
+          this.state.onlynumarr.splice(this.state.onlynumarr.length - 1);
+          return;
+        } else {
+          if (
+            this.state.multiarr.filter(
+              (vv) => vv.id == this.state.stockid.toString()
+            ).length == 0
+          ) {
+            this.state.multiarr.push(numarr);
+          } else {
+            this.state.onlynumarr.map((e) => {
+              if (e.id.toString() == this.state.stockid.toString()) {
+                e.val = Number(numarr.val) + Number(e.val);
+              }
+            });
+          }
         }
       }
     }
 
-    this.state.allData.map((e) => {
-      if (e._id == this.state.stockid) {
-        this.state.analysisType = e.a_types.toString();
-        this.state.certificate = e.c_types.toString();
-      }
-    });
-
-    if (sumVal > this.state.selfree) {
-      alert("the sum of input values must smaller than Material left.");
-    } else {
-      axios
-        .post(Config.ServerUri + "/sample_mat", {
-          mat_left: stock_data[stock_data.length - 1],
-          sampleinfo: stock_sample,
-          selfid: this.state.selfid,
-          stockid: this.state.stockid,
-          analysisType: this.state.analysisType,
-          certificate: this.state.certificate,
-        })
-        .then((res) => {
-          console.log(res.data);
-          this.setState({
-            stock_modal_flag: true,
-            allData: res.data,
-            filteredData: res.data,
-            stock_disable_arr,
-          });
-        })
-        .catch((err) => console.log(err));
-      stock_disable_arr[mat.length - 1] = false;
-      stock_disable_arr.push(true);
-      var endSelVal = mat[mat.length - 1];
-      axios
-        .post(Config.ServerUri + "/add_mat", {
-          mat_left: stock_data[stock_data.length - 1],
-          _id: this.state.stockid,
-        })
-        .then((res) => {
-          this.setState({
-            allData: res.data,
-            filteredData: res.data,
-            stock_modal_flag: true,
-            stock_disable_arr,
-          });
-        })
-        .catch((err) => console.log(err));
-      this.setState({ mat, stock_data, stock_disable_arr });
-      mat.push(endSelVal);
-      stock_data.push("");
-    }
+    stock_disable_arr[mat.length - 1] = false;
+    stock_disable_arr.push(true);
+    var endSelVal = mat[mat.length - 1];
+    mat.push(endSelVal);
+    stock_data.push("");
+    this.setState({ mat, stock_data, stock_disable_arr, each_stock_element });
   }
 
   DeleteItem(item) {
-    const { mat, stock_data, stock_disable_arr, stock_sample } = this.state;
+    const {
+      mat,
+      stock_data,
+      stock_disable_arr,
+      onlynumarr,
+      each_stock_element,
+    } = this.state;
+    this.state.multiarr.map((e) => {
+      if (e.id.toString() == each_stock_element[item].id.toString()) {
+        e.val = e.val - each_stock_element[item].val;
+      }
+    });
+    console.log(this.state.multiarr);
     stock_disable_arr.splice(item, 1);
-    let getid = mat[item].split(",")[0].split(" ")[
-      mat[item].split(",")[0].split(" ").length - 1
-    ];
-    let getValue = stock_data[item];
-    axios
-      .post(Config.ServerUri + "/del_mat", {
-        mat_left: getValue,
-        _id: getid,
-      })
-      .then((res) => {
-        this.setState({
-          allData: res.data,
-          filteredData: res.data,
-          stock_disable_arr,
-        });
-      })
-      .catch((err) => console.log(err));
-
-    axios
-      .post(Config.ServerUri + "/remove_mat", {
-        mat_left: stock_data[stock_data.length - 1],
-        sampleinfo: stock_sample,
-        selfid: this.state.selfid,
-        stockid: this.state.stockid,
-      })
-      .then((res) => {
-        this.setState({
-          allData: res.data,
-          filteredData: res.data,
-          stock_disable_arr,
-        });
-      })
-      .catch((err) => console.log(err));
-
-    if (stock_data.length == 1) {
-      alert("Not Remove");
-    } else {
-      mat.splice(item, 1);
-      stock_data.splice(item, 1);
-      this.setState({ mat, stock_data, stock_disable_arr });
-    }
+    mat.splice(item, 1);
+    stock_data.splice(item, 1);
+    onlynumarr.splice(item, 1);
+    each_stock_element.splice(item, 1);
+    this.setState({
+      mat,
+      stock_data,
+      stock_disable_arr,
+      onlynumarr,
+      each_stock_element,
+    });
   }
 
   on_update_clicked(item) {
@@ -985,6 +978,7 @@ export default class InputLaboratory extends Component {
 
   on_add_material(item) {
     var ty = item.sample_type;
+    console.log(item);
     var vv = this.state.sampleTypesData.map((v) => {
       if (v.sampleType == ty) {
         if (v.stockSample == true) {
@@ -1042,7 +1036,7 @@ export default class InputLaboratory extends Component {
         }
       });
     } else {
-      this.setState({ param: "multi", selfid: item._id });
+      this.setState({ param: "multi", selfid: item._id, onlyselfid: item._id });
       var valary = [];
       var stex = "";
       var formatValue = [];
@@ -1097,7 +1091,6 @@ export default class InputLaboratory extends Component {
         mat,
         freeValue: formatValue,
         selfree: formatValue,
-        stock_sample: stex,
       });
     }
     this.setState({
@@ -1630,109 +1623,283 @@ export default class InputLaboratory extends Component {
     var free = e.target.value
       .toString()
       .substr(0, e.target.value.toString().lastIndexOf(" "));
-    var real = free.toString().substr(0, free.toString().lastIndexOf(" "));
     var selfreeValue = free.toString().split(" ");
     var stockid = pattern[pattern.length - 1];
     this.setState({
       stockid: stockid,
-      stock_sample: real,
       selfree: selfreeValue[selfreeValue.length - 1],
     });
   }
 
   onSaveStock() {
-    this.setState({ stock_modal_flag: false });
-    const { stock_data, stock_sample } = this.state;
-
+    const { stock_data } = this.state;
+    var flag = 0;
+    var num = 0;
+    stock_data.map((e) => {
+      if (e == "") {
+        flag = 0;
+      } else {
+        num = Number(num) + Number(e);
+        flag = 1;
+      }
+    });
+    // Single
     if (this.state.param == "single") {
-      axios
-        .post(Config.ServerUri + "/add_mat", {
-          mat_left: stock_data[stock_data.length - 1],
-          _id: this.state.stockid,
-        })
-        .then((res) => {
-          this.setState({
-            allData: res.data,
-            filteredData: res.data,
-            stock_modal_flag: false,
-            mat: [],
-          });
-        })
-        .catch((err) => console.log(err));
+      if (flag == 0) {
+        notification.warning({
+          message: "Error",
+          description: "Please enter your data!",
+          className: "not-css",
+        });
+        return;
+      } else if (num > this.state.freeValue) {
+        notification.warning({
+          message: "Error",
+          description: "Value exceeded!",
+          className: "not-css",
+        });
+        return;
+      } else {
+        axios
+          .post(Config.ServerUri + "/add_mat", {
+            totalValue: num,
+            _id: this.state.stockid,
+          })
+          .then((res) => {
+            this.setState({
+              allData: res.data,
+              filteredData: res.data,
+              mat: [],
+              stock_modal_flag: false,
+              multiarr: [],
+            });
+          })
+          .catch((err) => console.log(err));
+      }
+      // Multiple
     } else {
-      axios
-        .post(Config.ServerUri + "/add_mat", {
-          mat_left: stock_data[stock_data.length - 1],
-          _id: this.state.stockid,
-        })
-        .then((res) => {
-          this.setState({
-            allData: res.data,
-            filteredData: res.data,
-            stock_modal_flag: false,
-            mat: [],
+      var lastval = stock_data[stock_data.length - 1];
+      var lastarr = {
+        id: this.state.stockid,
+        val: lastval,
+      };
+      if (flag == 0) {
+        notification.warning({
+          message: "Error",
+          description: "Please enter your data!",
+          className: "not-css",
+        });
+        return;
+      } else {
+        if (this.state.multiarr.length == 0) {
+          this.state.multiarr.push(lastarr);
+        } else {
+          this.state.multiarr.map((e) => {
+            if (e.id == this.state.stockid) {
+              e.val = Number(e.val) + Number(lastval);
+            } else {
+              if (
+                this.state.multiarr.filter(
+                  (e) => e.id == this.state.stockid.toString()
+                ).length == 0
+              ) {
+                this.state.multiarr.push(lastarr);
+              }
+            }
           });
-        })
-        .catch((err) => console.log(err));
-      axios
-        .post(Config.ServerUri + "/sample_mat", {
-          mat_left: stock_data[stock_data.length - 1],
-          sampleinfo: stock_sample,
-          selfid: this.state.selfid,
-          stockid: this.state.stockid,
-        })
-        .then((res) => {
-          this.setState({
-            allData: res.data,
-            filteredData: res.data,
-            stock_modal_flag: false,
-            mat: [],
+        }
+        var tSum = 0;
+        this.state.multiarr.map((v) => {
+          tSum += Number(v.val);
+        });
+        let idstore = [];
+        this.state.multiarr.map((e) => {
+          idstore.push(e.id.toString());
+        });
+        axios
+          .post(Config.ServerUri + "/add_multi_mat", {
+            sendarrval: this.state.multiarr,
+            idstore: idstore,
+            selfid: this.state.selfid,
+          })
+          .then((res) => {
+            this.setState({
+              allData: res.data,
+              filteredData: res.data,
+              mat: [],
+              stock_modal_flag: false,
+              multiarr: [],
+              onlynumarr: [],
+              testarr: [],
+            });
+          })
+          .catch((err) => console.log(err));
+
+        let arr = [];
+        this.state.allData.map((e) => {
+          this.state.multiarr.map((m) => {
+            if (e._id == m.id) {
+              arr.push(e.a_types);
+              this.state.certificate.push(e.c_types.toString());
+              this.state.lotcharge.push(e.Charge[0].charge);
+              this.state.lotupdatedate.push(e.Charge[0].update_date);
+              this.state.lotuser.push(e.Charge[0].user._id);
+              this.state.stock_sample.push(
+                e.sample_type +
+                  " " +
+                  e.material +
+                  " " +
+                  e.client +
+                  " " +
+                  e.Charge[0].charge
+              );
+              this.state.arrid.push(e._id);
+            }
           });
-        })
-        .catch((err) => console.log(err));
+        });
+
+        var merged = [].concat.apply([], arr);
+
+        axios
+          .post(Config.ServerUri + "/sample_mat", {
+            selfid: this.state.selfid,
+            stockid: this.state.stockid,
+            onlyselfid: this.state.onlyselfid,
+            arrid: this.state.arrid,
+            sampleinfo: this.state.stock_sample,
+            analysisType: merged,
+            certificate: this.state.certificate,
+          })
+          .then((res) => {
+            this.setState({
+              allData: res.data,
+              filteredData: res.data,
+              mat: [],
+              stock_modal_flag: false,
+              multiarr: [],
+              onlynumarr: [],
+              testarr: [],
+              a_types: this.state.analysisType,
+            });
+          })
+          .catch((err) => console.log(err));
+
+        axios
+          .post(Config.ServerUri + "/weight_mat", {
+            selfid: this.state.selfid,
+            tSum: tSum,
+            lotuser: this.state.lotuser,
+          })
+          .then((res) => {
+            this.setState({
+              allData: res.data,
+              filteredData: res.data,
+              mat: [],
+              stock_modal_flag: false,
+              multiarr: [],
+              onlynumarr: [],
+              testarr: [],
+            });
+          })
+          .catch((err) => console.log(err));
+
+        axios
+          .post(Config.ServerUri + "/lot_mat", {
+            selfid: this.state.selfid,
+            lotcharge: this.state.lotcharge,
+          })
+          .then((res) => {
+            this.setState({
+              allData: res.data,
+              filteredData: res.data,
+              mat: [],
+              stock_modal_flag: false,
+              multiarr: [],
+              onlynumarr: [],
+              testarr: [],
+            });
+          })
+          .catch((err) => console.log(err));
+      }
     }
   }
 
-  async onRowClicked(item, analysis) {
-    var history_item = [];
-    var reason = [];
+  async onRowClicked(item, analysis, key) {
+    var ty = item.sample_type;
+    var vv = this.state.sampleTypesData.map((v) => {
+      if (v.sampleType == ty) {
+        if (v.stockSample == true) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    });
+    if (vv[vv.length - 1] == true) {
+      var history_item = [];
+      var reason = [];
+      await axios
+        .get(Config.ServerUri + "/get_objective_history")
+        .then((res) => {
+          res.data.objectivehistory.map((temp) => {
+            if (analysis === temp.analysis && item._id === temp.id) {
+              this.onChangeValue(temp);
+              history_item.push(temp);
+            }
+          });
+        });
 
-    await axios.get(Config.ServerUri + "/get_objective_history").then((res) => {
-      res.data.objectivehistory.map((temp) => {
-        if (analysis === temp.analysis && item._id === temp.id) {
-          this.onChangeValue(temp);
-          history_item.push(temp);
+      await axios.get(Config.ServerUri + "/get_all_reason").then((res) => {
+        reason = res.data;
+      });
+      this.setState({
+        laboratory: item._id,
+        a_types: item.a_types,
+        material: item.material,
+        anaylsis_button: analysis,
+        history_item: history_item,
+        client_id: item.client_id,
+        reason: reason,
+      });
+      this.setModal_detail(true);
+    } else {
+      var data = [];
+      item.idstore.map((e) => {
+        this.state.objectiveHistory.map((ee) => {
+          if (e == ee.id) {
+            data.push(ee);
+          }
+        });
+      });
+      this.state.unitData.map((e) => {
+        if (data[key].unit == e._id) {
+          this.setState({ unitValue: e.unit });
         }
       });
-    });
 
-    await axios.get(Config.ServerUri + "/get_all_reason").then((res) => {
-      reason = res.data;
-    });
-    this.setState({
-      laboratory: item._id,
-      a_types: item.a_types,
-      material: item.material,
-      anaylsis_button: analysis,
-      history_item: history_item,
-      client_id: item.client_id,
-      reason: reason,
-    });
-    this.setModal_detail(true);
+      this.setState({
+        madaldata: data,
+        heardertitle: data[key].analysis,
+        objectName: data[key].label,
+        minValue: data[key].min,
+        maxValue: data[key].max,
+        limitValue: data[key].limitValue,
+        reasonValue: data[key].reason,
+        acceptValue: data[key].accept,
+      });
+      this.multimodal(true);
+    }
   }
 
   onChangeValue(data) {
-    console.log(data);
     var color = "";
     var accept = false;
     var reason = "";
     if (data.accept) {
-      console.log(111);
       accept = data.accept;
     }
 
     if (data.reason) {
-      console.log(222);
       reason = data.reason;
     }
 
@@ -1743,7 +1910,6 @@ export default class InputLaboratory extends Component {
     }
 
     if (data.accept === true) {
-      console.log(555);
       color = "#2eb85c";
     }
 
@@ -1790,12 +1956,25 @@ export default class InputLaboratory extends Component {
     this.setState({ modal_detail: modal, object_history: false });
   }
 
+  multimodal(modal) {
+    this.setState({ multimodal: modal, object_history: false });
+  }
+
   client_detail_cancel() {
     this.setState({ client_detail_flag: false });
   }
 
   weight_data_cancel() {
-    this.setState({ weight_flag: false, weight_table_flag: false });
+    this.setState({
+      weight_flag: false,
+      weight_table_flag: false,
+      multimodal: false,
+    });
+  }
+  multimodalcancel() {
+    this.setState({
+      multimodal: false,
+    });
   }
 
   charge_data_cancel() {
@@ -1862,6 +2041,7 @@ export default class InputLaboratory extends Component {
   AnalysisTypeChange() {
     this.setState({ history_item: [] });
     this.setModal_detail(false);
+    this.multimodal(false);
   }
 
   onChangeweight(e) {
@@ -1997,7 +2177,7 @@ export default class InputLaboratory extends Component {
                   ))}
                 </div>
                 <div style={{ width: "3%" }} />
-                <div style={{ width: "3%", marginTop: "20px" }}>
+                <div style={{ width: "5%", marginTop: "20px" }}>
                   {[...Array(this.state.stock_data.length - 1)].map(
                     (v, item) => (
                       <CButton
@@ -2011,17 +2191,15 @@ export default class InputLaboratory extends Component {
                     )
                   )}
                 </div>
-                <div style={{ width: "5%" }} />
-                <div style={{ width: "7%", marginTop: "20px" }}>
-                  <CButton
-                    color="info"
-                    onClick={() => this.PlusStockdata()}
-                    className="btnadd"
-                  >
+              </div>
+              <CRow>
+                <CCol md="10"></CCol>
+                <CCol md="2">
+                  <CButton color="info" onClick={() => this.PlusStockdata()}>
                     Add
                   </CButton>
-                </div>
-              </div>
+                </CCol>
+              </CRow>
             </CFormGroup>
           </CForm>
         </CCardBody>
@@ -2132,7 +2310,6 @@ export default class InputLaboratory extends Component {
         }
       });
     });
-
     objectives.map((item) => {
       if (item.analysis === this.state.anaylsis_button) {
         _objectives.push(item);
@@ -2140,8 +2317,130 @@ export default class InputLaboratory extends Component {
     });
 
     this.state._objectives = _objectives;
-
     return this.renderDetailModalCreate(_objectives);
+  }
+
+  renderDetailMultiModalData() {
+    const {
+      unitValue,
+      heardertitle,
+      objectName,
+      minValue,
+      maxValue,
+      limitValue,
+      reasonValue,
+      acceptValue,
+    } = this.state;
+    return (
+      <>
+        <CCard>
+          <CCardBody>
+            <CRow>
+              <CCol md="4">
+                <CRow>
+                  <CCol md="8">
+                    <CLabel>
+                      {objectName +
+                        " " +
+                        unitValue +
+                        " " +
+                        `[${minValue}, ${maxValue}]`}
+                    </CLabel>
+                  </CCol>
+                  <CCol md="4">
+                    <Input
+                      type="text"
+                      value={limitValue}
+                      style={{
+                        color:
+                          minValue <= limitValue && limitValue <= maxValue
+                            ? "#2eb85c"
+                            : "#e55353",
+                      }}
+                      className="form-control-sm"
+                      required={true}
+                    />
+                  </CCol>
+                </CRow>
+              </CCol>
+              <CCol md="4">
+                <CRow>
+                  <CCol md="3">
+                    <CLabel>Reason</CLabel>
+                  </CCol>
+                  <CCol md="9">
+                    <CSelect>
+                      <option key="default" value="" disabled>
+                        Select reason [from Admin/reasons]
+                      </option>
+                      <option value={reasonValue}>{reasonValue}</option>
+                    </CSelect>
+                  </CCol>
+                </CRow>
+              </CCol>
+              <CCol md="4">
+                <CRow>
+                  <CCol md="7">
+                    <CLabel
+                      style={{
+                        display: acceptValue === false ? "block" : "none",
+                      }}
+                    >
+                      Accept value anyway
+                    </CLabel>
+                  </CCol>
+                  <CCol md="2">
+                    <div
+                      style={{
+                        width: "15px",
+                        height: "15px",
+                        border: "1px solid black",
+                      }}
+                      className={acceptValue ? "chk clr-full" : "chk"}
+                      onClick={() => {
+                        this.setState({
+                          acceptValue: acceptValue == true ? false : true,
+                        });
+                      }}
+                    ></div>
+                  </CCol>
+                </CRow>
+              </CCol>
+            </CRow>
+            <CRow style={{ marginTop: "5px" }}>
+              <CCol>
+                <CForm>
+                  <CFormGroup>
+                    <CRow style={{ marginTop: "5px" }}>
+                      <CCol md="2">
+                        <CLabel>Comment</CLabel>
+                      </CCol>
+                      <CCol md="10">
+                        <CTextarea
+                          name="comment"
+                          value={this.state.comment}
+                          onChange={(e) => this.onChangeComment(e)}
+                        ></CTextarea>
+                      </CCol>
+                    </CRow>
+                  </CFormGroup>
+                </CForm>
+              </CCol>
+            </CRow>
+            <div className="float-right">
+              <CButton color="info">OK</CButton>
+              <span style={{ padding: "4px" }} />
+              <CButton
+                onClick={() => this.multimodalcancel()}
+                color="secondary"
+              >
+                Cancel
+              </CButton>
+            </div>
+          </CCardBody>
+        </CCard>
+      </>
+    );
   }
 
   renderClientDetailData() {
@@ -3535,180 +3834,339 @@ export default class InputLaboratory extends Component {
                 }
               },
               a_types: (item, index) => {
-                var data = [];
-                var color = "";
-                item.a_types.map((v, k) => {
-                  data = [];
-                  this.state.objectiveHistory.map((temp) => {
-                    if (temp.id === item._id) {
-                      data.push(temp);
+                var ty = item.sample_type;
+                var vv = this.state.sampleTypesData.map((v) => {
+                  if (v.sampleType == ty) {
+                    if (v.stockSample == true) {
+                      return true;
+                    } else {
+                      return false;
                     }
-                  });
+                  }
                 });
-
-                return (
-                  <td>
-                    <div style={{ display: "column" }}>
-                      {item.a_types.map((v, k) => {
-                        if (data.length === 0) {
-                          return (
-                            <div style={{ padding: "5px" }}>
-                              <CButton
-                                key={k}
-                                style={{
-                                  backgroundColor: "grey",
-                                  color: "white",
-                                }}
-                                size="sm"
-                                onClick={() => {
-                                  this.onRowClicked(item, v);
-                                }}
-                              >
-                                {v}
-                              </CButton>
-                            </div>
-                          );
-                        } else {
-                          var analysis_history = [];
-                          var color_group = [];
-                          for (var i = data.length - 1; i >= 0; i--) {
-                            if (
-                              !analysis_history.some(
-                                (val) =>
-                                  `${val.label} + ${val.analysis} + ${val.obj_value}` ===
-                                  `${data[i].label} + ${data[i].analysis} + ${data[i].obj_value}`
-                              )
-                            ) {
-                              analysis_history.push(data[i]);
+                if (vv[vv.length - 1] == true) {
+                  var data = [];
+                  var color = "";
+                  item.a_types.map((v, k) => {
+                    data = [];
+                    this.state.objectiveHistory.map((temp) => {
+                      if (temp.id === item._id) {
+                        data.push(temp);
+                      }
+                    });
+                  });
+                  return (
+                    <td>
+                      <div style={{ display: "column" }}>
+                        {item.a_types.map((v, k) => {
+                          if (data.length === 0) {
+                            return (
+                              <div style={{ padding: "5px" }}>
+                                <CButton
+                                  key={k}
+                                  style={{
+                                    backgroundColor: "grey",
+                                    color: "white",
+                                  }}
+                                  size="sm"
+                                  onClick={() => {
+                                    this.onRowClicked(item, v);
+                                  }}
+                                >
+                                  {v}
+                                </CButton>
+                              </div>
+                            );
+                          } else {
+                            var analysis_history = [];
+                            var color_group = [];
+                            for (var i = data.length - 1; i >= 0; i--) {
+                              if (
+                                !analysis_history.some(
+                                  (val) =>
+                                    `${val.label} + ${val.analysis} + ${val.obj_value}` ===
+                                    `${data[i].label} + ${data[i].analysis} + ${data[i].obj_value}`
+                                )
+                              ) {
+                                analysis_history.push(data[i]);
+                              }
                             }
-                          }
-                          // console.log(111, analysis_history);
 
-                          color = "";
-                          analysis_history.map((temp, index) => {
+                            color = "";
+                            analysis_history.map((temp, index) => {
+                              if (temp.analysis === v) {
+                                if (
+                                  temp.limitValue >= temp.min &&
+                                  temp.limitValue <= temp.max
+                                ) {
+                                  if (color === "#e55353") {
+                                    color = "#e55353";
+                                  } else {
+                                    color = "#2eb85c";
+                                  }
+                                  color_group.push(color);
+                                } else {
+                                  if (temp.accept === true) {
+                                    color = "#2eb85c";
+                                  } else {
+                                    color = "#e55353";
+                                  }
+                                  color_group.push(color);
+                                }
+                              }
+                            });
+
+                            if (color_group.length !== 0) {
+                              var a = color_group.filter(
+                                (temp) => temp === "#e55353"
+                              );
+
+                              if (a.length === 0) {
+                                color = "#2eb85c";
+                              } else {
+                                color = "#e55353";
+                              }
+                            }
+
+                            if (color == "") {
+                              color = "grey";
+                            }
+
+                            return (
+                              <div style={{ padding: "5px" }}>
+                                <CButton
+                                  key={k}
+                                  style={{
+                                    backgroundColor: color,
+                                    color: "white",
+                                  }}
+                                  size="sm"
+                                  onClick={() => {
+                                    this.onRowClicked(item, v);
+                                  }}
+                                >
+                                  {v}
+                                </CButton>
+                              </div>
+                            );
+                          }
+                        })}
+                      </div>
+                    </td>
+                  );
+                } else {
+                  var data = [];
+                  var color = "";
+                  item.idstore.map((e) => {
+                    this.state.objectiveHistory.map((ee) => {
+                      if (e == ee.id) {
+                        data.push(ee);
+                      }
+                    });
+                  });
+                  return (
+                    <td>
+                      <div style={{ display: "column" }}>
+                        {item.a_types.map((v, k) => {
+                          if (data.length === 0) {
+                            return (
+                              <div style={{ padding: "5px" }}>
+                                <CButton
+                                  key={k}
+                                  style={{
+                                    backgroundColor: "grey",
+                                    color: "white",
+                                  }}
+                                  size="sm"
+                                  onClick={() => {
+                                    this.onRowClicked(item, v, k);
+                                  }}
+                                >
+                                  {v}
+                                </CButton>
+                              </div>
+                            );
+                          } else {
+                            color = "";
+                            var temp = data[k];
                             if (temp.analysis === v) {
                               if (
                                 temp.limitValue >= temp.min &&
                                 temp.limitValue <= temp.max
                               ) {
-                                if (color === "#e55353") {
-                                  color = "#e55353";
-                                } else {
-                                  color = "#2eb85c";
-                                }
-                                color_group.push(color);
-                              } else {
-                                if (temp.accept === true) {
-                                  color = "#2eb85c";
-                                } else {
-                                  color = "#e55353";
-                                }
-                                color_group.push(color);
+                                color = "#2eb85c";
+                              }
+                              if (
+                                temp.limitValue < temp.min ||
+                                temp.limitValue > temp.max
+                              ) {
+                                color = "#e55353";
+                              }
+                              if (temp.limitValue == "") {
+                                color = "grey";
                               }
                             }
-                          });
-
-                          if (color_group.length !== 0) {
-                            var a = color_group.filter(
-                              (temp) => temp === "#e55353"
+                            return (
+                              <div style={{ padding: "5px" }}>
+                                <CButton
+                                  key={k}
+                                  style={{
+                                    backgroundColor: color,
+                                    color: "white",
+                                  }}
+                                  size="sm"
+                                  onClick={() => {
+                                    this.onRowClicked(item, v, k);
+                                  }}
+                                >
+                                  {this.state.filteredData.filter(
+                                    (e) => temp.id == e._id
+                                  )[0].sample_type +
+                                    "-" +
+                                    v}
+                                </CButton>
+                              </div>
                             );
-
-                            if (a.length === 0) {
-                              color = "#2eb85c";
-                            } else {
-                              color = "#e55353";
-                            }
                           }
-
-                          if (color == "") {
-                            color = "grey";
-                          }
-
-                          return (
-                            <div style={{ padding: "5px" }}>
-                              <CButton
-                                key={k}
-                                style={{
-                                  backgroundColor: color,
-                                  color: "white",
-                                }}
-                                size="sm"
-                                onClick={() => {
-                                  this.onRowClicked(item, v);
-                                }}
-                              >
-                                {v}
-                              </CButton>
-                            </div>
-                          );
-                        }
-                      })}
-                    </div>
-                  </td>
-                );
+                        })}
+                      </div>
+                    </td>
+                  );
+                }
               },
               c_types: (item, index) => {
-                var data = [];
-                var color = "";
-                var color_group = [];
-                item.a_types.map((v, k) => {
-                  data = [];
-                  this.state.objectiveHistory.map((temp) => {
-                    if (temp.id === item._id) {
-                      data.push(temp);
-                    }
-                  });
-                });
-                data.map((temp) => {
-                  color = "";
-                  if (
-                    temp.limitValue >= temp.min &&
-                    temp.limitValue <= temp.max
-                  ) {
-                    if (color === "#e55353") {
-                      color = "#e55353";
+                var ty = item.sample_type;
+                var vv = this.state.sampleTypesData.map((v) => {
+                  if (v.sampleType == ty) {
+                    if (v.stockSample == true) {
+                      return true;
                     } else {
-                      color = "#2eb85c";
-                    }
-                    color_group.push(color);
-                  } else {
-                    if (temp.accept === true) {
-                      color = "#2eb85c";
-                    } else {
-                      color = "#e55353";
+                      return false;
                     }
                   }
                 });
+                if (vv[vv.length - 1] == true) {
+                  var data = [];
+                  var color = "";
+                  var color_group = [];
+                  item.a_types.map((v, k) => {
+                    data = [];
+                    this.state.objectiveHistory.map((temp) => {
+                      if (temp.id === item._id) {
+                        data.push(temp);
+                      }
+                    });
+                  });
+                  data.map((temp) => {
+                    color = "";
+                    if (
+                      temp.limitValue >= temp.min &&
+                      temp.limitValue <= temp.max
+                    ) {
+                      if (color === "#e55353") {
+                        color = "#e55353";
+                      } else {
+                        color = "#2eb85c";
+                      }
+                      color_group.push(color);
+                    } else {
+                      if (temp.accept === true) {
+                        color = "#2eb85c";
+                      } else {
+                        color = "#e55353";
+                      }
+                    }
+                  });
 
-                if (color == "") {
-                  color = "#e55353";
-                }
-                if (item.client == "") {
-                  color = "#e55353";
-                }
-
-                if (color == "#e55353") {
-                  return (
-                    <td>
-                      {item.c_types.map((v) => (
-                        <CButton>{v}</CButton>
-                      ))}
-                    </td>
-                  );
+                  if (color == "") {
+                    color = "#e55353";
+                  }
+                  if (item.client == "") {
+                    color = "#e55353";
+                  }
+                  if (color == "#e55353") {
+                    return (
+                      <td>
+                        {item.c_types.map((v) => (
+                          <CButton>{v}</CButton>
+                        ))}
+                      </td>
+                    );
+                  } else {
+                    return (
+                      <td>
+                        {item.c_types.map((v) => (
+                          <CButton
+                            onClick={() =>
+                              this.certificate_modal_state(item, v)
+                            }
+                          >
+                            {v}
+                          </CButton>
+                        ))}
+                      </td>
+                    );
+                  }
                 } else {
+                  var data = [];
+                  var color = "";
+                  item.idstore.map((e) => {
+                    this.state.objectiveHistory.map((ee) => {
+                      if (e == ee.id) {
+                        data.push(ee);
+                      }
+                    });
+                  });
                   return (
                     <td>
-                      {item.c_types.map((v) => (
-                        <CButton
-                          onClick={() => this.certificate_modal_state(item, v)}
-                        >
-                          {v}
-                        </CButton>
-                      ))}
+                      <div style={{ display: "column" }}>
+                        {item.a_types.map((v, k) => {
+                          if (data.length === 0) {
+                            return (
+                              <div style={{ padding: "5px" }}>
+                                {item.c_types.map((v) => (
+                                  <CButton
+                                    onClick={() =>
+                                      this.certificate_modal_state(item, v)
+                                    }
+                                  >
+                                    {v}
+                                  </CButton>
+                                ))}
+                              </div>
+                            );
+                          }
+                        })}
+                      </div>
+                      <div style={{ padding: "5px" }}>
+                        {item.c_types.length == 0
+                          ? ""
+                          : item.idstore.map((e, ii) => {
+                              if (item.c_types[ii] != undefined) {
+                                return item.c_types[ii]
+                                  .toString()
+                                  .split(",")
+                                  .map((v, i) => (
+                                    <CButton
+                                      onClick={() =>
+                                        this.certificate_modal_state(item, v)
+                                      }
+                                    >
+                                      {this.state.filteredData.filter(
+                                        (ev) => ev._id == e.toString()
+                                      )[0].sample_type +
+                                        " - " +
+                                        v}
+                                    </CButton>
+                                  ));
+                              }
+                            })}
+                      </div>
                     </td>
                   );
                 }
               },
+
               Weight: (item, index) => {
                 if (item.Weight.length === 0) {
                   return (
@@ -3742,15 +4200,15 @@ export default class InputLaboratory extends Component {
                     </td>
                   );
                 } else {
-                  var charge = "";
-                  item.Charge.map((item) => {
-                    charge = item.charge;
-                  });
                   return (
                     <td>
-                      <CButton onClick={() => this.onClick_charge(item)}>
-                        {charge}
-                      </CButton>
+                      {item.Charge.map((v) => (
+                        <CButton
+                          onClick={() => this.onClick_charge(item, v.charge)}
+                        >
+                          {v.charge}
+                        </CButton>
+                      ))}
                     </td>
                   );
                 }
@@ -3770,7 +4228,7 @@ export default class InputLaboratory extends Component {
                     <td>
                       <ul>
                         {item.stockSample.map((v) => {
-                          return <li>{v.val}</li>;
+                          return <li>{v}</li>;
                         })}
                       </ul>
                     </td>
@@ -3834,6 +4292,22 @@ export default class InputLaboratory extends Component {
           </CModalHeader>
           <CModalBody>{this.renderDetailModalData()}</CModalBody>
         </CModal>
+
+        {/* Multi Modal */}
+        <CModal
+          className="anaylsis_types_multi_modal"
+          show={this.state.multimodal}
+          onClose={() => this.AnalysisTypeChange()}
+          style={{ width: "60vw" }}
+          size="lg"
+          centered
+        >
+          <CModalHeader>
+            <CModalTitle>{this.state.heardertitle}</CModalTitle>
+          </CModalHeader>
+          <CModalBody>{this.renderDetailMultiModalData()}</CModalBody>
+        </CModal>
+
         <CModal
           show={this.state.client_detail_flag}
           onClose={() => this.client_detail_cancel()}
