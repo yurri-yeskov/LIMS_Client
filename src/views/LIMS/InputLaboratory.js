@@ -147,6 +147,7 @@ export default class InputLaboratory extends Component {
     this.handleFiles = this.handleFiles.bind(this);
     this.onChangeMinMaxValues = this.onChangeMinMaxValues.bind(this);
     this.onClickLabel = this.onClickLabel.bind(this);
+    this.onclickMultiLabel = this.onclickMultiLabel.bind(this);
     this.onClickSaveObjectiveHistory =
       this.onClickSaveObjectiveHistory.bind(this);
     this.onChangeComment = this.onChangeComment.bind(this);
@@ -163,6 +164,9 @@ export default class InputLaboratory extends Component {
     this.DeleteItem = this.DeleteItem.bind(this);
 
     this.state = {
+      showhistory: false,
+      limitValuearr: [],
+      updatavarr: [],
       acceptValue: true,
       reasonValue: "",
       limitValue: "",
@@ -805,7 +809,6 @@ export default class InputLaboratory extends Component {
         id: this.state.stockid,
         val: stock_data[stock_data.length - 1],
       };
-      // console.log(numarr);
 
       this.state.onlynumarr.push(numarr);
       if (flag == 0) {
@@ -878,7 +881,6 @@ export default class InputLaboratory extends Component {
         e.val = e.val - each_stock_element[item].val;
       }
     });
-    console.log(this.state.multiarr);
     stock_disable_arr.splice(item, 1);
     mat.splice(item, 1);
     stock_data.splice(item, 1);
@@ -978,7 +980,6 @@ export default class InputLaboratory extends Component {
 
   on_add_material(item) {
     var ty = item.sample_type;
-    console.log(item);
     var vv = this.state.sampleTypesData.map((v) => {
       if (v.sampleType == ty) {
         if (v.stockSample == true) {
@@ -1114,7 +1115,30 @@ export default class InputLaboratory extends Component {
     } else {
       client = this.state.client;
     }
-
+    var ty = this.state.sample_type;
+    var stocksample = false;
+    var stockok = 0;
+    var vv = this.state.sampleTypesData.map((v) => {
+      if (v.sampleType == ty) {
+        if (v.stockSample == true) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    });
+    vv.map((e) => {
+      if (e == true) {
+        stocksample = true;
+      }
+    });
+    if (stocksample == true) {
+      stockok = 0;
+    } else if (stocksample == false && this.state.a_types.length > 0) {
+      stockok = 1;
+    } else {
+      stockok = 2;
+    }
     var delivering = {
       address_name1: this.state.address_name1,
       address_name2: this.state.address_name2,
@@ -1132,9 +1156,9 @@ export default class InputLaboratory extends Component {
     };
 
     this.setModal_Create(false);
-
     axios
       .post(Config.ServerUri + "/create_input_laboratory", {
+        stocksampleinfo: stockok,
         sample_type: this.state.sample_type,
         material: this.state.material,
         client: client,
@@ -1731,6 +1755,11 @@ export default class InputLaboratory extends Component {
               multiarr: [],
               onlynumarr: [],
               testarr: [],
+              arrid: [],
+              stock_sample: [],
+              merged: [],
+              certificate: [],
+              lotcharge: [],
             });
           })
           .catch((err) => console.log(err));
@@ -1780,6 +1809,11 @@ export default class InputLaboratory extends Component {
               onlynumarr: [],
               testarr: [],
               a_types: this.state.analysisType,
+              arrid: [],
+              stock_sample: [],
+              merged: [],
+              certificate: [],
+              lotcharge: [],
             });
           })
           .catch((err) => console.log(err));
@@ -1799,6 +1833,11 @@ export default class InputLaboratory extends Component {
               multiarr: [],
               onlynumarr: [],
               testarr: [],
+              arrid: [],
+              stock_sample: [],
+              merged: [],
+              certificate: [],
+              lotcharge: [],
             });
           })
           .catch((err) => console.log(err));
@@ -1816,7 +1855,11 @@ export default class InputLaboratory extends Component {
               stock_modal_flag: false,
               multiarr: [],
               onlynumarr: [],
-              testarr: [],
+              arrid: [],
+              stock_sample: [],
+              merged: [],
+              certificate: [],
+              lotcharge: [],
             });
           })
           .catch((err) => console.log(err));
@@ -1825,17 +1868,7 @@ export default class InputLaboratory extends Component {
   }
 
   async onRowClicked(item, analysis, key) {
-    var ty = item.sample_type;
-    var vv = this.state.sampleTypesData.map((v) => {
-      if (v.sampleType == ty) {
-        if (v.stockSample == true) {
-          return true;
-        } else {
-          return false;
-        }
-      }
-    });
-    if (vv[vv.length - 1] == true) {
+    if (item.stockinfo == 0 || item.stockinfo == 1) {
       var history_item = [];
       var reason = [];
       await axios
@@ -1876,14 +1909,21 @@ export default class InputLaboratory extends Component {
           this.setState({ unitValue: e.unit });
         }
       });
-
+      let limitValuearr = [];
+      let updatavarr = [];
+      data.map((e) => {
+        limitValuearr.push(e.limitValue);
+        updatavarr.push(e.update_date);
+      });
       this.setState({
+        limitValuearr: limitValuearr,
+        updatavarr: updatavarr,
         madaldata: data,
         heardertitle: data[key].analysis,
         objectName: data[key].label,
         minValue: data[key].min,
         maxValue: data[key].max,
-        limitValue: data[key].limitValue,
+        limitValue: data[data.length - 1].limitValue,
         reasonValue: data[key].reason,
         acceptValue: data[key].accept,
       });
@@ -1974,6 +2014,7 @@ export default class InputLaboratory extends Component {
   multimodalcancel() {
     this.setState({
       multimodal: false,
+      showhistory: false,
     });
   }
 
@@ -2339,7 +2380,10 @@ export default class InputLaboratory extends Component {
               <CCol md="4">
                 <CRow>
                   <CCol md="8">
-                    <CLabel>
+                    <CLabel
+                      htmlFor="objective"
+                      onClick={() => this.onclickMultiLabel()}
+                    >
                       {objectName +
                         " " +
                         unitValue +
@@ -2405,6 +2449,37 @@ export default class InputLaboratory extends Component {
                     ></div>
                   </CCol>
                 </CRow>
+              </CCol>
+            </CRow>
+
+            <CRow style={{ marginTop: "5px" }}>
+              <CCol>
+                {this.state.showhistory === true ? (
+                  <>
+                    <CDataTable
+                      items={this.state.madaldata}
+                      fields={object_fields}
+                      scopedSlots={{
+                        author: (item, index) => {
+                          return <td>{item.userid.userName}</td>;
+                        },
+                        accept: (item, index) => {
+                          return (
+                            <td>
+                              <div
+                                className={
+                                  item.accept === true ? "chk clr-full" : "chk"
+                                }
+                              ></div>
+                            </td>
+                          );
+                        },
+                      }}
+                    />
+                  </>
+                ) : (
+                  <></>
+                )}
               </CCol>
             </CRow>
             <CRow style={{ marginTop: "5px" }}>
@@ -2735,7 +2810,14 @@ export default class InputLaboratory extends Component {
 
     this.setModal_detail(false);
   }
-
+  onclickMultiLabel() {
+    if (this.state.showhistory == false) {
+      this.setState({ showhistory: true });
+    } else {
+      this.setState({ showhistory: false });
+    }
+    console.log(this.state.madaldata);
+  }
   onClickLabel(label, objectives) {
     var history_item = [];
     axios.get(Config.ServerUri + "/get_objective_history").then((res) => {
@@ -3834,17 +3916,7 @@ export default class InputLaboratory extends Component {
                 }
               },
               a_types: (item, index) => {
-                var ty = item.sample_type;
-                var vv = this.state.sampleTypesData.map((v) => {
-                  if (v.sampleType == ty) {
-                    if (v.stockSample == true) {
-                      return true;
-                    } else {
-                      return false;
-                    }
-                  }
-                });
-                if (vv[vv.length - 1] == true) {
+                if (item.stockinfo == 0 || item.stockinfo == 1) {
                   var data = [];
                   var color = "";
                   item.a_types.map((v, k) => {
@@ -4035,17 +4107,7 @@ export default class InputLaboratory extends Component {
                 }
               },
               c_types: (item, index) => {
-                var ty = item.sample_type;
-                var vv = this.state.sampleTypesData.map((v) => {
-                  if (v.sampleType == ty) {
-                    if (v.stockSample == true) {
-                      return true;
-                    } else {
-                      return false;
-                    }
-                  }
-                });
-                if (vv[vv.length - 1] == true) {
+                if (item.stockinfo == 0 || item.stockinfo == 1) {
                   var data = [];
                   var color = "";
                   var color_group = [];
@@ -4166,7 +4228,6 @@ export default class InputLaboratory extends Component {
                   );
                 }
               },
-
               Weight: (item, index) => {
                 if (item.Weight.length === 0) {
                   return (
