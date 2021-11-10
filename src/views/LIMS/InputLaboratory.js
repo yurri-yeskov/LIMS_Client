@@ -164,6 +164,8 @@ export default class InputLaboratory extends Component {
     this.DeleteItem = this.DeleteItem.bind(this);
 
     this.state = {
+      sacnt: 0,
+      sccnt: 0,
       showhistory: false,
       limitValuearr: [],
       updatavarr: [],
@@ -979,6 +981,10 @@ export default class InputLaboratory extends Component {
   }
 
   on_add_material(item) {
+    this.setState({
+      sacnt: item.self_analysis_cnt,
+      sccnt: item.self_certificate_cnt,
+    });
     var ty = item.sample_type;
     var vv = this.state.sampleTypesData.map((v) => {
       if (v.sampleType == ty) {
@@ -1104,7 +1110,6 @@ export default class InputLaboratory extends Component {
 
   createInputLaboratory(event) {
     event.preventDefault();
-
     var client = "";
     if (this.state.double_error !== "") {
       return;
@@ -1154,10 +1159,13 @@ export default class InputLaboratory extends Component {
       pos_id: this.state.pos_id,
       w_target: this.state.w_target,
     };
-
+    let analysiscnt = this.state.a_types.length;
+    let certificatecnt = this.state.c_types.length;
     this.setModal_Create(false);
     axios
       .post(Config.ServerUri + "/create_input_laboratory", {
+        analysiscnt: analysiscnt,
+        certificatecnt: certificatecnt,
         stocksampleinfo: stockok,
         sample_type: this.state.sample_type,
         material: this.state.material,
@@ -1765,10 +1773,12 @@ export default class InputLaboratory extends Component {
           .catch((err) => console.log(err));
 
         let arr = [];
+        // let arrceti = [];
         this.state.allData.map((e) => {
           this.state.multiarr.map((m) => {
             if (e._id == m.id) {
               arr.push(e.a_types);
+              // arrceti.push(e.c_types);
               this.state.certificate.push(e.c_types.toString());
               this.state.lotcharge.push(e.Charge[0].charge);
               this.state.lotupdatedate.push(e.Charge[0].update_date);
@@ -1786,9 +1796,8 @@ export default class InputLaboratory extends Component {
             }
           });
         });
-
         var merged = [].concat.apply([], arr);
-
+        // var mergedceti = [].concat.apply([], arrceti);
         axios
           .post(Config.ServerUri + "/sample_mat", {
             selfid: this.state.selfid,
@@ -1904,6 +1913,7 @@ export default class InputLaboratory extends Component {
           }
         });
       });
+
       this.state.unitData.map((e) => {
         if (data[key].unit == e._id) {
           this.setState({ unitValue: e.unit });
@@ -1923,7 +1933,7 @@ export default class InputLaboratory extends Component {
         objectName: data[key].label,
         minValue: data[key].min,
         maxValue: data[key].max,
-        limitValue: data[data.length - 1].limitValue,
+        limitValue: data[key].limitValue,
         reasonValue: data[key].reason,
         acceptValue: data[key].accept,
       });
@@ -2816,7 +2826,6 @@ export default class InputLaboratory extends Component {
     } else {
       this.setState({ showhistory: false });
     }
-    console.log(this.state.madaldata);
   }
   onClickLabel(label, objectives) {
     var history_item = [];
@@ -4027,7 +4036,9 @@ export default class InputLaboratory extends Component {
                     </td>
                   );
                 } else {
-                  var data = [];
+                  var data = [],
+                    new_atypes = [],
+                    old_atypes = [];
                   var color = "";
                   item.idstore.map((e) => {
                     this.state.objectiveHistory.map((ee) => {
@@ -4036,10 +4047,77 @@ export default class InputLaboratory extends Component {
                       }
                     });
                   });
+                  item.a_types.map((new_a, new_k) => {
+                    if (new_k + 1 > item.self_analysis_cnt) {
+                      new_atypes.push(new_a);
+                    } else {
+                      old_atypes.push(new_a);
+                    }
+                  });
                   return (
                     <td>
                       <div style={{ display: "column" }}>
-                        {item.a_types.map((v, k) => {
+                        {old_atypes &&
+                          old_atypes.map((v, k) => {
+                            if (data.length === 0) {
+                              return (
+                                <div style={{ padding: "5px" }}>
+                                  <CButton
+                                    key={k}
+                                    style={{
+                                      backgroundColor: "grey",
+                                      color: "white",
+                                    }}
+                                    size="sm"
+                                    onClick={() => {
+                                      this.onRowClicked(item, v, k);
+                                    }}
+                                  >
+                                    {v}
+                                  </CButton>
+                                </div>
+                              );
+                            } else {
+                              color = "";
+                              var temp = data[k];
+                              if (temp.analysis === v) {
+                                if (
+                                  temp.limitValue >= temp.min &&
+                                  temp.limitValue <= temp.max
+                                ) {
+                                  color = "#2eb85c";
+                                }
+                                if (
+                                  temp.limitValue < temp.min ||
+                                  temp.limitValue > temp.max
+                                ) {
+                                  color = "#e55353";
+                                }
+                                if (temp.limitValue == "") {
+                                  color = "grey";
+                                }
+                                console.log("color", color);
+                              }
+                              return (
+                                <div style={{ padding: "5px" }}>
+                                  <CButton
+                                    key={k}
+                                    style={{
+                                      backgroundColor: "grey",
+                                      color: "white",
+                                    }}
+                                    size="sm"
+                                    onClick={() => {
+                                      this.onRowClicked(item, v, k);
+                                    }}
+                                  >
+                                    {v}
+                                  </CButton>
+                                </div>
+                              );
+                            }
+                          })}
+                        {new_atypes.map((v, k) => {
                           if (data.length === 0) {
                             return (
                               <div style={{ padding: "5px" }}>
@@ -4111,7 +4189,7 @@ export default class InputLaboratory extends Component {
                   var data = [];
                   var color = "";
                   var color_group = [];
-                  item.a_types.map((v, k) => {
+                  item.c_types.map((v, k) => {
                     data = [];
                     this.state.objectiveHistory.map((temp) => {
                       if (temp.id === item._id) {
@@ -4170,7 +4248,9 @@ export default class InputLaboratory extends Component {
                     );
                   }
                 } else {
-                  var data = [];
+                  var data = [],
+                    new_atypes = [],
+                    old_atypes = [];
                   var color = "";
                   item.idstore.map((e) => {
                     this.state.objectiveHistory.map((ee) => {
@@ -4179,33 +4259,38 @@ export default class InputLaboratory extends Component {
                       }
                     });
                   });
+                  item.c_types.map((new_a, new_k) => {
+                    if (new_k + 1 > item.self_certificate_cnt) {
+                      new_atypes.push(new_a);
+                    } else {
+                      old_atypes.push(new_a);
+                    }
+                  });
+                  // console.log(item.c_types);
                   return (
                     <td>
                       <div style={{ display: "column" }}>
-                        {item.a_types.map((v, k) => {
-                          if (data.length === 0) {
+                        {old_atypes &&
+                          old_atypes.map((v, k) => {
                             return (
                               <div style={{ padding: "5px" }}>
-                                {item.c_types.map((v) => (
-                                  <CButton
-                                    onClick={() =>
-                                      this.certificate_modal_state(item, v)
-                                    }
-                                  >
-                                    {v}
-                                  </CButton>
-                                ))}
+                                <CButton
+                                  onClick={() =>
+                                    this.certificate_modal_state(item, v)
+                                  }
+                                >
+                                  {v}
+                                </CButton>
                               </div>
                             );
-                          }
-                        })}
+                          })}
                       </div>
                       <div style={{ padding: "5px" }}>
-                        {item.c_types.length == 0
+                        {new_atypes.length == 0
                           ? ""
-                          : item.idstore.map((e, ii) => {
-                              if (item.c_types[ii] != undefined) {
-                                return item.c_types[ii]
+                          : new_atypes.reverse().map((e, ii) => {
+                              if (new_atypes[ii] != undefined) {
+                                return new_atypes[ii]
                                   .toString()
                                   .split(",")
                                   .map((v, i) => (
@@ -4215,7 +4300,7 @@ export default class InputLaboratory extends Component {
                                       }
                                     >
                                       {this.state.filteredData.filter(
-                                        (ev) => ev._id == e.toString()
+                                        (ev) => ev._id == item.idstore[ii]
                                       )[0].sample_type +
                                         " - " +
                                         v}
