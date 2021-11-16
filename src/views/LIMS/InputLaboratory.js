@@ -164,8 +164,13 @@ export default class InputLaboratory extends Component {
     this.DeleteItem = this.DeleteItem.bind(this);
 
     this.state = {
-      sacnt: 0,
-      sccnt: 0,
+      setunstockclient: "",
+      setunstockdate: "",
+      setunstockcer: [],
+      setunstockid: "",
+      setunstockclientid: "",
+      stockinfo: 0,
+      objectstockok: "",
       showhistory: false,
       limitValuearr: [],
       updatavarr: [],
@@ -184,9 +189,7 @@ export default class InputLaboratory extends Component {
       testarr: [],
       analysisType: [],
       certificate: [],
-      lotcharge: [],
-      lotupdatedate: [],
-      lotuser: [],
+      lotValue: [],
       realarr: [],
       multiarr: [],
       onlynumarr: [],
@@ -273,6 +276,8 @@ export default class InputLaboratory extends Component {
       addId: "",
       addVal: "",
       preId: "",
+      aTypearr: [],
+      cTypearr: [],
       // analysisType_label: props.language_data.filter(
       //   (item) => item.label === "analysis_type"
       // )[0][props.selected_language],
@@ -805,63 +810,7 @@ export default class InputLaboratory extends Component {
         return;
       } else {
       }
-    } else {
-      var sumVal = 0;
-      var numarr = {
-        id: this.state.stockid,
-        val: stock_data[stock_data.length - 1],
-      };
-
-      this.state.onlynumarr.push(numarr);
-      if (flag == 0) {
-        notification.warning({
-          message: "Error",
-          description: "Please enter your data!",
-          className: "not-css",
-        });
-        return;
-      } else if (
-        stock_data[stock_data.length - 1] > Number(this.state.selfree)
-      ) {
-        notification.warning({
-          message: "Error",
-          description: "Value exceeded!",
-          className: "not-css",
-        });
-        this.state.onlynumarr.splice(this.state.onlynumarr.length - 1);
-        return;
-      } else {
-        this.state.onlynumarr.map((e) => {
-          if (e.id.toString() == this.state.stockid.toString()) {
-            sumVal += Number(e.val);
-          }
-        });
-        if (sumVal > Number(this.state.selfree)) {
-          notification.warning({
-            message: "Error",
-            description: "Value exceeded!",
-            className: "not-css",
-          });
-          this.state.onlynumarr.splice(this.state.onlynumarr.length - 1);
-          return;
-        } else {
-          if (
-            this.state.multiarr.filter(
-              (vv) => vv.id == this.state.stockid.toString()
-            ).length == 0
-          ) {
-            this.state.multiarr.push(numarr);
-          } else {
-            this.state.onlynumarr.map((e) => {
-              if (e.id.toString() == this.state.stockid.toString()) {
-                e.val = Number(numarr.val) + Number(e.val);
-              }
-            });
-          }
-        }
-      }
     }
-
     stock_disable_arr[mat.length - 1] = false;
     stock_disable_arr.push(true);
     var endSelVal = mat[mat.length - 1];
@@ -888,6 +837,7 @@ export default class InputLaboratory extends Component {
     stock_data.splice(item, 1);
     onlynumarr.splice(item, 1);
     each_stock_element.splice(item, 1);
+    console.log(each_stock_element);
     this.setState({
       mat,
       stock_data,
@@ -936,7 +886,6 @@ export default class InputLaboratory extends Component {
     } else {
       this.setState({ display_detail: false });
     }
-
     this.setModal_Create(true);
   }
 
@@ -982,9 +931,12 @@ export default class InputLaboratory extends Component {
 
   on_add_material(item) {
     this.setState({
-      sacnt: item.self_analysis_cnt,
-      sccnt: item.self_certificate_cnt,
+      each_stock_element: [],
+      multiarr: [],
+      aTypearr: item.a_types,
+      cTypearr: item.c_types,
     });
+
     var ty = item.sample_type;
     var vv = this.state.sampleTypesData.map((v) => {
       if (v.sampleType == ty) {
@@ -1052,34 +1004,44 @@ export default class InputLaboratory extends Component {
           this.state.filteredData.map((temp) => {
             if (sample.sampleType === temp.sample_type) {
               if (item.material == temp.material) {
-                if (sample.stockSample === true) {
-                  opt_material.push(
-                    temp.material +
-                      " " +
-                      temp.client +
-                      " " +
-                      temp.Charge[temp.Charge.length - 1].charge +
-                      " " +
-                      temp.material_left +
-                      " " +
-                      temp._id
-                  );
-
-                  if (formatValue == "") {
-                    formatValue.push(temp.material_left);
-                  } else {
-                    return;
-                  }
-                  if (valary == "") {
-                    valary.push(temp._id);
-                    stex =
+                var stateflag = 1;
+                if (temp.Charge.length == 0) {
+                  stateflag = 0;
+                }
+                var flag = true;
+                if (stateflag == 0) {
+                  flag = false;
+                }
+                if (flag == true) {
+                  if (sample.stockSample === true) {
+                    opt_material.push(
                       temp.material +
-                      " " +
-                      temp.client +
-                      " " +
-                      temp.Charge[temp.Charge.length - 1].charge;
-                  } else {
-                    return;
+                        " " +
+                        temp.client +
+                        " " +
+                        temp.Charge[temp.Charge.length - 1].charge +
+                        " " +
+                        temp.material_left +
+                        " " +
+                        temp._id
+                    );
+
+                    if (formatValue == "") {
+                      formatValue.push(temp.material_left);
+                    } else {
+                      return;
+                    }
+                    if (valary == "") {
+                      valary.push(temp._id);
+                      stex =
+                        temp.material +
+                        " " +
+                        temp.client +
+                        " " +
+                        temp.Charge[temp.Charge.length - 1].charge;
+                    } else {
+                      return;
+                    }
                   }
                 }
               }
@@ -1110,6 +1072,18 @@ export default class InputLaboratory extends Component {
 
   createInputLaboratory(event) {
     event.preventDefault();
+    var ty = this.state.sample_type;
+    var vv = this.state.sampleTypesData.map((v) => {
+      if (v.sampleType == ty) {
+        if (v.stockSample == true) {
+          return "0";
+        } else {
+          return "1";
+        }
+      }
+    });
+    var vvState = vv.filter((e) => e != undefined).toString();
+
     var client = "";
     if (this.state.double_error !== "") {
       return;
@@ -1122,7 +1096,6 @@ export default class InputLaboratory extends Component {
     }
     var ty = this.state.sample_type;
     var stocksample = false;
-    var stockok = 0;
     var vv = this.state.sampleTypesData.map((v) => {
       if (v.sampleType == ty) {
         if (v.stockSample == true) {
@@ -1137,6 +1110,7 @@ export default class InputLaboratory extends Component {
         stocksample = true;
       }
     });
+    var stockok = 0;
     if (stocksample == true) {
       stockok = 0;
     } else if (stocksample == false && this.state.a_types.length > 0) {
@@ -1159,14 +1133,10 @@ export default class InputLaboratory extends Component {
       pos_id: this.state.pos_id,
       w_target: this.state.w_target,
     };
-    let analysiscnt = this.state.a_types.length;
-    let certificatecnt = this.state.c_types.length;
     this.setModal_Create(false);
     axios
       .post(Config.ServerUri + "/create_input_laboratory", {
-        analysiscnt: analysiscnt,
-        certificatecnt: certificatecnt,
-        stocksampleinfo: stockok,
+        vvState: vvState,
         sample_type: this.state.sample_type,
         material: this.state.material,
         client: client,
@@ -1351,92 +1321,196 @@ export default class InputLaboratory extends Component {
     });
   }
   getcertificatedata = async (item) => {
-    const { c_rowdata, selectCertificate, rowObj } = this.state;
-    var tabletol = [];
-    item.tablecol.map((vv) => {
-      tabletol.push({
-        key: vv.name,
+    if (this.state.stockinfo == 0) {
+      const { c_rowdata, selectCertificate, rowObj } = this.state;
+      var tabletol = [];
+      item.tablecol.map((vv) => {
+        tabletol.push({
+          key: vv.name,
+        });
       });
-    });
-    var dateformat = "";
-    var pdfdata = {
-      pdfname: item.name,
-      logo: item.logo.path,
-      address: {
-        name: c_rowdata.client,
-        addressB: "",
-        zipcodeB: "",
-        cityB: "",
-        address2B: "",
-        country: "",
-      },
-      place: item.place,
-      c_title: item.certificatetitle,
-      date: c_rowdata.sample_date,
-      certificateName: selectCertificate,
-      productName: item.productdata.productTitle,
-      productData: [],
-      freetext: item.freetext,
-      footer: item.footer.path,
-      history: [],
-    };
-    await axios
-      .post(Config.ServerUri + "/get_certificate_datefotmat", {
-        name: item.name,
-      })
-      .then((res) => {
-        if (res.data) {
-          dateformat = res.data.date_format;
-          pdfdata.date = moment(c_rowdata.sample_date).format(dateformat);
-        }
-      });
+      var dateformat = "";
+      var pdfdata = {
+        pdfname: item.name,
+        logo: item.logo.path,
+        address: {
+          name: c_rowdata.client,
+          addressB: "",
+          zipcodeB: "",
+          cityB: "",
+          address2B: "",
+          country: "",
+        },
+        place: item.place,
+        c_title: item.certificatetitle,
+        date: c_rowdata.sample_date,
+        certificateName: selectCertificate,
+        productName: item.productdata.productTitle,
+        productData: [],
+        freetext: item.freetext,
+        footer: item.footer.path,
+        history: [],
+      };
+      await axios
+        .post(Config.ServerUri + "/get_certificate_datefotmat", {
+          name: item.name,
+        })
+        .then((res) => {
+          if (res.data) {
+            dateformat = res.data.date_format;
+            pdfdata.date = moment(c_rowdata.sample_date).format(dateformat);
+          }
+        });
 
-    await axios
-      .post(Config.ServerUri + "/pdf_getaddressdata", {
-        id: c_rowdata.client_id,
-        dateformat,
-      })
-      .then((res) => {
-        if (res.data) {
-          pdfdata.address.addressB = res.data.addressB;
-          pdfdata.address.zipcodeB = res.data.zipCodeB;
-          pdfdata.address.cityB = res.data.cityB;
-          pdfdata.address.address2B = res.data.address2B;
-          pdfdata.address.country = res.data.countryB;
-        }
-      });
-    await axios
-      .post(Config.ServerUri + "/pdf_getanaldata", {
-        clientid: c_rowdata.client_id,
-        analdata: c_rowdata.a_types,
-        c_rowdata,
-        productdata: item.productdata.productData,
-        rowid: c_rowdata._id,
-        dateformat,
-      })
-      .then((res) => {
-        if (res.data) {
-          pdfdata.productData = res.data;
-        }
-      });
+      await axios
+        .post(Config.ServerUri + "/pdf_getaddressdata", {
+          id: c_rowdata.client_id,
+          dateformat,
+        })
+        .then((res) => {
+          if (res.data) {
+            pdfdata.address.addressB = res.data.addressB;
+            pdfdata.address.zipcodeB = res.data.zipCodeB;
+            pdfdata.address.cityB = res.data.cityB;
+            pdfdata.address.address2B = res.data.address2B;
+            pdfdata.address.country = res.data.countryB;
+          }
+        });
+      await axios
+        .post(Config.ServerUri + "/pdf_getanaldata", {
+          clientid: c_rowdata.client_id,
+          analdata: c_rowdata.a_types,
+          c_rowdata,
+          productdata: item.productdata.productData,
+          rowid: c_rowdata._id,
+          dateformat,
+        })
+        .then((res) => {
+          if (res.data) {
+            pdfdata.productData = res.data;
+          }
+        });
 
-    await axios
-      .post(Config.ServerUri + "/pdf_gethistorydata", {
-        data: item.tablecol,
-        rowid: c_rowdata._id,
-        rowdata: c_rowdata,
-        selectCertificate,
-        rowObj,
-        analdata: c_rowdata.a_types,
-        dateformat,
-      })
-      .then((res) => {
-        if (res.data) {
-          pdfdata.history = res.data;
+      await axios
+        .post(Config.ServerUri + "/pdf_gethistorydata", {
+          data: item.tablecol,
+          rowid: c_rowdata._id,
+          rowdata: c_rowdata,
+          selectCertificate,
+          rowObj,
+          analdata: c_rowdata.a_types,
+          dateformat,
+        })
+        .then((res) => {
+          if (res.data) {
+            pdfdata.history = res.data;
+          }
+        });
+
+      this.setState({
+        pdfdata,
+        pdfcolumns: tabletol,
+        history: pdfdata.history,
+      });
+    } else {
+      const { c_rowdata, selectCertificate, rowObj } = this.state;
+      var tabletol = [];
+      item.tablecol.map((vv) => {
+        tabletol.push({
+          key: vv.name,
+        });
+      });
+      var dateformat = "";
+      var pdfdata = {
+        pdfname: item.name,
+        logo: item.logo.path,
+        address: {
+          name: this.state.setunstockclient,
+          addressB: "",
+          zipcodeB: "",
+          cityB: "",
+          address2B: "",
+          country: "",
+        },
+        place: item.place,
+        c_title: item.certificatetitle,
+        date: this.state.setunstockdate,
+        certificateName: selectCertificate,
+        productName: item.productdata.productTitle,
+        productData: [],
+        freetext: item.freetext,
+        footer: item.footer.path,
+        history: [],
+      };
+      await axios
+        .post(Config.ServerUri + "/get_certificate_datefotmat", {
+          name: item.name,
+        })
+        .then((res) => {
+          if (res.data) {
+            dateformat = res.data.date_format;
+            pdfdata.date = moment(this.state.setunstockdate).format(dateformat);
+          }
+        });
+
+      await axios
+        .post(Config.ServerUri + "/pdf_getaddressdata", {
+          id: this.state.setunstockclientid,
+          dateformat,
+        })
+        .then((res) => {
+          if (res.data) {
+            pdfdata.address.addressB = res.data.addressB;
+            pdfdata.address.zipcodeB = res.data.zipCodeB;
+            pdfdata.address.cityB = res.data.cityB;
+            pdfdata.address.address2B = res.data.address2B;
+            pdfdata.address.country = res.data.countryB;
+          }
+        });
+      await axios
+        .post(Config.ServerUri + "/pdf_getanaldata", {
+          clientid: this.state.setunstockclientid,
+          analdata: this.state.setunstockcer,
+          c_rowdata,
+          productdata: item.productdata.productData,
+          rowid: this.state.setunstockid,
+          dateformat,
+        })
+        .then((res) => {
+          if (res.data) {
+            pdfdata.productData = res.data;
+          }
+        });
+
+      await axios
+        .post(Config.ServerUri + "/pdf_gethistorydata", {
+          data: item.tablecol,
+          rowid: this.state.setunstockid,
+          rowdata: c_rowdata,
+          selectCertificate,
+          rowObj,
+          analdata: this.state.setunstockcer,
+          dateformat,
+        })
+        .then((res) => {
+          if (res.data) {
+            pdfdata.history = res.data;
+          }
+        });
+      var pdfdata_history = [];
+      pdfdata.history.map((e) => {
+        if (Object.keys(e).length !== 0) {
+          pdfdata_history.push(e);
         }
       });
-
-    this.setState({ pdfdata, pdfcolumns: tabletol, history: pdfdata.history });
+      pdfdata.history = pdfdata_history;
+      console.log(pdfdata.history);
+      this.setState({
+        pdfdata,
+        pdfcolumns: tabletol,
+        history: pdfdata_history,
+      });
+    }
   };
   handleSeltectedChangeReason = (e) => {
     this.setState({ [e.target.name]: e.target.value });
@@ -1703,7 +1777,6 @@ export default class InputLaboratory extends Component {
               filteredData: res.data,
               mat: [],
               stock_modal_flag: false,
-              multiarr: [],
             });
           })
           .catch((err) => console.log(err));
@@ -1715,6 +1788,24 @@ export default class InputLaboratory extends Component {
         id: this.state.stockid,
         val: lastval,
       };
+      this.state.each_stock_element.push(lastarr);
+      var newArray = [];
+      var keyValue = {};
+      for (
+        var counter = 0;
+        counter < this.state.each_stock_element.length;
+        counter++
+      ) {
+        var obj = this.state.each_stock_element[counter];
+        if (!keyValue[obj.id]) {
+          keyValue[obj.id] = 0;
+        }
+        keyValue[obj.id] += Number(obj.val);
+      }
+      for (var key in keyValue) {
+        newArray.push({ id: key, val: keyValue[key] });
+      }
+      this.setState({ multiarr: newArray });
       if (flag == 0) {
         notification.warning({
           message: "Error",
@@ -1723,35 +1814,15 @@ export default class InputLaboratory extends Component {
         });
         return;
       } else {
-        if (this.state.multiarr.length == 0) {
-          this.state.multiarr.push(lastarr);
-        } else {
-          this.state.multiarr.map((e) => {
-            if (e.id == this.state.stockid) {
-              e.val = Number(e.val) + Number(lastval);
-            } else {
-              if (
-                this.state.multiarr.filter(
-                  (e) => e.id == this.state.stockid.toString()
-                ).length == 0
-              ) {
-                this.state.multiarr.push(lastarr);
-              }
-            }
-          });
-        }
-        var tSum = 0;
-        this.state.multiarr.map((v) => {
-          tSum += Number(v.val);
+        let weightValue = 0;
+        newArray.map((v) => {
+          weightValue += Number(v.val);
         });
-        let idstore = [];
-        this.state.multiarr.map((e) => {
-          idstore.push(e.id.toString());
-        });
+
+        // ModalValue Operation
         axios
           .post(Config.ServerUri + "/add_multi_mat", {
-            sendarrval: this.state.multiarr,
-            idstore: idstore,
+            modaladdval: newArray,
             selfid: this.state.selfid,
           })
           .then((res) => {
@@ -1759,30 +1830,40 @@ export default class InputLaboratory extends Component {
               allData: res.data,
               filteredData: res.data,
               mat: [],
-              stock_modal_flag: false,
-              multiarr: [],
-              onlynumarr: [],
-              testarr: [],
-              arrid: [],
               stock_sample: [],
-              merged: [],
-              certificate: [],
-              lotcharge: [],
+              lotValue: [],
+              stock_modal_flag: false,
             });
           })
           .catch((err) => console.log(err));
 
-        let arr = [];
-        // let arrceti = [];
+        let analysisArr = [];
+        let certificateArr = [];
         this.state.allData.map((e) => {
-          this.state.multiarr.map((m) => {
+          newArray.map((m) => {
             if (e._id == m.id) {
-              arr.push(e.a_types);
-              // arrceti.push(e.c_types);
-              this.state.certificate.push(e.c_types.toString());
-              this.state.lotcharge.push(e.Charge[0].charge);
-              this.state.lotupdatedate.push(e.Charge[0].update_date);
-              this.state.lotuser.push(e.Charge[0].user._id);
+              console.log(123, e.a_types);
+              e.a_types.map((ea) => {
+                analysisArr.push(
+                  ea + "-" + e._id + "-" + e.client_id + "-" + e.sample_type
+                );
+              });
+              e.c_types.map((ec) => {
+                certificateArr.push(
+                  ec +
+                    "-" +
+                    e._id +
+                    "-" +
+                    e.client_id +
+                    "-" +
+                    e.sample_type +
+                    "-" +
+                    e.client +
+                    "-/" +
+                    e.sample_date
+                );
+              });
+              this.state.lotValue.push(e.Charge[0]);
               this.state.stock_sample.push(
                 e.sample_type +
                   " " +
@@ -1792,83 +1873,118 @@ export default class InputLaboratory extends Component {
                   " " +
                   e.Charge[0].charge
               );
-              this.state.arrid.push(e._id);
             }
           });
         });
-        var merged = [].concat.apply([], arr);
-        // var mergedceti = [].concat.apply([], arrceti);
+        var analysisMerged1 = [].concat.apply([], analysisArr);
+        var certificateMerged1 = [].concat.apply([], certificateArr);
+
+        let selfaTypearr = [];
+        if (this.state.aTypearr.length != 0) {
+          this.state.aTypearr.map((aty) => {
+            if (aty.toString().split("-").length == 1) {
+              selfaTypearr.push(aty);
+            }
+          });
+        }
+        let selfcTypearr = [];
+        if (this.state.cTypearr.length != 0) {
+          this.state.cTypearr.map((cty) => {
+            if (cty.toString().split("-").length == 1) {
+              selfcTypearr.push(cty);
+            }
+          });
+        }
+
+        var analysisMerged = selfaTypearr.concat(analysisMerged1);
+        var certificateMerged = selfcTypearr.concat(certificateMerged1);
+
+        // Analysis Operation
         axios
-          .post(Config.ServerUri + "/sample_mat", {
+          .post(Config.ServerUri + "/analysis_mat", {
             selfid: this.state.selfid,
-            stockid: this.state.stockid,
-            onlyselfid: this.state.onlyselfid,
-            arrid: this.state.arrid,
-            sampleinfo: this.state.stock_sample,
-            analysisType: merged,
-            certificate: this.state.certificate,
+            analysisMerged: analysisMerged,
           })
           .then((res) => {
             this.setState({
               allData: res.data,
               filteredData: res.data,
               mat: [],
-              stock_modal_flag: false,
-              multiarr: [],
-              onlynumarr: [],
-              testarr: [],
-              a_types: this.state.analysisType,
-              arrid: [],
               stock_sample: [],
-              merged: [],
-              certificate: [],
-              lotcharge: [],
+              lotValue: [],
+              stock_modal_flag: false,
             });
           })
           .catch((err) => console.log(err));
 
+        // Certificate Operation
+        axios
+          .post(Config.ServerUri + "/certificate_mat", {
+            selfid: this.state.selfid,
+            certificateMerged: certificateMerged,
+          })
+          .then((res) => {
+            this.setState({
+              allData: res.data,
+              filteredData: res.data,
+              mat: [],
+              stock_sample: [],
+              lotValue: [],
+              stock_modal_flag: false,
+            });
+          })
+          .catch((err) => console.log(err));
+
+        // Weight Operation
         axios
           .post(Config.ServerUri + "/weight_mat", {
             selfid: this.state.selfid,
-            tSum: tSum,
-            lotuser: this.state.lotuser,
+            weight_value: weightValue,
           })
           .then((res) => {
             this.setState({
               allData: res.data,
               filteredData: res.data,
               mat: [],
-              stock_modal_flag: false,
-              multiarr: [],
-              onlynumarr: [],
-              testarr: [],
-              arrid: [],
               stock_sample: [],
-              merged: [],
-              certificate: [],
-              lotcharge: [],
+              lotValue: [],
+              stock_modal_flag: false,
             });
           })
           .catch((err) => console.log(err));
 
+        // Lot Number Operation
         axios
           .post(Config.ServerUri + "/lot_mat", {
             selfid: this.state.selfid,
-            lotcharge: this.state.lotcharge,
+            lotValue: this.state.lotValue,
           })
           .then((res) => {
             this.setState({
               allData: res.data,
               filteredData: res.data,
               mat: [],
-              stock_modal_flag: false,
-              multiarr: [],
-              onlynumarr: [],
-              arrid: [],
               stock_sample: [],
-              merged: [],
-              certificate: [],
-              lotcharge: [],
+              lotValue: [],
+              stock_modal_flag: false,
+            });
+          })
+          .catch((err) => console.log(err));
+
+        // Stock Sample Operation
+        axios
+          .post(Config.ServerUri + "/stocksample_mat", {
+            selfid: this.state.selfid,
+            sampleinfo: this.state.stock_sample,
+          })
+          .then((res) => {
+            this.setState({
+              allData: res.data,
+              filteredData: res.data,
+              mat: [],
+              stock_sample: [],
+              lotValue: [],
+              stock_modal_flag: false,
             });
           })
           .catch((err) => console.log(err));
@@ -1877,9 +1993,15 @@ export default class InputLaboratory extends Component {
   }
 
   async onRowClicked(item, analysis, key) {
-    if (item.stockinfo == 0 || item.stockinfo == 1) {
-      var history_item = [];
-      var reason = [];
+    var history_item = [];
+    var reason = [];
+
+    if (item.stockinfo == 0) {
+      if (analysis.toString().split("-").length == 1) {
+        this.setState({ objectstockok: "other" });
+      } else {
+        this.setState({ objectstockok: "self" });
+      }
       await axios
         .get(Config.ServerUri + "/get_objective_history")
         .then((res) => {
@@ -1890,7 +2012,6 @@ export default class InputLaboratory extends Component {
             }
           });
         });
-
       await axios.get(Config.ServerUri + "/get_all_reason").then((res) => {
         reason = res.data;
       });
@@ -1905,39 +2026,58 @@ export default class InputLaboratory extends Component {
       });
       this.setModal_detail(true);
     } else {
-      var data = [];
-      item.idstore.map((e) => {
-        this.state.objectiveHistory.map((ee) => {
-          if (e == ee.id) {
-            data.push(ee);
+      if (analysis.toString().split("-").length == 1) {
+        this.setState({ objectstockok: "self" });
+      } else {
+        this.setState({ objectstockok: "other" });
+      }
+      var unstockid = analysis.toString().split("-")[1];
+      var unclientid = analysis.toString().split("-")[2];
+
+      if (unstockid == undefined) {
+        unstockid = item._id;
+      }
+      if (unclientid == undefined) {
+        unclientid = item.client_id;
+      }
+      let unstockana = [];
+      if (analysis.toString().split("-").length == 1) {
+        unstockana = item.a_types.filter(
+          (e) => e.toString().split("-").length == 1
+        );
+      } else {
+        unstockana = item.a_types.map((le) => {
+          if (le.toString().split("-").length != 1) {
+            return le.toString().split("-")[0];
           }
         });
-      });
-
-      this.state.unitData.map((e) => {
-        if (data[key].unit == e._id) {
-          this.setState({ unitValue: e.unit });
-        }
-      });
-      let limitValuearr = [];
-      let updatavarr = [];
-      data.map((e) => {
-        limitValuearr.push(e.limitValue);
-        updatavarr.push(e.update_date);
+      }
+      await axios
+        .get(Config.ServerUri + "/get_objective_history")
+        .then((res) => {
+          res.data.objectivehistory.map((temp) => {
+            if (
+              analysis.toString().split("-")[0] === temp.analysis &&
+              unstockid === temp.id
+            ) {
+              this.onChangeValue(temp);
+              history_item.push(temp);
+            }
+          });
+        });
+      await axios.get(Config.ServerUri + "/get_all_reason").then((res) => {
+        reason = res.data;
       });
       this.setState({
-        limitValuearr: limitValuearr,
-        updatavarr: updatavarr,
-        madaldata: data,
-        heardertitle: data[key].analysis,
-        objectName: data[key].label,
-        minValue: data[key].min,
-        maxValue: data[key].max,
-        limitValue: data[key].limitValue,
-        reasonValue: data[key].reason,
-        acceptValue: data[key].accept,
+        laboratory: unstockid,
+        a_types: unstockana,
+        material: item.material,
+        anaylsis_button: analysis.toString().split("-")[0],
+        history_item: history_item,
+        client_id: unclientid,
+        reason: reason,
       });
-      this.multimodal(true);
+      this.setModal_detail(true);
     }
   }
 
@@ -2037,54 +2177,144 @@ export default class InputLaboratory extends Component {
   }
 
   certificate_modal_state = (data, v) => {
+    this.setState({ stockinfo: data.stockinfo });
     var objectives = [];
-    this.state.analysisData.map((item) => {
-      data.a_types.map((temp) => {
-        if (item.analysisType === temp) {
-          item.objectives.map((item0) => {
-            this.state.objectives.map((temp0) => {
-              temp0.units.map((ind) => {
-                if (item0.id === temp0._id && item0.unit === ind) {
-                  this.state.materialsData.map((mat) => {
-                    if (mat.material === data.material) {
-                      mat.aTypesValues.map((obj) => {
-                        if (
-                          obj.label === temp &&
-                          obj.obj === temp0._id + "-" + ind &&
-                          obj.client === data.client_id
-                        ) {
-                          objectives.push({
-                            label: temp0.objective,
-                            value: temp0._id,
-                            min: obj.min,
-                            max: obj.max,
-                            id: data._id,
-                            analysis: obj.label,
-                            certificate: v,
-                            unit: this.getUnitName(item0.unit),
-                            unit_id: item0.unit,
-                            material: mat._id,
-                            client: data.client_id,
-                          });
-                        }
-                      });
-                    }
-                  });
-                }
+    if (data.stockinfo == 0) {
+      this.state.analysisData.map((item) => {
+        data.a_types.map((temp) => {
+          if (item.analysisType === temp) {
+            item.objectives.map((item0) => {
+              this.state.objectives.map((temp0) => {
+                temp0.units.map((ind) => {
+                  if (item0.id === temp0._id && item0.unit === ind) {
+                    this.state.materialsData.map((mat) => {
+                      if (mat.material === data.material) {
+                        mat.aTypesValues.map((obj) => {
+                          if (
+                            obj.label === temp &&
+                            obj.obj === temp0._id + "-" + ind &&
+                            obj.client === data.client_id
+                          ) {
+                            objectives.push({
+                              label: temp0.objective,
+                              value: temp0._id,
+                              min: obj.min,
+                              max: obj.max,
+                              id: data._id,
+                              analysis: obj.label,
+                              certificate: v,
+                              unit: this.getUnitName(item0.unit),
+                              unit_id: item0.unit,
+                              material: mat._id,
+                              client: data.client_id,
+                            });
+                          }
+                        });
+                      }
+                    });
+                  }
+                });
               });
             });
-          });
-        }
+          }
+        });
       });
-    });
+      this.setState({
+        pdfdata: {},
+        certificateVisible: true,
+        c_rowdata: data,
+        selectCertificate: v,
+        rowObj: objectives,
+      });
+    } else {
+      let unstockcer = [];
+      if (v.toString().split("-").length == 1) {
+        unstockcer = data.a_types.filter(
+          (e) => e.toString().split("-").length == 1
+        );
+      } else {
+        unstockcer = data.a_types.map((le) => {
+          if (le.toString().split("-").length != 1) {
+            return le.toString().split("-")[0];
+          }
+        });
+      }
+      unstockcer = unstockcer.filter((re) => re != undefined);
+      let unstockid = v.toString().split("-")[1];
+      if (unstockid == undefined) {
+        unstockid = data._id;
+      }
+      let unstockcliendid = v.toString().split("-")[2];
+      if (unstockcliendid == undefined) {
+        unstockcliendid = data.client_id;
+      }
+      let unstockclient = v.toString().split("-")[4];
+      if (unstockclient == undefined) {
+        unstockclient = data.client;
+      }
+      let unstockdate = v.toString().split("/")[1];
+      if (unstockdate == undefined) {
+        unstockdate = data.sample_date;
+      }
 
-    this.setState({
-      pdfdata: {},
-      certificateVisible: true,
-      c_rowdata: data,
-      selectCertificate: v,
-      rowObj: objectives,
-    });
+      this.setState({
+        setunstockclient: unstockclient,
+        setunstockdate: unstockdate,
+        setunstockcer: unstockcer,
+        setunstockid: unstockid,
+        setunstockclientid: unstockcliendid,
+      });
+
+      if (v.toString().split("-").length != 1) {
+        v = v.toString().split("-")[0];
+      }
+      this.state.analysisData.map((item) => {
+        unstockcer.map((temp) => {
+          if (item.analysisType === temp) {
+            item.objectives.map((item0) => {
+              this.state.objectives.map((temp0) => {
+                temp0.units.map((ind) => {
+                  if (item0.id === temp0._id && item0.unit === ind) {
+                    this.state.materialsData.map((mat) => {
+                      if (mat.material === data.material) {
+                        mat.aTypesValues.map((obj) => {
+                          if (
+                            obj.label === temp &&
+                            obj.obj === temp0._id + "-" + ind &&
+                            obj.client === unstockcliendid
+                          ) {
+                            objectives.push({
+                              label: temp0.objective,
+                              value: temp0._id,
+                              min: obj.min,
+                              max: obj.max,
+                              id: unstockid,
+                              analysis: obj.label,
+                              certificate: v,
+                              unit: this.getUnitName(item0.unit),
+                              unit_id: item0.unit,
+                              material: mat._id,
+                              client: unstockcliendid,
+                            });
+                          }
+                        });
+                      }
+                    });
+                  }
+                });
+              });
+            });
+          }
+        });
+      });
+      this.setState({
+        pdfdata: {},
+        certificateVisible: true,
+        c_rowdata: data,
+        selectCertificate: v,
+        rowObj: objectives,
+      });
+    }
   };
   certificate_Modal_cancel = () => {
     this.setState({ certificateVisible: false });
@@ -2224,6 +2454,7 @@ export default class InputLaboratory extends Component {
                       style={{ marginBottom: "10px" }}
                       value={v}
                       onChange={(e) => this.onChangeStock(e, item)}
+                      type="number"
                     />
                   ))}
                 </div>
@@ -2361,171 +2592,31 @@ export default class InputLaboratory extends Component {
         }
       });
     });
+    var mediumobjectarr = [];
     objectives.map((item) => {
       if (item.analysis === this.state.anaylsis_button) {
-        _objectives.push(item);
+        mediumobjectarr.push(item);
       }
     });
 
+    var _objectives = mediumobjectarr.reduce((unique, o) => {
+      if (
+        !unique.some(
+          (obj) =>
+            obj.label === o.label &&
+            obj.value === o.value &&
+            obj.min === o.min &&
+            obj.max === o.max &&
+            obj.unit === o.unit
+        )
+      ) {
+        unique.push(o);
+      }
+      return unique;
+    }, []);
+
     this.state._objectives = _objectives;
     return this.renderDetailModalCreate(_objectives);
-  }
-
-  renderDetailMultiModalData() {
-    const {
-      unitValue,
-      heardertitle,
-      objectName,
-      minValue,
-      maxValue,
-      limitValue,
-      reasonValue,
-      acceptValue,
-    } = this.state;
-    return (
-      <>
-        <CCard>
-          <CCardBody>
-            <CRow>
-              <CCol md="4">
-                <CRow>
-                  <CCol md="8">
-                    <CLabel
-                      htmlFor="objective"
-                      onClick={() => this.onclickMultiLabel()}
-                    >
-                      {objectName +
-                        " " +
-                        unitValue +
-                        " " +
-                        `[${minValue}, ${maxValue}]`}
-                    </CLabel>
-                  </CCol>
-                  <CCol md="4">
-                    <Input
-                      type="text"
-                      value={limitValue}
-                      style={{
-                        color:
-                          minValue <= limitValue && limitValue <= maxValue
-                            ? "#2eb85c"
-                            : "#e55353",
-                      }}
-                      className="form-control-sm"
-                      required={true}
-                    />
-                  </CCol>
-                </CRow>
-              </CCol>
-              <CCol md="4">
-                <CRow>
-                  <CCol md="3">
-                    <CLabel>Reason</CLabel>
-                  </CCol>
-                  <CCol md="9">
-                    <CSelect>
-                      <option key="default" value="" disabled>
-                        Select reason [from Admin/reasons]
-                      </option>
-                      <option value={reasonValue}>{reasonValue}</option>
-                    </CSelect>
-                  </CCol>
-                </CRow>
-              </CCol>
-              <CCol md="4">
-                <CRow>
-                  <CCol md="7">
-                    <CLabel
-                      style={{
-                        display: acceptValue === false ? "block" : "none",
-                      }}
-                    >
-                      Accept value anyway
-                    </CLabel>
-                  </CCol>
-                  <CCol md="2">
-                    <div
-                      style={{
-                        width: "15px",
-                        height: "15px",
-                        border: "1px solid black",
-                      }}
-                      className={acceptValue ? "chk clr-full" : "chk"}
-                      onClick={() => {
-                        this.setState({
-                          acceptValue: acceptValue == true ? false : true,
-                        });
-                      }}
-                    ></div>
-                  </CCol>
-                </CRow>
-              </CCol>
-            </CRow>
-
-            <CRow style={{ marginTop: "5px" }}>
-              <CCol>
-                {this.state.showhistory === true ? (
-                  <>
-                    <CDataTable
-                      items={this.state.madaldata}
-                      fields={object_fields}
-                      scopedSlots={{
-                        author: (item, index) => {
-                          return <td>{item.userid.userName}</td>;
-                        },
-                        accept: (item, index) => {
-                          return (
-                            <td>
-                              <div
-                                className={
-                                  item.accept === true ? "chk clr-full" : "chk"
-                                }
-                              ></div>
-                            </td>
-                          );
-                        },
-                      }}
-                    />
-                  </>
-                ) : (
-                  <></>
-                )}
-              </CCol>
-            </CRow>
-            <CRow style={{ marginTop: "5px" }}>
-              <CCol>
-                <CForm>
-                  <CFormGroup>
-                    <CRow style={{ marginTop: "5px" }}>
-                      <CCol md="2">
-                        <CLabel>Comment</CLabel>
-                      </CCol>
-                      <CCol md="10">
-                        <CTextarea
-                          name="comment"
-                          value={this.state.comment}
-                          onChange={(e) => this.onChangeComment(e)}
-                        ></CTextarea>
-                      </CCol>
-                    </CRow>
-                  </CFormGroup>
-                </CForm>
-              </CCol>
-            </CRow>
-            <div className="float-right">
-              <CButton color="info">OK</CButton>
-              <span style={{ padding: "4px" }} />
-              <CButton
-                onClick={() => this.multimodalcancel()}
-                color="secondary"
-              >
-                Cancel
-              </CButton>
-            </div>
-          </CCardBody>
-        </CCard>
-      </>
-    );
   }
 
   renderClientDetailData() {
@@ -2973,6 +3064,7 @@ export default class InputLaboratory extends Component {
         data: data,
         comment: this.state.comment,
         token: token,
+        objectstock: this.state.objectstockok,
       })
       .then((res) => {
         res.data.map((item) => {
@@ -3925,7 +4017,7 @@ export default class InputLaboratory extends Component {
                 }
               },
               a_types: (item, index) => {
-                if (item.stockinfo == 0 || item.stockinfo == 1) {
+                if (item.stockinfo == 0) {
                   var data = [];
                   var color = "";
                   item.a_types.map((v, k) => {
@@ -4012,7 +4104,6 @@ export default class InputLaboratory extends Component {
                             if (color == "") {
                               color = "grey";
                             }
-
                             return (
                               <div style={{ padding: "5px" }}>
                                 <CButton
@@ -4036,89 +4127,27 @@ export default class InputLaboratory extends Component {
                     </td>
                   );
                 } else {
-                  var data = [],
-                    new_atypes = [],
-                    old_atypes = [];
+                  var data = [];
                   var color = "";
-                  item.idstore.map((e) => {
-                    this.state.objectiveHistory.map((ee) => {
-                      if (e == ee.id) {
-                        data.push(ee);
-                      }
+                  item.a_types.map((v, k) => {
+                    this.state.objectiveHistory.map((temp) => {
+                      data.push(temp);
                     });
-                  });
-                  item.a_types.map((new_a, new_k) => {
-                    if (new_k + 1 > item.self_analysis_cnt) {
-                      new_atypes.push(new_a);
-                    } else {
-                      old_atypes.push(new_a);
-                    }
                   });
                   return (
                     <td>
                       <div style={{ display: "column" }}>
-                        {old_atypes &&
-                          old_atypes.map((v, k) => {
-                            if (data.length === 0) {
-                              return (
-                                <div style={{ padding: "5px" }}>
-                                  <CButton
-                                    key={k}
-                                    style={{
-                                      backgroundColor: "grey",
-                                      color: "white",
-                                    }}
-                                    size="sm"
-                                    onClick={() => {
-                                      this.onRowClicked(item, v, k);
-                                    }}
-                                  >
-                                    {v}
-                                  </CButton>
-                                </div>
-                              );
-                            } else {
-                              color = "";
-                              var temp = data[k];
-                              if (temp.analysis === v) {
-                                if (
-                                  temp.limitValue >= temp.min &&
-                                  temp.limitValue <= temp.max
-                                ) {
-                                  color = "#2eb85c";
-                                }
-                                if (
-                                  temp.limitValue < temp.min ||
-                                  temp.limitValue > temp.max
-                                ) {
-                                  color = "#e55353";
-                                }
-                                if (temp.limitValue == "") {
-                                  color = "grey";
-                                }
-                                console.log("color", color);
-                              }
-                              return (
-                                <div style={{ padding: "5px" }}>
-                                  <CButton
-                                    key={k}
-                                    style={{
-                                      backgroundColor: "grey",
-                                      color: "white",
-                                    }}
-                                    size="sm"
-                                    onClick={() => {
-                                      this.onRowClicked(item, v, k);
-                                    }}
-                                  >
-                                    {v}
-                                  </CButton>
-                                </div>
-                              );
-                            }
-                          })}
-                        {new_atypes.map((v, k) => {
+                        {item.a_types.map((v, k) => {
                           if (data.length === 0) {
+                            var analysis_name = "";
+                            if (v.toString().split("-").length == 1) {
+                              analysis_name = v;
+                            } else {
+                              analysis_name =
+                                v.toString().split("-")[3] +
+                                "-" +
+                                v.toString().split("-")[0];
+                            }
                             return (
                               <div style={{ padding: "5px" }}>
                                 <CButton
@@ -4129,32 +4158,123 @@ export default class InputLaboratory extends Component {
                                   }}
                                   size="sm"
                                   onClick={() => {
-                                    this.onRowClicked(item, v, k);
+                                    this.onRowClicked(item, v);
                                   }}
                                 >
-                                  {v}
+                                  {analysis_name}
                                 </CButton>
                               </div>
                             );
                           } else {
-                            color = "";
-                            var temp = data[k];
-                            if (temp.analysis === v) {
-                              if (
-                                temp.limitValue >= temp.min &&
-                                temp.limitValue <= temp.max
-                              ) {
-                                color = "#2eb85c";
+                            var analysis_history = [];
+                            var color_group = [];
+                            if (v.toString().split("-").length == 1) {
+                              for (var i = data.length - 1; i >= 0; i--) {
+                                if (
+                                  !analysis_history.some(
+                                    (val) =>
+                                      `${val.label} + ${val.analysis} + ${val.obj_value}+ ${val.stockok}` ===
+                                      `${data[i].label} + ${data[i].analysis} + ${data[i].obj_value}+ ${data[i].stockok}`
+                                  )
+                                ) {
+                                  analysis_history.push(data[i]);
+                                }
                               }
-                              if (
-                                temp.limitValue < temp.min ||
-                                temp.limitValue > temp.max
-                              ) {
+                            } else {
+                              for (var i = data.length - 1; i >= 0; i--) {
+                                if (
+                                  !analysis_history.some(
+                                    (val) =>
+                                      `${val.label} + ${val.analysis} + ${val.obj_value}+ ${val.stockok}` ===
+                                      `${data[i].label} + ${data[i].analysis} + ${data[i].obj_value}`
+                                  )
+                                ) {
+                                  analysis_history.push(data[i]);
+                                }
+                              }
+                            }
+                            color = "";
+                            if (v.toString().split("-").length == 1) {
+                              analysis_history.map((temp, index) => {
+                                if (temp.stockok == "self") {
+                                  if (temp.id == item._id) {
+                                    if (temp.analysis === v) {
+                                      if (
+                                        temp.limitValue >= temp.min &&
+                                        temp.limitValue <= temp.max
+                                      ) {
+                                        if (color === "#e55353") {
+                                          color = "#e55353";
+                                        } else {
+                                          color = "#2eb85c";
+                                        }
+                                        color_group.push(color);
+                                      } else {
+                                        if (temp.accept === true) {
+                                          color = "#2eb85c";
+                                        } else {
+                                          color = "#e55353";
+                                        }
+                                        color_group.push(color);
+                                      }
+                                    }
+                                  }
+                                }
+                              });
+                            } else {
+                              analysis_history.map((temp, index) => {
+                                if (temp.stockok == "other") {
+                                  if (
+                                    temp.analysis === v.toString().split("-")[0]
+                                  ) {
+                                    if (temp.id == v.toString().split("-")[1]) {
+                                      if (
+                                        temp.limitValue >= temp.min &&
+                                        temp.limitValue <= temp.max
+                                      ) {
+                                        if (color === "#e55353") {
+                                          color = "#e55353";
+                                        } else {
+                                          color = "#2eb85c";
+                                        }
+                                        color_group.push(color);
+                                      } else {
+                                        if (temp.accept === true) {
+                                          color = "#2eb85c";
+                                        } else {
+                                          color = "#e55353";
+                                        }
+                                        color_group.push(color);
+                                      }
+                                    }
+                                  }
+                                }
+                              });
+                            }
+
+                            if (color_group.length !== 0) {
+                              var a = color_group.filter(
+                                (temp) => temp === "#e55353"
+                              );
+
+                              if (a.length === 0) {
+                                color = "#2eb85c";
+                              } else {
                                 color = "#e55353";
                               }
-                              if (temp.limitValue == "") {
-                                color = "grey";
-                              }
+                            }
+
+                            if (color == "") {
+                              color = "grey";
+                            }
+                            var analysis_name = "";
+                            if (v.toString().split("-").length == 1) {
+                              analysis_name = v;
+                            } else {
+                              analysis_name =
+                                v.toString().split("-")[3] +
+                                "-" +
+                                v.toString().split("-")[0];
                             }
                             return (
                               <div style={{ padding: "5px" }}>
@@ -4166,14 +4286,10 @@ export default class InputLaboratory extends Component {
                                   }}
                                   size="sm"
                                   onClick={() => {
-                                    this.onRowClicked(item, v, k);
+                                    this.onRowClicked(item, v);
                                   }}
                                 >
-                                  {this.state.filteredData.filter(
-                                    (e) => temp.id == e._id
-                                  )[0].sample_type +
-                                    "-" +
-                                    v}
+                                  {analysis_name}
                                 </CButton>
                               </div>
                             );
@@ -4185,129 +4301,52 @@ export default class InputLaboratory extends Component {
                 }
               },
               c_types: (item, index) => {
-                if (item.stockinfo == 0 || item.stockinfo == 1) {
-                  var data = [];
-                  var color = "";
-                  var color_group = [];
-                  item.c_types.map((v, k) => {
-                    data = [];
-                    this.state.objectiveHistory.map((temp) => {
-                      if (temp.id === item._id) {
-                        data.push(temp);
-                      }
-                    });
-                  });
-                  data.map((temp) => {
-                    color = "";
-                    if (
-                      temp.limitValue >= temp.min &&
-                      temp.limitValue <= temp.max
-                    ) {
-                      if (color === "#e55353") {
-                        color = "#e55353";
-                      } else {
-                        color = "#2eb85c";
-                      }
-                      color_group.push(color);
-                    } else {
-                      if (temp.accept === true) {
-                        color = "#2eb85c";
-                      } else {
-                        color = "#e55353";
-                      }
-                    }
-                  });
-
-                  if (color == "") {
-                    color = "#e55353";
-                  }
-                  if (item.client == "") {
-                    color = "#e55353";
-                  }
-                  if (color == "#e55353") {
-                    return (
-                      <td>
-                        {item.c_types.map((v) => (
-                          <CButton>{v}</CButton>
-                        ))}
-                      </td>
-                    );
-                  } else {
-                    return (
-                      <td>
-                        {item.c_types.map((v) => (
-                          <CButton
-                            onClick={() =>
-                              this.certificate_modal_state(item, v)
-                            }
-                          >
-                            {v}
-                          </CButton>
-                        ))}
-                      </td>
-                    );
-                  }
-                } else {
-                  var data = [],
-                    new_atypes = [],
-                    old_atypes = [];
-                  var color = "";
-                  item.idstore.map((e) => {
-                    this.state.objectiveHistory.map((ee) => {
-                      if (e == ee.id) {
-                        data.push(ee);
-                      }
-                    });
-                  });
-                  item.c_types.map((new_a, new_k) => {
-                    if (new_k + 1 > item.self_certificate_cnt) {
-                      new_atypes.push(new_a);
-                    } else {
-                      old_atypes.push(new_a);
-                    }
-                  });
-                  // console.log(item.c_types);
+                if (item.stockinfo == 0) {
                   return (
                     <td>
                       <div style={{ display: "column" }}>
-                        {old_atypes &&
-                          old_atypes.map((v, k) => {
-                            return (
-                              <div style={{ padding: "5px" }}>
-                                <CButton
-                                  onClick={() =>
-                                    this.certificate_modal_state(item, v)
-                                  }
-                                >
-                                  {v}
-                                </CButton>
-                              </div>
-                            );
-                          })}
+                        {item.c_types.map((v, k) => {
+                          return (
+                            <div style={{ padding: "5px" }}>
+                              <CButton
+                                onClick={() =>
+                                  this.certificate_modal_state(item, v)
+                                }
+                              >
+                                {v}
+                              </CButton>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div style={{ padding: "5px" }}>
-                        {new_atypes.length == 0
-                          ? ""
-                          : new_atypes.reverse().map((e, ii) => {
-                              if (new_atypes[ii] != undefined) {
-                                return new_atypes[ii]
-                                  .toString()
-                                  .split(",")
-                                  .map((v, i) => (
-                                    <CButton
-                                      onClick={() =>
-                                        this.certificate_modal_state(item, v)
-                                      }
-                                    >
-                                      {this.state.filteredData.filter(
-                                        (ev) => ev._id == item.idstore[ii]
-                                      )[0].sample_type +
-                                        " - " +
-                                        v}
-                                    </CButton>
-                                  ));
-                              }
-                            })}
+                    </td>
+                  );
+                } else {
+                  return (
+                    <td>
+                      <div style={{ display: "column" }}>
+                        {item.c_types.map((v, k) => {
+                          var certificate_name = "";
+                          if (v.toString().split("-").length == 1) {
+                            certificate_name = v;
+                          } else {
+                            certificate_name =
+                              v.toString().split("-")[3] +
+                              "-" +
+                              v.toString().split("-")[0];
+                          }
+                          return (
+                            <div style={{ padding: "5px" }}>
+                              <CButton
+                                onClick={() =>
+                                  this.certificate_modal_state(item, v)
+                                }
+                              >
+                                {certificate_name}
+                              </CButton>
+                            </div>
+                          );
+                        })}
                       </div>
                     </td>
                   );
@@ -4437,21 +4476,6 @@ export default class InputLaboratory extends Component {
             <CModalTitle>{this.state.anaylsis_button}</CModalTitle>
           </CModalHeader>
           <CModalBody>{this.renderDetailModalData()}</CModalBody>
-        </CModal>
-
-        {/* Multi Modal */}
-        <CModal
-          className="anaylsis_types_multi_modal"
-          show={this.state.multimodal}
-          onClose={() => this.AnalysisTypeChange()}
-          style={{ width: "60vw" }}
-          size="lg"
-          centered
-        >
-          <CModalHeader>
-            <CModalTitle>{this.state.heardertitle}</CModalTitle>
-          </CModalHeader>
-          <CModalBody>{this.renderDetailMultiModalData()}</CModalBody>
         </CModal>
 
         <CModal
