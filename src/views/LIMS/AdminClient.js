@@ -16,7 +16,6 @@ import {
   CValidFeedback,
   CInvalidFeedback,
 } from "@coreui/react";
-import { connect } from 'react-redux';
 import { CSVLink } from "react-csv";
 import ReactFileReader from 'react-file-reader';
 import { toast } from "react-hot-toast";
@@ -111,7 +110,7 @@ export default class AdminClient extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
         export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
@@ -534,18 +533,12 @@ export default class AdminClient extends Component {
   getAllClients() {
     axios.get(Config.ServerUri + '/get_all_clients')
       .then((res) => {
-        var client_list = [];
-        res.data.map((client) => {
-          client_list.push({ 'name': client.name, 'clientId': client.clientId, 'other': client.other, 'countryL': client.countryL, 'zipCodeL': client.zipCodeL, 'cityL': client.cityL, 'addressL': client.addressL, 'address2L': client.address2L, 'countryB': client.countryB, 'zipCodeB': client.zipCodeB, 'cityB': client.cityB, 'addressB': client.addressB, 'address2B': client.address2B, 'email': client.email, 'email2': client.email2, 'email3': client.email3, 'remark1': client.remark1, 'remark2': client.remark2 })
-        })
         this.setState({
-          export_all_data: client_list,
+          export_all_data: res.data,
           clientsData: res.data
         });
       })
-      .catch((error) => {
-
-      })
+      .catch((error) => {})
   }
 
   on_delete_clicked(id) {
@@ -558,7 +551,7 @@ export default class AdminClient extends Component {
     this.setState({
       current_id: "",
       name: "",
-      clientId: "",
+      clientId: this.state.clientsData.length + 1,
       other: "",
       countryL: "",
       zipCodeL: "",
@@ -639,12 +632,8 @@ export default class AdminClient extends Component {
     })
       .then((res) => {
         toast.success('Client successfully deleted');
-        var client_list = [];
-        res.data.map((client) => {
-          client_list.push({ 'name': client.name, 'clientId': client.clientId, 'other': client.other, 'countryL': client.countryL, 'zipCodeL': client.zipCodeL, 'cityL': client.cityL, 'addressL': client.addressL, 'address2L': client.address2L, 'countryB': client.countryB, 'zipCodeB': client.zipCodeB, 'cityB': client.cityB, 'addressB': client.addressB, 'address2B': client.address2B, 'email': client.email, 'email2': client.email2, 'email3': client.email3, 'remark1': client.remark1, 'remark2': client.remark2 })
-        })
         this.setState({
-          export_all_data: client_list,
+          export_all_data: res.data,
           clientsData: res.data
         });
       })
@@ -660,7 +649,7 @@ export default class AdminClient extends Component {
 
     this.setModal_Create(false);
 
-    axios.post(Config.ServerUri + '/create_client', {
+    const data = {
       name: this.state.name,
       clientId: this.state.clientId,
       other: this.state.other,
@@ -679,15 +668,13 @@ export default class AdminClient extends Component {
       email3: this.state.email3,
       remark1: this.state.remark1,
       remark2: this.state.remark2
-    })
+    }
+
+    axios.post(Config.ServerUri + '/create_client', data)
       .then((res) => {
         toast.success('Client successfully created');
-        var client_list = [];
-        res.data.map((client) => {
-          client_list.push({ 'name': client.name, 'clientId': client.clientId, 'other': client.other, 'countryL': client.countryL, 'zipCodeL': client.zipCodeL, 'cityL': client.cityL, 'addressL': client.addressL, 'address2L': client.address2L, 'countryB': client.countryB, 'zipCodeB': client.zipCodeB, 'cityB': client.cityB, 'addressB': client.addressB, 'address2B': client.address2B, 'email': client.email, 'email2': client.email2, 'email3': client.email3, 'remark1': client.remark1, 'remark2': client.remark2 })
-        })
         this.setState({
-          export_all_data: client_list,
+          export_all_data: res.data,
           clientsData: res.data
         });
       })
@@ -702,7 +689,7 @@ export default class AdminClient extends Component {
     if (this.state.double_error !== "") return;
 
     this.setModal_Create(false);
-    axios.post(Config.ServerUri + '/update_client', {
+    const data = {
       id: this.state.current_id,
       name: this.state.name,
       clientId: this.state.clientId,
@@ -722,15 +709,12 @@ export default class AdminClient extends Component {
       email3: this.state.email3,
       remark1: this.state.remark1,
       remark2: this.state.remark2
-    })
+    }
+    axios.post(Config.ServerUri + '/update_client', data)
       .then((res) => {
         toast.success('Client successfully updated');
-        var client_list = [];
-        res.data.map((client) => {
-          client_list.push({ 'name': client.name, 'clientId': client.clientId, 'other': client.other, 'countryL': client.countryL, 'zipCodeL': client.zipCodeL, 'cityL': client.cityL, 'addressL': client.addressL, 'address2L': client.address2L, 'countryB': client.countryB, 'zipCodeB': client.zipCodeB, 'cityB': client.cityB, 'addressB': client.addressB, 'address2B': client.address2B, 'email': client.email, 'email2': client.email2, 'email3': client.email3, 'remark1': client.remark1, 'remark2': client.remark2 })
-        })
         this.setState({
-          export_all_data: client_list,
+          export_all_data: res.data,
           clientsData: res.data
         });
       })
@@ -751,11 +735,3 @@ export default class AdminClient extends Component {
     });
   }
 }
-
-// function mapStateToProps(state){  
-//   return {
-//     selected_language:state.selected_language
-//   }
-// }
-
-// export default connect(mapStateToProps, null)(AdminClient);

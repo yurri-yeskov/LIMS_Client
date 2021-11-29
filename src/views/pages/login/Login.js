@@ -16,8 +16,9 @@ import {
 
 import CIcon from '@coreui/icons-react'
 
-const axios = require('axios');
-const Config = require('../../../Config');
+import axios from 'axios';
+import Config from '../../../Config';
+import setAuthToken from '../../../utils/setAuthToken';
 
 class Login extends Component {
   constructor() {
@@ -25,83 +26,42 @@ class Login extends Component {
     this.state = {
       userName: '',
       password: '',
-      username_error: '',
-      password_error: '',
-      usersData: []
+      usersData: [],
+      errors: {}
     }
-    this.getAllUsers = this.getAllUsers.bind(this);
-    this.handleInputChange = this.handleInputChange.bind(this);
     this.loginUser = this.loginUser.bind(this);
   }
-  componentDidMount() {
-    this.getAllUsers();
-  }
-  getAllUsers = () => {
-    axios.get(Config.ServerUri + '/get_all_users')
-    .then((res) => {
-      this.setState({
-        usersData: res.data.users,
-        userTypesData: res.data.userTypes,
-      });
-    })
-    .catch((error) => {
-      
-    })
-  }
-  handleInputChange = (e) => {
-    var name = e.target.name;
-    var value = e.target.value;
-    if(name === "userName") {
-      var found = true;
-      for(var i in this.state.usersData) {
-        var item = this.state.usersData[i];
-        if(item.userName === value) {
-          found = false;
-          break;
-        }        
-      }
-      if(found === true) {
-        this.setState({ username_error: "User not found" });
-      } else {
-        this.setState({ username_error: '' });
-      }
-    } 
-    if(name === "password") {
-      found = true;
-      for(i in this.state.usersData) {
-        item = this.state.usersData[i];
-        if(item.password === value) {
-          found = false;
-          break;
-        }
-      }
-      if(found === true) {
-        this.setState({ password_error: 'Incorrect password' });
-      } else {
-        this.setState({ password_error: ''});
-      }
-    }
-    this.setState({
-      [name]:value
-    })
 
+  componentDidMount() {
+    localStorage.removeItem('jwt')
   }
-  loginUser = (e) => {    
+
+  handleInputChange = (e) => {
+    this.setState({
+      [e.target.name]: e.target.value
+    })
+  }
+
+  loginUser = (e) => {
     e.preventDefault();
     axios.post(Config.ServerUri + '/login_user', {
       userName: this.state.userName,
       password: this.state.password
     })
-    .then((res) => {   
-      localStorage.setItem('token', res.data.token);
-      window.location.href = '/';
-    })
-    .catch(err => {
-      console.error(err);
-    })
-  }  
+      .then((res) => {
+        if (res.data.success) {
+          localStorage.setItem('token', res.data.token);
+          setAuthToken(res.data.token);
+          window.location.href = '/';
+        }
+      })
+      .catch(err => {
+        this.setState({ errors: err.response.data })
+      })
+  }
+
   render() {
-    const { username_error, password_error } = this.state;   
+    const { errors } = this.state;
     return (
       <div className="c-app c-default-layout flex-row align-items-center">
         <CContainer>
@@ -119,10 +79,9 @@ class Login extends Component {
                             <CIcon name="cil-user" />
                           </CInputGroupText>
                         </CInputGroupPrepend>
-                        <CInput type="text" placeholder="Username" autoComplete="username" name="userName" onChange={this.handleInputChange} value={this.state.userName} required/>
+                        <CInput type="text" placeholder="Username" autoComplete="username" name="userName" onChange={this.handleInputChange} value={this.state.userName} required />
                         {
-                          username_error === undefined || username_error === '' ? <div></div> : 
-                            <div style={{width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353'}}>{username_error}</div>
+                          errors.userName && <div style={{ width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353' }}>{errors.userName}</div>
                         }
                       </CInputGroup>
                       <CInputGroup className="mb-4">
@@ -131,27 +90,26 @@ class Login extends Component {
                             <CIcon name="cil-lock-locked" />
                           </CInputGroupText>
                         </CInputGroupPrepend>
-                        <CInput type="password" placeholder="Password" autoComplete="current-password" name="password" onChange={this.handleInputChange} value={this.state.password} required/>
+                        <CInput type="password" placeholder="Password" autoComplete="current-password" name="password" onChange={this.handleInputChange} value={this.state.password} required />
                         {
-                          password_error === undefined || password_error === '' ? <div></div> : 
-                            <div style={{width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353'}}>{password_error}</div>
+                          errors.password && <div style={{ width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353' }}>{errors.password}</div>
                         }
                       </CInputGroup>
                       <CRow>
                         <CCol xs="11">
                           <CButton type="submit" className="btn btn-primary mb-3" >Login</CButton>
-                        </CCol>                        
+                        </CCol>
                       </CRow>
                     </CForm>
                   </CCardBody>
-                </CCard>                
+                </CCard>
               </CCardGroup>
             </CCol>
           </CRow>
         </CContainer>
       </div>
     )
-  }  
+  }
 }
 
 export default Login

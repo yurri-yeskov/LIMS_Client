@@ -358,7 +358,7 @@ export default class AdminUnit extends Component {
     this.setState({
       current_id: '',
       unit: '',
-      unit_id: '',
+      unit_id: this.state.unitsData.length + 1,
       remark: '',
       _create: true,
       double_error: "",

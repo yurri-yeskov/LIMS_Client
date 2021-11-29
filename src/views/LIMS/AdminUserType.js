@@ -21,44 +21,8 @@ import $ from 'jquery';
 import { toast } from "react-hot-toast";
 import { CSVLink } from "react-csv";
 import ReactFileReader from 'react-file-reader';
-
-
-const axios = require("axios");
-const Config = require("../../Config.js");
-
-const fields = [
-  { key: 'userType_id' },
-  { key: 'userType' },
-  { key: 'labInput', label: 'Input', sorter: false },
-  { key: 'labAnalysis', label: 'Analysis', sorter: false },
-  { key: 'labAdmin', label: 'Admin', sorter: false },
-  { key: 'stockUser', label: 'User', sorter: false },
-  { key: 'stockAdmin', label: 'Admin', sorter: false },
-  { key: 'hsImport', label: 'Import', sorter: false },
-  { key: 'hsExport', label: 'Export', sorter: false },
-  { key: 'hsAdmin', label: 'Admin', sorter: false },
-  { key: 'geologyImport', label: 'Import', sorter: false },
-  { key: 'geologyExport', label: 'Export', sorter: false },
-  { key: 'geologyAdmin', label: 'Admin', sorter: false },
-  { key: 'remark', sorter: false },
-  { key: 'buttonGroups', label: '', _style: { width: '84px', display: 'none' } }]
-
-const header = [
-  { key: "userType_id", label: "User Type ID" },
-  { key: "userType", label: "User Type" },
-  { key: "labInput", label: "Laboratory Input" },
-  { key: "labAnalysis", label: "Laboratory Analysis" },
-  { key: "labAdmin", label: "Laboratory Admin" },
-  { key: 'stockUser', label: 'Stock User' },
-  { key: 'stockAdmin', label: 'Stock Admin' },
-  { key: 'hsImport', label: 'HS Import' },
-  { key: 'hsExport', label: 'HS Export' },
-  { key: 'hsAdmin', label: 'HS Admin' },
-  { key: 'geologyImport', label: 'Geology Import' },
-  { key: 'geologyExport', label: 'Geology Export' },
-  { key: 'geologyAdmin', label: 'Geology Admin' },
-  { key: 'remark', label: 'Remark' },
-]
+import axios from "axios"
+import Config from "../../Config.js";
 
 export default class AdminUserType extends Component {
   constructor(props) {
@@ -141,8 +105,9 @@ export default class AdminUserType extends Component {
   componentDidMount() {
     this.getAllUserTypes();
   }
+
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
         export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
@@ -188,6 +153,7 @@ export default class AdminUserType extends Component {
       })
     }
   }
+
   handleInputChange(e) {
     var name = e.target.name;
     var value = e.target.value;
@@ -211,6 +177,7 @@ export default class AdminUserType extends Component {
       [name]: value,
     });
   }
+
   async on_export_clicked() {
     await this.csvLink.link.click();
   }
@@ -552,17 +519,16 @@ export default class AdminUserType extends Component {
 
   renderTableHeaders() {
     $("#insertedTr").remove();
-    const trContent =
-      '<tr id="insertedTr"> \
-      <th></th> \
-      <th></th> \
-      <th colspan="3" style="text-align: center">'+ this.state.laboratory_label + '</th> \
-      <th colspan="2" style="text-align: center">'+ this.state.stock_management_label + '</th> \
-      <th colspan="3" style="text-align: center">'+ this.state.hs_label + '</th> \
-      <th colspan="3" style="text-align: center">'+ this.state.geology_label + '</th> \
-      <th></th> \
-      <th rowspan="2"></th> \
-    </tr>';
+    const trContent = '<tr id="insertedTr">' +
+      '<th></th>' +
+      '<th></th>' +
+      '<th colspan="3" style="text-align: center">'+ this.state.laboratory_label + '</th>' +
+      '<th colspan="2" style="text-align: center">'+ this.state.stock_management_label + '</th>' +
+      '<th colspan="3" style="text-align: center">'+ this.state.hs_label + '</th>' +
+      '<th colspan="3" style="text-align: center">'+ this.state.geology_label + '</th>' +
+      '<th></th>' +
+      '<th rowspan="2"></th>' +
+      '</tr>';
     $("#tableUserTypes").find("thead").find("tr").before(trContent);
   }
 
@@ -574,7 +540,6 @@ export default class AdminUserType extends Component {
             color="info"
             className="float-right"
             style={{ margin: "0px 0px 0px 16px" }}
-            //style={{margin: '16px'}}
             onClick={() => { this.on_create_clicked() }}
           ><i className="fa fa-plus" /><span style={{ padding: '4px' }} />{this.state.create_new_label}</CButton>
           <CButton
@@ -859,18 +824,12 @@ export default class AdminUserType extends Component {
   getAllUserTypes() {
     axios.get(Config.ServerUri + '/get_all_userTypes')
       .then((res) => {
-        var usertype_list = []
-        res.data.map((usertype) => {
-          usertype_list.push({ "userType_id": usertype.userType_id, "userType": usertype.userType, "labInput": usertype.labInput, "labAnalysis": usertype.labAnalysis, "labAdmin": usertype.labAdmin, "stockUser": usertype.stockUser, "stockAdmin": usertype.stockAdmin, "hsImport": usertype.hsImport, "hsExport": usertype.hsExport, "hsAdmin": usertype.hsAdmin, "geologyImport": usertype.geologyImport, "geologyExport": usertype.geologyExport, "geologyAdmin": usertype.geologyAdmin, "remark": usertype.remark })
-        });
         this.setState({
           userTypesData: res.data,
-          export_all_data: usertype_list,
+          export_all_data: res.data,
         });
       })
-      .catch((error) => {
-
-      })
+      .catch((error) => {})
   }
 
   on_delete_clicked(id) {
@@ -883,7 +842,7 @@ export default class AdminUserType extends Component {
     this.setState({
       current_id: '',
       userType: '',
-      userType_id: '',
+      userType_id: this.state.userTypesData.length + 1,
       labInput: false,
       labAnalysis: false,
       labAdmin: false,

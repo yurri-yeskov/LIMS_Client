@@ -37,7 +37,6 @@ const TheHeader = () => {
 
   const dispatch = useDispatch()
   const sidebarShow = useSelector(state => state.sidebarShow)
-  const language = useSelector(state => state.language)
 
   const toggleSidebar = () => {
     const val = [true, 'responsive'].includes(sidebarShow) ? false : 'responsive'

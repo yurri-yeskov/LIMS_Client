@@ -69,6 +69,11 @@ const TheSidebar = () => {
           name: language_state.laboratory_label,
           to: '/input/laboratory',
         },
+        {
+          _tag: 'CSidebarNavItem',
+          name: "Temp",
+          to: '/input/laboratory1',
+        },
       ],
     });
     navigation.push({

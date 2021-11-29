@@ -18,8 +18,9 @@ import { CSVLink } from "react-csv";
 import ReactFileReader from 'react-file-reader';
 import { toast } from "react-hot-toast";
 
-const axios = require("axios");
-const Config = require("../../Config.js");
+import axios from "axios";
+import Config from "../../Config.js";
+
 export default class AdminReason extends Component {
   constructor(props) {
     super(props);
@@ -63,7 +64,7 @@ export default class AdminReason extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
         export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
@@ -343,15 +344,10 @@ export default class AdminReason extends Component {
   }
 
   getAllReason() {
-    axios
-      .get(Config.ServerUri + "/get_all_reason")
+    axios.get(Config.ServerUri + "/get_all_reason")
       .then((res) => {
-        var reason_list = [];
-        res.data.map((reason) => {
-          reason_list.push({ 'reason_id': reason.reason_id, 'reason': reason.reason, 'remark': reason.remark });
-        })
         this.setState({
-          export_all_data: reason_list,
+          export_all_data: res.data,
           reasonData: res.data,
         });
       })
@@ -367,6 +363,7 @@ export default class AdminReason extends Component {
   on_create_clicked() {
     this.setState({
       current_id: "",
+      reason_id: this.state.reasonData.length + 1,
       reason: "",
       remark: "",
       _create: true,
@@ -379,6 +376,7 @@ export default class AdminReason extends Component {
   on_update_clicked(item) {
     this.setState({
       current_id: item._id,
+      reason_id: item.reason_id,
       reason: item.reason,
       remark: item.remark,
       _create: false,
@@ -397,12 +395,8 @@ export default class AdminReason extends Component {
       })
       .then((res) => {
         toast.success("Reason successfully deleted");
-        var reason_list = [];
-        res.data.map((reason) => {
-          reason_list.push({ 'reason_id': reason.reason_id, 'reason': reason.reason, 'remark': reason.remark });
-        })
         this.setState({
-          export_all_data: reason_list,
+          export_all_data: res.data,
           reasonData: res.data,
         });
       })
@@ -424,12 +418,8 @@ export default class AdminReason extends Component {
       })
       .then((res) => {
         toast.success("Reason successfully created");
-        var reason_list = [];
-        res.data.map((reason) => {
-          reason_list.push({ 'reason_id': reason.reason_id, 'reason': reason.reason, 'remark': reason.remark });
-        })
         this.setState({
-          export_all_data: reason_list,
+          export_all_data: res.data,
           reasonData: res.data,
         });
       })
@@ -452,12 +442,8 @@ export default class AdminReason extends Component {
       })
       .then((res) => {
         toast.success("Reason successfully updated");
-        var reason_list = [];
-        res.data.map((reason) => {
-          reason_list.push({ 'reason_id': reason.reason_id, 'reason': reason.reason, 'remark': reason.remark });
-        })
         this.setState({
-          export_all_data: reason_list,
+          export_all_data: res.data,
           reasonData: res.data,
         });
       })

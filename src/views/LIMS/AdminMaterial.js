@@ -15,7 +15,6 @@ import {
   CInput,
   CRow,
   CCol,
-  CTooltip,
 } from "@coreui/react";
 
 import Select from "react-select";
@@ -50,6 +49,7 @@ export default class AdminMaterial extends Component {
       objectivesError: [],
       clients: [],
       _clients: [],
+      objOptions: [],
       remark: "",
       _create: false,
       material_error: '',
@@ -83,7 +83,7 @@ export default class AdminMaterial extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
         export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
@@ -105,6 +105,7 @@ export default class AdminMaterial extends Component {
       })
     }
   }
+
   async on_export_clicked() {
     await this.csvLink.link.click();
   }
@@ -117,7 +118,6 @@ export default class AdminMaterial extends Component {
         resolve(reader.result);
       }
     })
-    console.log(result);
     axios.post(Config.ServerUri + '/upload_material_csv', {
       data: result
     })
@@ -128,6 +128,7 @@ export default class AdminMaterial extends Component {
         toast.success('Material CSV file successfully imported');
       });
   }
+
   handleInputChange(e) {
     var name = e.target.name;
     var value = e.target.value;
@@ -161,9 +162,9 @@ export default class AdminMaterial extends Component {
 
   getObjectiveValue(id /*objective id*/, unit /*unit id*/, client, analysis) {
     var values = this.state.objectiveValues;
-
-    if (analysis == undefined) {
-      var retVal = {
+    let retVal;
+    if (analysis === undefined) {
+      retVal = {
         id: id,
         unit: unit,
         client: client,
@@ -172,7 +173,7 @@ export default class AdminMaterial extends Component {
         max: 0,
       };
     } else {
-      var retVal = {
+      retVal = {
         id: id,
         unit: unit,
         client: client,
@@ -207,7 +208,7 @@ export default class AdminMaterial extends Component {
     });
 
     this.state.objectiveValues.map((item) => {
-      if (item != undefined) {
+      if (item !== undefined) {
         if (item.client !== client) objectiveValues.push(item);
         return true;
       }
@@ -225,7 +226,6 @@ export default class AdminMaterial extends Component {
 
   handleMultiSelectChange_A_Types(e, obj, client) {
     var analysisTypes = [];
-    var minMaxValues = [];
     var objectiveValues = [];
 
     this.state.analysisTypes.map((item) => {
@@ -236,7 +236,7 @@ export default class AdminMaterial extends Component {
     });
 
     this.state.objectiveValues.map((item) => {
-      if (item != undefined) {
+      if (item !== undefined) {
         var unit = item.id + "-" + item.unit;
         if (item.client !== client || unit !== obj) {
           objectiveValues.push(item);
@@ -266,76 +266,339 @@ export default class AdminMaterial extends Component {
       objectiveValues: objectiveValues,
     });
   }
+
   handleMultiSelectChange_Client(e) {
-    var clients = [];
+    let selected_clients = [];
     e.map((item) => {
-      clients.push(item.value);
+      selected_clients.push(item.value);
+      return true;
+    });
+    this.setState({ clients: selected_clients, _clients: e });
+  }
+
+  getAllMaterials() {
+    axios.get(Config.ServerUri + "/get_all_materials")
+      .then((res) => {
+        console.log(res.data)
+        const data = res.data.clients.map(client => {
+          return {
+            label: client.name,
+            value: client._id
+          }
+        })
+
+        this.setState({
+          materialsData: res.data.materials,
+          objectivesData: res.data.objectives,
+          unitsData: res.data.units,
+          clientsData: res.data.clients,
+          analysisData: res.data.analysisTypes,
+          objOptions: res.data.obj_units,
+          clientOptions: data
+        });
+
+        var material_list = [];
+        Object.keys(res.data.materials).length > 0 && res.data.materials.map((material) => {
+          var client_list = 'Default\n';
+          var combination_list = '';
+          combination_list += this.getTooltip(material, '') + '\n';
+          material.clients.map((client) => {
+            client_list += client.name + '\n';
+            combination_list += this.getTooltip(material, client._id) + '\n';
+          });
+          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
+        });
+        this.setState({
+          export_all_data: material_list
+        });
+      })
+      .catch((error) => { });
+  }
+
+  on_create_clicked() {
+    this.setState({
+      current_id: '',
+      material: '',
+      material_id: this.state.materialsData.length + 1,
+      remark: '',
+      objectives: [],
+      objectiveValues: [],
+      objectivesError: [],
+      clients: [],
+      _clients: [],
+      _create: true,
+      material_error: "",
+      filteredObjectives: [],
+      analysisTypes: [],
+    });
+    this.setState({
+      modal_create: true,
+    });
+  }
+
+  on_update_clicked(item) {
+    var clients = [];
+    var _clients = [];
+
+    item.clients.map(temp => {
+      let label = ""
+      label = this.state.clientsData.filter(d => d._id === temp._id)[0].name;
+      if (label !== "") {
+        clients.push(temp._id);
+        _clients.push({ label: label, value: temp._id });
+      }
       return true;
     });
 
-    this.setState({ clients: clients, _clients: e });
+    var objectives = [];
+    var objectiveValues = [];
+    var analysisTypes = [];
+
+    item.objectiveValues.map((temp) => {
+      var label = this.state.objectivesData.filter(obj => obj._id === temp.id)[0].objective;// this.getObjectiveName(temp.id);
+      var unit = this.state.unitsData.filter(d => d._id === temp.unit)[0].unit;
+      var clientIndex = clients.indexOf(temp.client);
+      var analysis = this.state.analysisData.filter(d => d._id === temp.analysis)[0].analysisType;
+
+      if (temp.client === "") clientIndex = 0;
+      if (label !== "" && unit !== "" && clientIndex >= 0) {
+        objectiveValues.push(temp);
+
+        objectives.push({
+          label: label + " " + unit,
+          value: temp.id + "-" + temp.unit,
+          client: temp.client,
+          analysis: temp.analysis,
+        });
+
+        analysisTypes.push({
+          label: analysis,
+          value: temp.analysis,
+          obj: temp.id + "-" + temp.unit,
+          client: temp.client,
+          min: temp.min,
+          max: temp.max,
+        });
+
+        return true;
+      }
+    });
+    this.setState({
+      current_id: item._id,
+      material: item.material,
+      material_id: item.material_id,
+      objectives: objectives,
+      objectiveValues: objectiveValues,
+      objectivesError: [],
+      analysisTypes: analysisTypes,
+      clients: clients,
+      _clients: _clients,
+      remark: item.remark,
+      _create: false,
+      material_error: "",
+    });
+    this.setState({
+      modal_create: true,
+    });
   }
 
-  getObjectiveName(id) {
-    var objectives = this.state.objectivesData;
-    for (var i = 0; i < objectives.length; i++) {
-      if (objectives[i]._id === id) return objectives[i].objective;
-    }
-    return "";
+  deleteMaterial() {
+    this.setState({ modal_delete: false })
+
+    axios
+      .post(Config.ServerUri + "/delete_material", {
+        id: this.state.current_id,
+      })
+      .then((res) => {
+        toast.success("Material successfully deleted");
+        this.setState({
+          materialsData: res.data.materials,
+          objectivesData: res.data.objectives,
+          unitsData: res.data.units,
+          clientsData: res.data.clients,
+        });
+        var material_list = [];
+        res.data.materials.map((material) => {
+          var client_list = 'Default\n';
+          var combination_list = '';
+          combination_list += this.getTooltip(material, '') + '\n';
+          material.clients.map((client_id) => {
+            client_list += this.state.clientsData.filter(d => d._id === client_id)[0].name + '\n';
+            combination_list += this.getTooltip(material, client_id) + '\n';
+          });
+          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
+        });
+        this.setState({
+          export_all_data: material_list
+        });
+      })
+      .catch((error) => { });
   }
 
-  getClientName(id) {
-    var clients = this.state.clientsData;
-    for (var i = 0; i < clients.length; i++) {
-      if (clients[i]._id === id) return clients[i].name;
-    }
-    return "";
+  checkMinMax() {
+    var objectiveValues = this.state.objectiveValues;
+    var objectivesError = [];
+    var check = true;
+
+    objectiveValues.map((item, i) => {
+      item.min = parseFloat(item.min);
+      item.max = parseFloat(item.max);
+      if (item.min > item.max) {
+        objectivesError.push("error");
+        check = false;
+      } else objectivesError.push("");
+
+      return true;
+    });
+
+    this.setState({ objectiveValues, objectivesError });
+    return check;
   }
 
-  getUnitName(id) {
-    var units = this.state.unitsData;
-    for (var i = 0; i < units.length; i++) {
-      if (units[i]._id === id) return units[i].unit;
+  createMaterial(event) {
+    event.preventDefault();
+
+    const objectiveValues = this.state.objectiveValues;
+    const analysisTypes = this.state.analysisTypes;
+
+    objectiveValues.map((item) => {
+      analysisTypes.map((data) => {
+        if (
+          item.client === data.client &&
+          item.analysis === data.value &&
+          item.id === data.obj.split("-")[0] &&
+          item.unit === data.obj.split("-")[1]
+        ) {
+          item.min = data.min;
+          item.max = data.max;
+        }
+      });
+    });
+
+    if (this.checkMinMax() === false) return;
+    if (this.state.material_error !== "") return;
+    this.setState({
+      modal_create: false,
+    });
+
+    const data = {
+      material_id: this.state.material_id,
+      material: this.state.material,
+      objectiveValues: objectiveValues,
+      clients: this.state.clients,
+      remark: this.state.remark,
+      aTypesValues: analysisTypes,
     }
-    return "";
+    axios.post(Config.ServerUri + "/create_material", data)
+      .then((res) => {
+        toast.success("Material successfully created");
+        const data = res.data.clients.map(client => {
+          return {
+            label: client.name,
+            value: client._id
+          }
+        })
+        this.setState({
+          materialsData: res.data.materials,
+          objectivesData: res.data.objectives,
+          unitsData: res.data.units,
+          clientsData: res.data.clients,
+          analysisTypes: res.data.analysisTypes,
+          objOptions: res.data.obj_units,
+          clientOptions: data
+        });
+
+        var material_list = [];
+        Object.keys(res.data.materials).length > 0 && res.data.materials.map((material) => {
+          var client_list = 'Default\n';
+          var combination_list = '';
+          combination_list += this.getTooltip(material, '') + '\n';
+          material.clients.map((client) => {
+            client_list += client.name + '\n';
+            combination_list += this.getTooltip(material, client) + '\n';
+          });
+          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
+        });
+        this.setState({
+          export_all_data: material_list
+        });
+      })
+      .catch((error) => { });
   }
 
-  getAnalysisName(id) {
-    var analysis = this.state.analysisData;
-    for (var i = 0; i < analysis.length; i++) {
-      if (analysis[i]._id === id) return analysis[i].analysisType;
+  updateMaterial(event) {
+    event.preventDefault();
+
+    const objectiveValues = this.state.objectiveValues;
+    const analysisTypes = this.state.analysisTypes;
+
+    objectiveValues.map((item) => {
+      analysisTypes.map((data) => {
+        if (
+          item.client === data.client &&
+          item.analysis === data.value &&
+          item.id === data.obj.split("-")[0] &&
+          item.unit === data.obj.split("-")[1]
+        ) {
+          item.min = data.min;
+          item.max = data.max;
+        }
+      });
+    });
+
+    if (this.checkMinMax() === false) return;
+    if (this.state.material_error !== "") return;
+    this.setState({
+      modal_create: false,
+    });
+
+    const data = {
+      id: this.state.current_id,
+      material_id: this.state.material_id,
+      material: this.state.material,
+      objectiveValues: this.state.objectiveValues,
+      clients: this.state.clients,
+      remark: this.state.remark,
+      aTypesValues: analysisTypes,
     }
-    return "";
+    axios.post(Config.ServerUri + "/update_material", data)
+      .then((res) => {
+        toast.success("Material successfully updated");
+        const data = res.data.clients.map(client => {
+          return {
+            label: client.name,
+            value: client._id
+          }
+        })
+        this.setState({
+          materialsData: res.data.materials,
+          objectivesData: res.data.objectives,
+          unitsData: res.data.units,
+          clientsData: res.data.clients,
+          analysisTypes: res.data.analysisTypes,
+          objOptions: res.data.obj_units,
+          clientOptions: data
+        });
+        var material_list = [];
+        Object.keys(res.data.materials).length > 0 && res.data.materials.map((material) => {
+          var client_list = 'Default\n';
+          var combination_list = '';
+          combination_list += this.getTooltip(material, '') + '\n';
+          material.clients.map((client) => {
+            client_list += client.name + '\n';
+            combination_list += this.getTooltip(material, client) + '\n';
+          });
+          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
+        });
+        this.setState({
+          export_all_data: material_list
+        });
+      })
+      .catch((error) => { });
   }
 
   renderModalCreate() {
     const { objectives } = this.state;
-    var objOptions = [];
-    this.state.objectivesData.map((item) => {
-      // options for objective multi-select
-      item.units.map((item0) => {
-        var unit = this.getUnitName(item0);
-        if (unit !== "") {
-          objOptions.push({
-            label: item.objective + " " + unit,
-            value: item._id + "-" + item0,
-          });
-        }
-
-        return true;
-      });
-      return true;
-    });
-    objOptions.sort((a, b) =>
-      a.label > b.label ? 1 : b.label > a.label ? -1 : 0
-    );
-
-    var clientOptions = [];
-    this.state.clientsData.map((item) => {
-      // options for client multi-select
-      clientOptions.push({ label: item.name, value: item._id });
-      return true;
-    });
 
     var clientObjs = []; // clients including default client
     clientObjs.push({ label: "Default", value: "" });
@@ -345,12 +608,12 @@ export default class AdminMaterial extends Component {
     });
 
     var error = this.state.material_error;
-
     this.state.filteredObjectives = Array.from(
-      objectives
-        .reduce((a, o) => a.set(`${o.value}-${o.client}`, o), new Map())
-        .values()
+      objectives.reduce((a, o) => a.set(`${o.value}-${o.client}`, o), new Map()).values()
     );
+    // this.setState({
+    //   filteredObjectives: data
+    // })
 
     return (
       <CCard>
@@ -411,16 +674,16 @@ export default class AdminMaterial extends Component {
                     },
                   }),
                 }}
-                options={clientOptions}
+                options={this.state.clientOptions}
                 onChange={(e) => this.handleMultiSelectChange_Client(e)}
                 value={this.state._clients}
               />
             </CFormGroup>
-            {clientObjs.map((item, index) => {
+            {Object.keys(clientObjs).length > 0 && clientObjs.map((item, index) => {
               var _objectives = [];
-              this.state.filteredObjectives.map((item0) => {
+              Object.keys(this.state.filteredObjectives).length > 0 && this.state.filteredObjectives.map((item0) => {
                 if (item0.client === item.value) {
-                  if (_objectives.length == 0) {
+                  if (_objectives.length === 0) {
                     _objectives.push({
                       label: item0.label,
                       value: item0.value,
@@ -442,7 +705,7 @@ export default class AdminMaterial extends Component {
               return this.renderObjectives(
                 item,
                 _objectives,
-                objOptions,
+                this.state.objOptions,
                 index
               );
             })}
@@ -461,7 +724,9 @@ export default class AdminMaterial extends Component {
               <span style={{ padding: "4px" }} />
               <CButton
                 color="secondary"
-                onClick={() => this.setModal_Create(false)}
+                onClick={() => this.setState({
+                  modal_create: false,
+                })}
               >
                 Cancel
               </CButton>
@@ -474,10 +739,10 @@ export default class AdminMaterial extends Component {
 
   renderObjectives(client, objs, options, clientIndex) {
     var analysisOptions = [];
-    this.state.analysisData.map((item) => {
+    this.state?.analysisData.map((item) => {
       objs.map((temp) => {
         item.objectives.map((item0) => {
-          if (temp.value == item0.id + "-" + item0.unit) {
+          if (temp.value === item0.id + "-" + item0.unit) {
             analysisOptions.push({
               label: item.analysisType,
               value: item._id,
@@ -525,7 +790,7 @@ export default class AdminMaterial extends Component {
                 </CCol>
               </CRow>
             </CFormGroup>
-            {this.state.filteredObjectives.map((obj, objIdx) => {
+            {Object.keys(this.state.filteredObjectives).length > 0 && this.state.filteredObjectives.map((obj, objIdx) => {
               var _analyisTypes = [];
               var label = "";
               var _analysisOptions = [];
@@ -536,17 +801,14 @@ export default class AdminMaterial extends Component {
 
               this.state.analysisTypes.map((type) => {
                 if (type.obj === obj.value && type.client === client.value) {
-                  if (_analyisTypes.length == 0) {
+                  if (_analyisTypes.length === 0) {
                     _analyisTypes.push({
                       label: type.label,
                       value: type.value,
                     });
                   } else {
                     _analyisTypes.map((temp) => {
-                      if (
-                        temp.label != type.label &&
-                        temp.value != type.value
-                      ) {
+                      if (temp.label !== type.label && temp.value !== type.value) {
                         _analyisTypes.push({
                           label: type.label,
                           value: type.value,
@@ -559,14 +821,7 @@ export default class AdminMaterial extends Component {
                 return true;
               });
 
-              _analyisTypes = Array.from(
-                _analyisTypes
-                  .reduce(
-                    (a, o) => a.set(`${o.value}-${o.client}-${o.obj}`, o),
-                    new Map()
-                  )
-                  .values()
-              );
+              _analyisTypes = Array.from(_analyisTypes.reduce((a, o) => a.set(`${o.value}-${o.client}-${o.obj}`, o), new Map()).values());
 
               analysisOptions.map((item) => {
                 if (item.objective === obj.value) {
@@ -577,7 +832,7 @@ export default class AdminMaterial extends Component {
               });
 
               label = obj.label;
-              if (label != "") {
+              if (label !== "") {
                 return this.renderATypes(
                   client,
                   obj,
@@ -627,7 +882,6 @@ export default class AdminMaterial extends Component {
         </CRow>
         {this.state.analysisTypes.map((type, typeIdx) => {
           var label = type.label;
-          var _minMaxValues = [];
 
           var objValue = {
             min: type.min,
@@ -706,11 +960,13 @@ export default class AdminMaterial extends Component {
   getTooltip(item, client) {
     var count = 0;
     var ret = "";
+    const objData = this.state.objectivesData
+    const analyData = this.state.analysisData
     item.objectiveValues.map((item0) => {
       if (item0.client !== client) return false;
-      var name = this.getObjectiveName(item0.id);
-      var unit = this.getUnitName(item0.unit);
-      var analysis = this.getAnalysisName(item0.analysis);
+      var name = objData.filter(obj => obj._id === item0.id)[0].objective; //this.getObjectiveName(item0.id);
+      var unit = this.state.unitsData.filter(d => d._id === item0.unit)[0].unit;
+      var analysis = analyData.filter(d => d._id === item0.analysis)[0].analysisType;
       if (name !== "" && unit !== "") {
         ret =
           ret +
@@ -783,21 +1039,19 @@ export default class AdminMaterial extends Component {
             hover
             clickableRows
             scopedSlots={{
-              material: (item) => {
+              material: (item, index) => {
                 var clientObjs = []; // clients including default client
                 clientObjs.push({ label: "Default", value: "" });
                 item.clients.map((item0) => {
-                  var label = this.getClientName(item0);
-                  if (label !== "")
-                    clientObjs.push({ label: label, value: item0 });
+                  clientObjs.push({ label: item0.name, value: item0._id });
                   return true;
                 });
 
                 return (
-                  <td>
-                    {clientObjs.map((client, index) => {
+                  <td key={index}>
+                    {clientObjs.map((client, index1) => {
                       return (
-                        <div
+                        <div key={index1}
                           style={{
                             marginLeft: client.value === "" ? "0px" : "0.6em",
                           }}
@@ -811,7 +1065,7 @@ export default class AdminMaterial extends Component {
               },
               buttonGroups: (item, index) => {
                 return (
-                  <td>
+                  <td key={index}>
                     <div style={{ display: "flex" }}>
                       <CButton
                         color="info"
@@ -827,7 +1081,8 @@ export default class AdminMaterial extends Component {
                         color="danger"
                         size="sm"
                         onClick={() => {
-                          this.on_delete_clicked(item._id);
+                          this.setState({ current_id: item._id })
+                          this.setState({ modal_delete: true })
                         }}
                       >
                         <i className="fa fa-trash" />
@@ -840,16 +1095,14 @@ export default class AdminMaterial extends Component {
                 var clientObjs = []; // clients including default client
                 clientObjs.push({ label: "Default", value: "" });
                 item.clients.map((item0) => {
-                  var label = this.getClientName(item0);
-                  if (label !== "")
-                    clientObjs.push({ label: label, value: item0 });
+                  clientObjs.push({ label: item0.name, value: item0._id });
                   return true;
                 });
                 return (
-                  <td>
-                    {clientObjs.map((client, index) => {
+                  <td key={index}>
+                    {clientObjs.map((client, index1) => {
                       let tooltip = this.getTooltip(item, client.value);
-                      return <div>{tooltip}</div>;
+                      return <div key={index1}>{tooltip}</div>;
                     })}
                   </td>
                 );
@@ -861,7 +1114,7 @@ export default class AdminMaterial extends Component {
         <CModal
           style={{ width: "50vw" }}
           show={this.state.modal_delete}
-          onClose={() => this.setModal_Delete(false)}
+          onClose={() => this.setState({ modal_delete: false })}
         >
           <CModalHeader>
             <CModalTitle>Confirm</CModalTitle>
@@ -875,7 +1128,7 @@ export default class AdminMaterial extends Component {
             </CButton>{" "}
             <CButton
               color="secondary"
-              onClick={() => this.setModal_Delete(false)}
+              onClick={() => this.setState({ modal_delete: false })}
             >
               Cancel
             </CButton>
@@ -885,7 +1138,9 @@ export default class AdminMaterial extends Component {
         <CModal
           style={{ width: "50vw" }}
           show={this.state.modal_create}
-          onClose={() => this.setModal_Create(false)}
+          onClose={() => this.setState({
+            modal_create: false,
+          })}
           closeOnBackdrop={false}
           centered
           size="lg"
@@ -903,310 +1158,4 @@ export default class AdminMaterial extends Component {
     );
   }
 
-  getAllMaterials() {
-    axios
-      .get(Config.ServerUri + "/get_all_materials")
-      .then((res) => {
-        this.setState({
-          materialsData: res.data.materials,
-          objectivesData: res.data.objectives,
-          unitsData: res.data.units,
-          clientsData: res.data.clients,
-          analysisData: res.data.analysisTypes,
-        });
-        var material_list = [];
-        res.data.materials.map((material) => {
-          var client_list = 'Default\n';
-          var combination_list = '';
-          combination_list += this.getTooltip(material, '') + '\n';
-          material.clients.map((client_id) => {
-            client_list += this.getClientName(client_id) + '\n';
-            combination_list += this.getTooltip(material, client_id) + '\n';
-          });
-          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
-        });
-        this.setState({
-          export_all_data: material_list
-        });
-      })
-      .catch((error) => { });
-  }
-
-  on_delete_clicked(id) {
-    this.setState({ current_id: id });
-
-    this.setModal_Delete(true);
-  }
-
-  on_create_clicked() {
-    this.setState({
-      current_id: '',
-      material: '',
-      material_id: '',
-      remark: '',
-      objectives: [],
-      objectiveValues: [],
-      objectivesError: [],
-      clients: [],
-      _clients: [],
-      _create: true,
-      material_error: "",
-      filteredObjectives: [],
-      analysisTypes: [],
-    });
-
-    this.setModal_Create(true);
-  }
-
-  on_update_clicked(item) {
-    var clients = [];
-    var _clients = [];
-
-    item.clients.map((temp, index) => {
-      var label = this.getClientName(temp);
-      if (label !== "") {
-        clients.push(temp);
-        _clients.push({ label: label, value: temp });
-      }
-      return true;
-    });
-
-    var objectives = [];
-    var objectiveValues = [];
-    var analysisTypes = [];
-
-    item.objectiveValues.map((temp) => {
-      var label = this.getObjectiveName(temp.id);
-      var unit = this.getUnitName(temp.unit);
-      var clientIndex = clients.indexOf(temp.client);
-      var analysis = this.getAnalysisName(temp.analysis);
-
-      if (temp.client === "") clientIndex = 0;
-      if (label !== "" && unit !== "" && clientIndex >= 0) {
-        objectiveValues.push(temp);
-
-        objectives.push({
-          label: label + " " + unit,
-          value: temp.id + "-" + temp.unit,
-          client: temp.client,
-          analysis: temp.analysis,
-        });
-
-        analysisTypes.push({
-          label: analysis,
-          value: temp.analysis,
-          obj: temp.id + "-" + temp.unit,
-          client: temp.client,
-          min: temp.min,
-          max: temp.max,
-        });
-
-        return true;
-      }
-    });
-    this.setState({
-      current_id: item._id,
-      material: item.material,
-      material_id: item.material_id,
-      objectives: objectives,
-      objectiveValues: objectiveValues,
-      objectivesError: [],
-      analysisTypes: analysisTypes,
-      clients: clients,
-      _clients: _clients,
-      remark: item.remark,
-      _create: false,
-      material_error: "",
-    });
-
-    this.setModal_Create(true);
-  }
-
-  deleteMaterial() {
-    this.setModal_Delete(false);
-
-    axios
-      .post(Config.ServerUri + "/delete_material", {
-        id: this.state.current_id,
-      })
-      .then((res) => {
-        toast.success("Material successfully deleted");
-        this.setState({
-          materialsData: res.data.materials,
-          objectivesData: res.data.objectives,
-          unitsData: res.data.units,
-          clientsData: res.data.clients,
-        });
-        var material_list = [];
-        res.data.materials.map((material) => {
-          var client_list = 'Default\n';
-          var combination_list = '';
-          combination_list += this.getTooltip(material, '') + '\n';
-          material.clients.map((client_id) => {
-            client_list += this.getClientName(client_id) + '\n';
-            combination_list += this.getTooltip(material, client_id) + '\n';
-          });
-          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
-        });
-        this.setState({
-          export_all_data: material_list
-        });
-      })
-      .catch((error) => { });
-  }
-
-  checkMinMax() {
-    var objectiveValues = this.state.objectiveValues;
-    var objectivesError = [];
-    var check = true;
-
-    objectiveValues.map((item, i) => {
-      item.min = parseFloat(item.min);
-      item.max = parseFloat(item.max);
-      if (item.min > item.max) {
-        objectivesError.push("error");
-        check = false;
-      } else objectivesError.push("");
-
-      return true;
-    });
-
-    this.setState({ objectiveValues, objectivesError });
-    return check;
-  }
-
-  createMaterial(event) {
-    event.preventDefault();
-
-    const objectiveValues = this.state.objectiveValues;
-    const analysisTypes = this.state.analysisTypes;
-
-    objectiveValues.map((item) => {
-      analysisTypes.map((data) => {
-        if (
-          item.client === data.client &&
-          item.analysis === data.value &&
-          item.id === data.obj.split("-")[0] &&
-          item.unit === data.obj.split("-")[1]
-        ) {
-          item.min = data.min;
-          item.max = data.max;
-        }
-      });
-    });
-
-    if (this.checkMinMax() === false) return;
-    if (this.state.material_error !== "") return;
-
-    this.setModal_Create(false);
-
-    axios
-      .post(Config.ServerUri + "/create_material", {
-        material_id: this.state.material_id,
-        material: this.state.material,
-        objectiveValues: objectiveValues,
-        clients: this.state.clients,
-        remark: this.state.remark,
-        aTypesValues: analysisTypes,
-      })
-      .then((res) => {
-        toast.success("Material successfully created");
-        this.setState({
-          materialsData: res.data.materials,
-          objectivesData: res.data.objectives,
-          unitsData: res.data.units,
-          clientsData: res.data.clients,
-          analysisTypes: res.data.analysisTypes,
-        });
-        var material_list = [];
-        res.data.materials.map((material) => {
-          var client_list = 'Default\n';
-          var combination_list = '';
-          combination_list += this.getTooltip(material, '') + '\n';
-          material.clients.map((client_id) => {
-            client_list += this.getClientName(client_id) + '\n';
-            combination_list += this.getTooltip(material, client_id) + '\n';
-          });
-          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
-        });
-        this.setState({
-          export_all_data: material_list
-        });
-      })
-      .catch((error) => { });
-  }
-
-  updateMaterial(event) {
-    event.preventDefault();
-
-    const objectiveValues = this.state.objectiveValues;
-    const analysisTypes = this.state.analysisTypes;
-
-    objectiveValues.map((item) => {
-      analysisTypes.map((data) => {
-        if (
-          item.client === data.client &&
-          item.analysis === data.value &&
-          item.id === data.obj.split("-")[0] &&
-          item.unit === data.obj.split("-")[1]
-        ) {
-          item.min = data.min;
-          item.max = data.max;
-        }
-      });
-    });
-
-    if (this.checkMinMax() === false) return;
-    if (this.state.material_error !== "") return;
-
-    this.setModal_Create(false);
-
-    axios
-      .post(Config.ServerUri + "/update_material", {
-        id: this.state.current_id,
-        material_id: this.state.material_id,
-        material: this.state.material,
-        objectiveValues: this.state.objectiveValues,
-        clients: this.state.clients,
-        remark: this.state.remark,
-        aTypesValues: analysisTypes,
-      })
-      .then((res) => {
-        toast.success("Material successfully updated");
-        this.setState({
-          materialsData: res.data.materials,
-          objectivesData: res.data.objectives,
-          unitsData: res.data.units,
-          clientsData: res.data.clients,
-          analysisTypes: res.data.analysisTypes,
-        });
-        var material_list = [];
-        res.data.materials.map((material) => {
-          var client_list = 'Default\n';
-          var combination_list = '';
-          combination_list += this.getTooltip(material, '') + '\n';
-          material.clients.map((client_id) => {
-            client_list += this.getClientName(client_id) + '\n';
-            combination_list += this.getTooltip(material, client_id) + '\n';
-          });
-          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
-        });
-        this.setState({
-          export_all_data: material_list
-        });
-      })
-      .catch((error) => { });
-  }
-
-  setModal_Delete(modal) {
-    this.setState({
-      modal_delete: modal,
-    });
-  }
-
-  setModal_Create(modal) {
-    this.setState({
-      modal_create: modal,
-    });
-  }
 }

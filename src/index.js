@@ -4,12 +4,13 @@ import 'core-js';
 import './polyfill'
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux'
 import App from './App';
+import { icons } from './assets/icons'
 import * as serviceWorker from './serviceWorker';
 import 'antd/dist/antd.css';
-import { icons } from './assets/icons'
+import './index.css';
 
-import { Provider } from 'react-redux'
 import store from './store/index'
 
 React.icons = icons

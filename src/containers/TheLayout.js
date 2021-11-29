@@ -16,7 +16,7 @@ const TheLayout = () => {
       token : localStorage.getItem('token')
     })
     .then((res) => {
-      if(res.data == undefined) {
+      if(res.data === undefined) {
         localStorage.removeItem('token');
         window.location.href = '/#/login';  
       }

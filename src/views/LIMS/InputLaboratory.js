@@ -19,7 +19,6 @@ import {
   CTextarea,
 } from "@coreui/react";
 import "./style.css";
-import { StyleSheet } from "@react-pdf/renderer";
 import { ReactMultiEmail, isEmail } from "react-multi-email";
 import {
   Card,
@@ -39,88 +38,13 @@ import "react-datepicker/dist/react-datepicker.css";
 import { CSVLink } from "react-csv";
 import moment from "moment";
 import GPDF from "./GeneratePDF";
-const axios = require("axios");
-const Config = require("../../Config.js");
+import axios from "axios";
+import Config from "../../Config.js";
 
-const fields = [
-  { key: "due_date", label: "Due Date" },
-  { key: "sample_type", label: "Sample Type", sorter: false },
-  { key: "material", label: "Material", sorter: false },
-  { key: "client", label: "Client", sorter: false },
-  { key: "packing_type", label: "Packing Type", sorter: false },
-  { key: "a_types", label: "Analysis Type", sorter: false },
-  { key: "c_types", label: "Certificate", sorter: false },
-  { key: "sending_date", label: "Sending Date" },
-  { key: "sample_date", label: "Sample Date" },
-  { key: "Weight", label: "Weight(actual)", sorter: false },
-  { key: "material_left", label: "Material left", sorter: false },
-  { key: "Charge", label: "Charge", sorter: false },
-  { key: "remark", label: "Remark", sorter: false },
-  { key: "buttonGroups", label: "", _style: { width: "84px" } },
-];
+import { header, object_fields, weight_fields, charge_fields } from "src/utils/LaboratoryTableFields";
 
-const header = [
-  { key: "due_date", label: "Due Date" },
-  { key: "sample_type", label: "Sample Type" },
-  { key: "material", label: "Material" },
-  { key: "client", label: "Client" },
-  { key: "packing_type", label: "Packing Type" },
-  { key: "a_types", label: "Analysis Type" },
-  { key: "c_types", label: "Certificate" },
-  { key: "sending_date", label: "Sending Date" },
-  { key: "sample_date", label: "Sample Date" },
-  { key: "distributor", label: "Distributor" },
-  { key: "geo_locaion", label: "Geo Location" },
-  { key: "remark", label: "Remark" },
-  { key: "delivering.address_name1", label: "Delivering.Address.Name1" },
-  { key: "delivering.address_title", label: "Delivering.Address.Title" },
-  { key: "delivering.address_country", label: "Delivering.Address.Country" },
-  { key: "delivering.address_name2", label: "Delivering.Address.Name2" },
-  { key: "delivering.address_name3", label: "Delivering.Address.Name3" },
-  { key: "delivering.address_street", label: "Delivering.Address.Street" },
-  { key: "delivering.address_zip", label: "Delivering.Address.ZIP" },
-  { key: "delivering.customer_product_code", label: "CustomProductCode" },
-  { key: "delivering.email_address", label: "E-mail Address" },
-  { key: "delivering.fetch_date", label: "Fetch Date" },
-  { key: "delivering.order_id", label: "Order.ID" },
-  { key: "delivering.pos_id", label: "Pos.ID" },
-  { key: "delivering.w_target", label: "Weight(target)" },
-];
-
-const object_fields = [
-  { key: "limitValue", label: "Value" },
-  { key: "author", label: "Author" },
-  { key: "update_date", label: "Date" },
-  { key: "reason", label: "Reason" },
-  { key: "accept", label: "Accept" },
-  { key: "comment", label: "Comment" },
-];
-
-const weight_fields = [
-  { key: "weight", label: "Weight" },
-  { key: "author", label: "Author" },
-  { key: "update_date", label: "Update Date" },
-  { key: "comment", label: "Comment" },
-];
-
-const charge_fields = [
-  { key: "charge", label: "Charge Date" },
-  { key: "author", label: "Author" },
-  { key: "update_date", label: "Update Date" },
-  { key: "comment", label: "Comment" },
-];
-const styles = StyleSheet.create({
-  page: {
-    flexDirection: "row",
-    backgroundColor: "#E4E4E4",
-  },
-  section: {
-    margin: 10,
-    padding: 10,
-    flexGrow: 1,
-  },
-});
 export default class InputLaboratory extends Component {
+
   constructor(props) {
     super(props);
     this.getAllData = this.getAllData.bind(this);
@@ -407,7 +331,7 @@ export default class InputLaboratory extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         analysisType_label: nextProps.language_data.filter(
           (item) => item.label === "analysis_type"
@@ -518,24 +442,22 @@ export default class InputLaboratory extends Component {
       });
     }
   }
+
   getAllData() {
-    axios
-      .get(Config.ServerUri + "/get_all_input_laboratory")
+    axios.get(Config.ServerUri + "/get_all_input_laboratory")
       .then((res) => {
         this.setState({
           allData: res.data,
           filteredData: res.data,
         });
       })
-      .catch((error) => {});
-    axios
-      .get(Config.ServerUri + "/get_certificate")
+      .catch((error) => { });
+
+    axios.get(Config.ServerUri + "/get_certificate")
       .then((res) => {
         if (res) {
           var data = [];
-          res.data.map((v) => {
-            data.push(v);
-          });
+          res.data.map((v) => data.push(v));
           this.setState({ certificatedata: data });
         }
       })
@@ -568,7 +490,7 @@ export default class InputLaboratory extends Component {
           sampleTypesData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   getAllAnalysisTypes() {
@@ -579,7 +501,7 @@ export default class InputLaboratory extends Component {
           analysisTypes: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   getAllMaterials() {
@@ -593,7 +515,7 @@ export default class InputLaboratory extends Component {
           unitsData: res.data.units,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   getAllClients() {
@@ -604,7 +526,7 @@ export default class InputLaboratory extends Component {
           clientsData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   getAllPackingTypes() {
@@ -615,7 +537,7 @@ export default class InputLaboratory extends Component {
           packingTypesData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   getAllCertificateTypes() {
@@ -626,7 +548,7 @@ export default class InputLaboratory extends Component {
           certificateTypesData: res.data.certificateTypes,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   on_delete_clicked(id) {
@@ -676,16 +598,6 @@ export default class InputLaboratory extends Component {
     const { stock_data } = this.state;
     stock_data[e.target.name] = e.target.value;
 
-    // var num = 0;
-    // stock_data.map((e) => {
-    //   num = Number(num) + Number(e);
-    // });
-    // if (this.state.param == "single") {
-    //   if (num > this.state.freeValue) {
-    //     alert("the sum of input values must smaller than Material left.");
-    //     stock_data[item] = "";
-    //   }
-    // }
     this.setState({ stock_data });
   }
 
@@ -711,7 +623,7 @@ export default class InputLaboratory extends Component {
     var charge_comment = "";
 
     item.Charge.map((temp) => {
-      if (temp.charge == "") {
+      if (temp.charge === "") {
         charge_value = charge_value;
       }
       charge_value = temp.charge;
@@ -779,15 +691,15 @@ export default class InputLaboratory extends Component {
       val: stock_data[stock_data.length - 1],
     });
     stock_data.map((e) => {
-      if (e == "") {
+      if (e === "") {
         flag = 0;
       } else {
         num = Number(num) + Number(e);
         flag = 1;
       }
     });
-    if (this.state.param == "single") {
-      if (flag == 0) {
+    if (this.state.param === "single") {
+      if (flag === 0) {
         notification.warning({
           message: "Error",
           description: "Please enter your data!",
@@ -801,7 +713,7 @@ export default class InputLaboratory extends Component {
           className: "not-css",
         });
         return;
-      } else if (num == this.state.freeValue) {
+      } else if (num === this.state.freeValue) {
         notification.warning({
           message: "Error",
           description: "Do Not Add",
@@ -828,7 +740,7 @@ export default class InputLaboratory extends Component {
       each_stock_element,
     } = this.state;
     this.state.multiarr.map((e) => {
-      if (e.id.toString() == each_stock_element[item].id.toString()) {
+      if (e.id.toString() === each_stock_element[item].id.toString()) {
         e.val = e.val - each_stock_element[item].val;
       }
     });
@@ -909,7 +821,7 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   deleteInputLaboratory() {
@@ -926,7 +838,7 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   on_add_material(item) {
@@ -939,8 +851,8 @@ export default class InputLaboratory extends Component {
 
     var ty = item.sample_type;
     var vv = this.state.sampleTypesData.map((v) => {
-      if (v.sampleType == ty) {
-        if (v.stockSample == true) {
+      if (v.sampleType === ty) {
+        if (v.stockSample === true) {
           return true;
         } else {
           return false;
@@ -949,16 +861,16 @@ export default class InputLaboratory extends Component {
     });
     var opt_material = [];
     let material = item.material_left;
-    vv = vv.filter((re) => re != undefined);
-    if (vv[0] == true) {
-      if (item.Weight.length == 0) {
+    vv = vv.filter((re) => re !== undefined);
+    if (vv[0] === true) {
+      if (item.Weight.length === 0) {
         notification.warning({
           message: "Warning",
           description: "Please Input Charge!",
           className: "not-css",
         });
         return;
-      } else if (item.Charge.length == 0) {
+      } else if (item.Charge.length === 0) {
         notification.warning({
           message: "Warning",
           description: "Please Input Charge!",
@@ -969,19 +881,19 @@ export default class InputLaboratory extends Component {
       this.setState({ param: "single" });
       this.state.sampleTypesData.map((sample) => {
         if (
-          sample.sampleType == item.sample_type &&
-          sample.stockSample == true
+          sample.sampleType === item.sample_type &&
+          sample.stockSample === true
         ) {
           opt_material.push(
             item.material +
-              " " +
-              item.client +
-              " " +
-              item.Charge[item.Charge.length - 1].charge +
-              "  " +
-              item.material_left +
-              " " +
-              item._id
+            " " +
+            item.client +
+            " " +
+            item.Charge[item.Charge.length - 1].charge +
+            "  " +
+            item.material_left +
+            " " +
+            item._id
           );
           var ee = "";
           ee += opt_material.map((e) => {
@@ -1000,45 +912,39 @@ export default class InputLaboratory extends Component {
       var stex = "";
       var formatValue = [];
       this.state.sampleTypesData.map((sample) => {
-        if (sample.stockSample == true) {
+        if (sample.stockSample === true) {
           this.state.filteredData.map((temp) => {
             if (sample.sampleType === temp.sample_type) {
-              if (item.material == temp.material) {
+              if (item.material === temp.material) {
                 var stateflag = 1;
-                if (temp.Charge.length == 0) {
+                if (temp.Charge.length === 0) {
                   stateflag = 0;
                 }
                 var flag = true;
-                if (stateflag == 0) {
+                if (stateflag === 0) {
                   flag = false;
                 }
-                if (flag == true) {
+                if (flag === true) {
                   if (sample.stockSample === true) {
                     opt_material.push(
                       temp.material +
-                        " " +
-                        temp.client +
-                        " " +
-                        temp.Charge[temp.Charge.length - 1].charge +
-                        " " +
-                        temp.material_left +
-                        " " +
-                        temp._id
+                      " " +
+                      temp.client +
+                      " " +
+                      temp.Charge[temp.Charge.length - 1].charge +
+                      " " +
+                      temp.material_left +
+                      " " +
+                      temp._id
                     );
 
-                    if (formatValue == "") {
+                    if (formatValue !== "") {
                       formatValue.push(temp.material_left);
                     } else {
                       return;
                     }
-                    if (valary == "") {
+                    if (valary === "") {
                       valary.push(temp._id);
-                      stex =
-                        temp.material +
-                        " " +
-                        temp.client +
-                        " " +
-                        temp.Charge[temp.Charge.length - 1].charge;
                     } else {
                       return;
                     }
@@ -1074,15 +980,15 @@ export default class InputLaboratory extends Component {
     event.preventDefault();
     var ty = this.state.sample_type;
     var vv = this.state.sampleTypesData.map((v) => {
-      if (v.sampleType == ty) {
-        if (v.stockSample == true) {
+      if (v.sampleType === ty) {
+        if (v.stockSample === true) {
           return "0";
         } else {
           return "1";
         }
       }
     });
-    var vvState = vv.filter((e) => e != undefined).toString();
+    var vvState = vv.filter((e) => e !== undefined).toString();
 
     var client = "";
     if (this.state.double_error !== "") {
@@ -1097,8 +1003,8 @@ export default class InputLaboratory extends Component {
     var ty = this.state.sample_type;
     var stocksample = false;
     var vv = this.state.sampleTypesData.map((v) => {
-      if (v.sampleType == ty) {
-        if (v.stockSample == true) {
+      if (v.sampleType === ty) {
+        if (v.stockSample === true) {
           return true;
         } else {
           return false;
@@ -1106,14 +1012,14 @@ export default class InputLaboratory extends Component {
       }
     });
     vv.map((e) => {
-      if (e == true) {
+      if (e === true) {
         stocksample = true;
       }
     });
     var stockok = 0;
-    if (stocksample == true) {
+    if (stocksample === true) {
       stockok = 0;
-    } else if (stocksample == false && this.state.a_types.length > 0) {
+    } else if (stocksample === false && this.state.a_types.length > 0) {
       stockok = 1;
     } else {
       stockok = 2;
@@ -1159,7 +1065,7 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   updateInputLaboratory(event) {
@@ -1210,7 +1116,7 @@ export default class InputLaboratory extends Component {
           filteredData: res.data,
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   setModal_Delete(modal) {
@@ -1220,7 +1126,7 @@ export default class InputLaboratory extends Component {
   }
 
   setModal_Create(modal) {
-    if (modal == true) {
+    if (modal === true) {
       // $("#material").prop("disabled", true);
       // $("#client").prop("disabled", true);
       // $("#packingType").prop("disabled", true);
@@ -1321,7 +1227,7 @@ export default class InputLaboratory extends Component {
     });
   }
   getcertificatedata = async (item) => {
-    if (this.state.stockinfo == 0) {
+    if (this.state.stockinfo === 0) {
       const { c_rowdata, selectCertificate, rowObj } = this.state;
       var tabletol = [];
       item.tablecol.map((vv) => {
@@ -1538,13 +1444,13 @@ export default class InputLaboratory extends Component {
         (client) => filtered_material[0].clients.indexOf(client._id) > -1
       );
       filtered_c_type = this.state.certificateTypesData.filter(
-        (c_type) => filtered_material[0]._id == c_type.material
+        (c_type) => filtered_material[0]._id === c_type.material
       );
       avaiable_a_types.map((element) => {
-        if (this.state.client == element.client) {
+        if (this.state.client === element.client) {
           available_a_type_names.push(
             this.state.analysisData.filter(
-              (a_data) => a_data._id == element.value
+              (a_data) => a_data._id === element.value
             )
           );
         }
@@ -1568,7 +1474,7 @@ export default class InputLaboratory extends Component {
     this.state.avaiable_a_types.map((item) => {
       if (client === item.client) {
         available_a_type_names.push(
-          this.state.analysisData.filter((a_data) => a_data._id == item.value)
+          this.state.analysisData.filter((a_data) => a_data._id === item.value)
         );
       }
     });
@@ -1604,7 +1510,7 @@ export default class InputLaboratory extends Component {
     var value = e.target.value;
     this.setState({ [name]: value });
 
-    if (value == "") {
+    if (value === "") {
       this.setState({
         filteredData: this.state.allData,
       });
@@ -1622,7 +1528,7 @@ export default class InputLaboratory extends Component {
     var value = e.target.value;
     this.setState({ [name]: value });
 
-    if (value == "") {
+    if (value === "") {
       this.setState({
         filteredData: this.state.allData,
       });
@@ -1635,28 +1541,28 @@ export default class InputLaboratory extends Component {
     }
   }
 
-  handleChangeDueDate(due_date) {
-    var due_date = due_date || this.state.due_date;
+  handleChangeDueDate(param_due_date) {
+    var due_date = param_due_date || this.state.due_date;
     this.setState({ due_date });
   }
 
-  handleChangeSampleDate(sample_date) {
-    var sample_date = sample_date || this.state.sample_date;
+  handleChangeSampleDate(param_sample_date) {
+    var sample_date = param_sample_date || this.state.sample_date;
     this.setState({ sample_date });
   }
 
-  handleChangeSendingDate(sending_date) {
-    var sending_date = sending_date || this.state.sending_date;
+  handleChangeSendingDate(param_sending_date) {
+    var sending_date = param_sending_date || this.state.sending_date;
     this.setState({ sending_date });
   }
 
-  handleChangeFetchDate(fetch_date) {
-    var fetch_date = fetch_date || this.state.fetch_date;
+  handleChangeFetchDate(param_fetch_date) {
+    var fetch_date = param_fetch_date || this.state.fetch_date;
     this.setState({ fetch_date });
   }
 
-  onChangeChargeDate(charge_value) {
-    var charge_value = charge_value || this.state.charge_value;
+  onChangeChargeDate(param_charge_value) {
+    var charge_value = param_charge_value || this.state.charge_value;
     this.setState({ charge_value });
   }
 
@@ -1722,7 +1628,7 @@ export default class InputLaboratory extends Component {
   onChange_material(e, i) {
     const { mat } = this.state;
     var da = mat[i].split(",");
-    var ddd = da.filter((v) => v != e.target.value);
+    var ddd = da.filter((v) => v !== e.target.value);
     ddd.unshift(e.target.value);
     mat[i] = ddd.toString();
     var pattern = e.target.value.toString().split(" ");
@@ -1742,7 +1648,7 @@ export default class InputLaboratory extends Component {
     var flag = 0;
     var num = 0;
     stock_data.map((e) => {
-      if (e == "") {
+      if (e === "") {
         flag = 0;
       } else {
         num = Number(num) + Number(e);
@@ -1750,8 +1656,8 @@ export default class InputLaboratory extends Component {
       }
     });
     // Single
-    if (this.state.param == "single") {
-      if (flag == 0) {
+    if (this.state.param === "single") {
+      if (flag === 0) {
         notification.warning({
           message: "Error",
           description: "Please enter your data!",
@@ -1806,7 +1712,7 @@ export default class InputLaboratory extends Component {
         newArray.push({ id: key, val: keyValue[key] });
       }
       this.setState({ multiarr: newArray });
-      if (flag == 0) {
+      if (flag === 0) {
         notification.warning({
           message: "Error",
           description: "Please enter your data!",
@@ -1841,7 +1747,7 @@ export default class InputLaboratory extends Component {
         let certificateArr = [];
         this.state.allData.map((e) => {
           newArray.map((m) => {
-            if (e._id == m.id) {
+            if (e._id === m.id) {
               console.log(123, e.a_types);
               e.a_types.map((ea) => {
                 analysisArr.push(
@@ -1851,27 +1757,27 @@ export default class InputLaboratory extends Component {
               e.c_types.map((ec) => {
                 certificateArr.push(
                   ec +
-                    "-" +
-                    e._id +
-                    "-" +
-                    e.client_id +
-                    "-" +
-                    e.sample_type +
-                    "-" +
-                    e.client +
-                    "-/" +
-                    e.sample_date
+                  "-" +
+                  e._id +
+                  "-" +
+                  e.client_id +
+                  "-" +
+                  e.sample_type +
+                  "-" +
+                  e.client +
+                  "-/" +
+                  e.sample_date
                 );
               });
               this.state.lotValue.push(e.Charge[0]);
               this.state.stock_sample.push(
                 e.sample_type +
-                  " " +
-                  e.material +
-                  " " +
-                  e.client +
-                  " " +
-                  e.Charge[0].charge
+                " " +
+                e.material +
+                " " +
+                e.client +
+                " " +
+                e.Charge[0].charge
               );
             }
           });
@@ -1880,17 +1786,17 @@ export default class InputLaboratory extends Component {
         var certificateMerged1 = [].concat.apply([], certificateArr);
 
         let selfaTypearr = [];
-        if (this.state.aTypearr.length != 0) {
+        if (this.state.aTypearr.length !== 0) {
           this.state.aTypearr.map((aty) => {
-            if (aty.toString().split("-").length == 1) {
+            if (aty.toString().split("-").length === 1) {
               selfaTypearr.push(aty);
             }
           });
         }
         let selfcTypearr = [];
-        if (this.state.cTypearr.length != 0) {
+        if (this.state.cTypearr.length !== 0) {
           this.state.cTypearr.map((cty) => {
-            if (cty.toString().split("-").length == 1) {
+            if (cty.toString().split("-").length === 1) {
               selfcTypearr.push(cty);
             }
           });
@@ -1996,8 +1902,8 @@ export default class InputLaboratory extends Component {
     var history_item = [];
     var reason = [];
 
-    if (item.stockinfo == 0) {
-      if (analysis.toString().split("-").length == 1) {
+    if (item.stockinfo === 0) {
+      if (analysis.toString().split("-").length === 1) {
         this.setState({ objectstockok: "other" });
       } else {
         this.setState({ objectstockok: "self" });
@@ -2026,7 +1932,7 @@ export default class InputLaboratory extends Component {
       });
       this.setModal_detail(true);
     } else {
-      if (analysis.toString().split("-").length == 1) {
+      if (analysis.toString().split("-").length === 1) {
         this.setState({ objectstockok: "self" });
       } else {
         this.setState({ objectstockok: "other" });
@@ -2034,20 +1940,20 @@ export default class InputLaboratory extends Component {
       var unstockid = analysis.toString().split("-")[1];
       var unclientid = analysis.toString().split("-")[2];
 
-      if (unstockid == undefined) {
+      if (unstockid === undefined) {
         unstockid = item._id;
       }
-      if (unclientid == undefined) {
+      if (unclientid === undefined) {
         unclientid = item.client_id;
       }
       let unstockana = [];
-      if (analysis.toString().split("-").length == 1) {
+      if (analysis.toString().split("-").length === 1) {
         unstockana = item.a_types.filter(
-          (e) => e.toString().split("-").length == 1
+          (e) => e.toString().split("-").length === 1
         );
       } else {
         unstockana = item.a_types.map((le) => {
-          if (le.toString().split("-").length != 1) {
+          if (le.toString().split("-").length !== 1) {
             return le.toString().split("-")[0];
           }
         });
@@ -2107,37 +2013,37 @@ export default class InputLaboratory extends Component {
       [data.id + "-" + data.analysis + "-" + data.obj_value + "-" + data.unit]:
         data._id,
       [data.id +
-      "-" +
-      data.label +
-      "-" +
-      data.unit +
-      "-" +
-      data.obj_value +
-      "-" +
-      data.analysis +
-      `[${data.min}, ${data.max}]`]: data.limitValue,
+        "-" +
+        data.label +
+        "-" +
+        data.unit +
+        "-" +
+        data.obj_value +
+        "-" +
+        data.analysis +
+        `[${data.min}, ${data.max}]`]: data.limitValue,
       [data.id +
-      "-" +
-      data.label +
-      "-" +
-      data.unit +
-      "-" +
-      data.obj_value +
-      "-" +
-      data.analysis +
-      `[${data.min}, ${data.max}]` +
-      "reason"]: reason,
+        "-" +
+        data.label +
+        "-" +
+        data.unit +
+        "-" +
+        data.obj_value +
+        "-" +
+        data.analysis +
+        `[${data.min}, ${data.max}]` +
+        "reason"]: reason,
       [data.id +
-      "-" +
-      data.label +
-      "-" +
-      data.unit +
-      "-" +
-      data.obj_value +
-      "-" +
-      data.analysis +
-      `[${data.min}, ${data.max}]` +
-      "checkbox"]: accept,
+        "-" +
+        data.label +
+        "-" +
+        data.unit +
+        "-" +
+        data.obj_value +
+        "-" +
+        data.analysis +
+        `[${data.min}, ${data.max}]` +
+        "checkbox"]: accept,
       [data.id + "-" + data.analysis + "-" + data.label + data.unit]: color,
     });
   }
@@ -2179,7 +2085,7 @@ export default class InputLaboratory extends Component {
   certificate_modal_state = (data, v) => {
     this.setState({ stockinfo: data.stockinfo });
     var objectives = [];
-    if (data.stockinfo == 0) {
+    if (data.stockinfo === 0) {
       this.state.analysisData.map((item) => {
         data.a_types.map((temp) => {
           if (item.analysisType === temp) {
@@ -2228,32 +2134,32 @@ export default class InputLaboratory extends Component {
       });
     } else {
       let unstockcer = [];
-      if (v.toString().split("-").length == 1) {
+      if (v.toString().split("-").length === 1) {
         unstockcer = data.a_types.filter(
-          (e) => e.toString().split("-").length == 1
+          (e) => e.toString().split("-").length === 1
         );
       } else {
         unstockcer = data.a_types.map((le) => {
-          if (le.toString().split("-").length != 1) {
+          if (le.toString().split("-").length !== 1) {
             return le.toString().split("-")[0];
           }
         });
       }
-      unstockcer = unstockcer.filter((re) => re != undefined);
+      unstockcer = unstockcer.filter((re) => re !== undefined);
       let unstockid = v.toString().split("-")[1];
-      if (unstockid == undefined) {
+      if (unstockid === undefined) {
         unstockid = data._id;
       }
       let unstockcliendid = v.toString().split("-")[2];
-      if (unstockcliendid == undefined) {
+      if (unstockcliendid === undefined) {
         unstockcliendid = data.client_id;
       }
       let unstockclient = v.toString().split("-")[4];
-      if (unstockclient == undefined) {
+      if (unstockclient === undefined) {
         unstockclient = data.client;
       }
       let unstockdate = v.toString().split("/")[1];
-      if (unstockdate == undefined) {
+      if (unstockdate === undefined) {
         unstockdate = data.sample_date;
       }
 
@@ -2265,7 +2171,7 @@ export default class InputLaboratory extends Component {
         setunstockclientid: unstockcliendid,
       });
 
-      if (v.toString().split("-").length != 1) {
+      if (v.toString().split("-").length !== 1) {
         v = v.toString().split("-")[0];
       }
       this.state.analysisData.map((item) => {
@@ -2814,7 +2720,7 @@ export default class InputLaboratory extends Component {
       value = "";
     }
     var pattern = "[^0-9.]";
-    if (value.match(pattern) != null) {
+    if (value.match(pattern) !== null) {
       value = value.substr(0, value.length - 1);
     }
     if (value.substr(value.length - 1, value.length) === ".") {
@@ -2840,27 +2746,27 @@ export default class InputLaboratory extends Component {
     this.setState({
       [e.target.name]: value,
       [item.id +
-      "-" +
-      item.label +
-      "-" +
-      item.unit +
-      "-" +
-      item.value +
-      "-" +
-      item.analysis +
-      `[${item.min}, ${item.max}]` +
-      "reason"]: "",
+        "-" +
+        item.label +
+        "-" +
+        item.unit +
+        "-" +
+        item.value +
+        "-" +
+        item.analysis +
+        `[${item.min}, ${item.max}]` +
+        "reason"]: "",
       [item.id +
-      "-" +
-      item.label +
-      "-" +
-      item.unit +
-      "-" +
-      item.value +
-      "-" +
-      item.analysis +
-      `[${item.min}, ${item.max}]` +
-      "checkbox"]: false,
+        "-" +
+        item.label +
+        "-" +
+        item.unit +
+        "-" +
+        item.value +
+        "-" +
+        item.analysis +
+        `[${item.min}, ${item.max}]` +
+        "checkbox"]: false,
     });
   }
 
@@ -2872,37 +2778,37 @@ export default class InputLaboratory extends Component {
     objectives.map((item) => {
       this.setState({
         [item.id +
-        "-" +
-        item.label +
-        "-" +
-        item.unit +
-        "-" +
-        item.value +
-        "-" +
-        item.analysis +
-        `[${item.min}, ${item.max}]`]: "",
+          "-" +
+          item.label +
+          "-" +
+          item.unit +
+          "-" +
+          item.value +
+          "-" +
+          item.analysis +
+          `[${item.min}, ${item.max}]`]: "",
         [item.id +
-        "-" +
-        item.label +
-        "-" +
-        item.unit +
-        "-" +
-        item.value +
-        "-" +
-        item.analysis +
-        `[${item.min}, ${item.max}]` +
-        "reason"]: "",
+          "-" +
+          item.label +
+          "-" +
+          item.unit +
+          "-" +
+          item.value +
+          "-" +
+          item.analysis +
+          `[${item.min}, ${item.max}]` +
+          "reason"]: "",
         [item.id +
-        "-" +
-        item.label +
-        "-" +
-        item.unit +
-        "-" +
-        item.value +
-        "-" +
-        item.analysis +
-        `[${item.min}, ${item.max}]` +
-        "checkbox"]: false,
+          "-" +
+          item.label +
+          "-" +
+          item.unit +
+          "-" +
+          item.value +
+          "-" +
+          item.analysis +
+          `[${item.min}, ${item.max}]` +
+          "checkbox"]: false,
         [item.label]: false,
         [item.id + "-" + item.analysis + "-" + item.label + item.unit]: "black",
       });
@@ -2912,7 +2818,7 @@ export default class InputLaboratory extends Component {
     this.setModal_detail(false);
   }
   onclickMultiLabel() {
-    if (this.state.showhistory == false) {
+    if (this.state.showhistory === false) {
       this.setState({ showhistory: true });
     } else {
       this.setState({ showhistory: false });
@@ -2943,10 +2849,10 @@ export default class InputLaboratory extends Component {
           if (data.constructor === Object && Object.keys(data).length === 0) {
           } else {
             if (
-              data.label == label.label &&
-              data.unit == label.unit &&
-              data.value == label.value &&
-              data.analysis == this.state.anaylsis_button
+              data.label === label.label &&
+              data.unit === label.unit &&
+              data.value === label.value &&
+              data.analysis === this.state.anaylsis_button
             ) {
               history_item.push(data);
             }
@@ -2958,14 +2864,14 @@ export default class InputLaboratory extends Component {
         if (item.label !== label.label) {
           this.setState({
             [item.label +
-            "-" +
-            item.analysis +
-            "-" +
-            item.unit +
-            "-" +
-            item.value +
-            "-" +
-            item.id]: false,
+              "-" +
+              item.analysis +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.id]: false,
           });
         }
       });
@@ -2973,24 +2879,24 @@ export default class InputLaboratory extends Component {
       this.setState({
         objectiveHistory: res.data.objectivehistory,
         [label.label +
-        "-" +
-        label.analysis +
-        "-" +
-        label.unit +
-        "-" +
-        label.value +
-        "-" +
-        label.id]:
+          "-" +
+          label.analysis +
+          "-" +
+          label.unit +
+          "-" +
+          label.value +
+          "-" +
+          label.id]:
           !this.state[
-            label.label +
-              "-" +
-              label.analysis +
-              "-" +
-              label.unit +
-              "-" +
-              label.value +
-              "-" +
-              label.id
+          label.label +
+          "-" +
+          label.analysis +
+          "-" +
+          label.unit +
+          "-" +
+          label.value +
+          "-" +
+          label.id
           ],
         history_item: history_item,
       });
@@ -3006,44 +2912,44 @@ export default class InputLaboratory extends Component {
         label: item.label,
         value:
           this.state[
-            item.id +
-              "-" +
-              item.label +
-              "-" +
-              item.unit +
-              "-" +
-              item.value +
-              "-" +
-              item.analysis +
-              `[${item.min}, ${item.max}]`
+          item.id +
+          "-" +
+          item.label +
+          "-" +
+          item.unit +
+          "-" +
+          item.value +
+          "-" +
+          item.analysis +
+          `[${item.min}, ${item.max}]`
           ],
         reason:
           this.state[
-            item.id +
-              "-" +
-              item.label +
-              "-" +
-              item.unit +
-              "-" +
-              item.value +
-              "-" +
-              item.analysis +
-              `[${item.min}, ${item.max}]` +
-              "reason"
+          item.id +
+          "-" +
+          item.label +
+          "-" +
+          item.unit +
+          "-" +
+          item.value +
+          "-" +
+          item.analysis +
+          `[${item.min}, ${item.max}]` +
+          "reason"
           ],
         accept:
           this.state[
-            item.id +
-              "-" +
-              item.label +
-              "-" +
-              item.unit +
-              "-" +
-              item.value +
-              "-" +
-              item.analysis +
-              `[${item.min}, ${item.max}]` +
-              "checkbox"
+          item.id +
+          "-" +
+          item.label +
+          "-" +
+          item.unit +
+          "-" +
+          item.value +
+          "-" +
+          item.analysis +
+          `[${item.min}, ${item.max}]` +
+          "checkbox"
           ],
         id: item.id,
         analysis: item.analysis,
@@ -3092,37 +2998,37 @@ export default class InputLaboratory extends Component {
             [item.label]: false,
             comment: "",
             [item.id +
-            "-" +
-            item.label +
-            "-" +
-            item.unit +
-            "-" +
-            item.value +
-            "-" +
-            item.analysis +
-            `[${item.min}, ${item.max}]`]: "",
+              "-" +
+              item.label +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.analysis +
+              `[${item.min}, ${item.max}]`]: "",
             [item.id +
-            "-" +
-            item.label +
-            "-" +
-            item.unit +
-            "-" +
-            item.value +
-            "-" +
-            item.analysis +
-            `[${item.min}, ${item.max}]` +
-            "reason"]: "",
+              "-" +
+              item.label +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.analysis +
+              `[${item.min}, ${item.max}]` +
+              "reason"]: "",
             [item.id +
-            "-" +
-            item.label +
-            "-" +
-            item.unit +
-            "-" +
-            item.value +
-            "-" +
-            item.analysis +
-            `[${item.min}, ${item.max}]` +
-            "checkbox"]: false,
+              "-" +
+              item.label +
+              "-" +
+              item.unit +
+              "-" +
+              item.value +
+              "-" +
+              item.analysis +
+              `[${item.min}, ${item.max}]` +
+              "checkbox"]: false,
             [item.id + "-" + item.analysis + "-" + item.label + item.unit]:
               "black",
           });
@@ -3132,7 +3038,6 @@ export default class InputLaboratory extends Component {
 
   renderDetailModalCreate(objectives) {
     var data = {};
-    var dis = "";
     data = objectives.map((item) => {
       return this.state.unitData.map((temp) => {
         if (item.analysis === this.state.anaylsis_button) {
@@ -3171,27 +3076,27 @@ export default class InputLaboratory extends Component {
                           }
                           value={
                             this.state[
-                              item.id +
-                                "-" +
-                                item.label +
-                                "-" +
-                                item.unit +
-                                "-" +
-                                item.value +
-                                "-" +
-                                item.analysis +
-                                `[${item.min}, ${item.max}]`
+                            item.id +
+                            "-" +
+                            item.label +
+                            "-" +
+                            item.unit +
+                            "-" +
+                            item.value +
+                            "-" +
+                            item.analysis +
+                            `[${item.min}, ${item.max}]`
                             ]
                           }
                           style={{
                             color:
                               this.state[
-                                item.id +
-                                  "-" +
-                                  item.analysis +
-                                  "-" +
-                                  item.label +
-                                  item.unit
+                              item.id +
+                              "-" +
+                              item.analysis +
+                              "-" +
+                              item.label +
+                              item.unit
                               ],
                           }}
                           className="form-control-sm"
@@ -3224,31 +3129,31 @@ export default class InputLaboratory extends Component {
                           value={
                             this.state[
                               item.id +
-                                "-" +
-                                item.label +
-                                "-" +
-                                item.unit +
-                                "-" +
-                                item.value +
-                                "-" +
-                                item.analysis +
-                                `[${item.min}, ${item.max}]` +
-                                "reason"
+                              "-" +
+                              item.label +
+                              "-" +
+                              item.unit +
+                              "-" +
+                              item.value +
+                              "-" +
+                              item.analysis +
+                              `[${item.min}, ${item.max}]` +
+                              "reason"
                             ] === undefined
                               ? ""
                               : this.state[
-                                  item.id +
-                                    "-" +
-                                    item.label +
-                                    "-" +
-                                    item.unit +
-                                    "-" +
-                                    item.value +
-                                    "-" +
-                                    item.analysis +
-                                    `[${item.min}, ${item.max}]` +
-                                    "reason"
-                                ]
+                              item.id +
+                              "-" +
+                              item.label +
+                              "-" +
+                              item.unit +
+                              "-" +
+                              item.value +
+                              "-" +
+                              item.analysis +
+                              `[${item.min}, ${item.max}]` +
+                              "reason"
+                              ]
                           }
                           onChange={this.handleSeltectedChangeReason}
                         >
@@ -3282,7 +3187,7 @@ export default class InputLaboratory extends Component {
                         <div
                           style={{
                             display:
-                              this.state.accept_visible == true
+                              this.state.accept_visible === true
                                 ? "block"
                                 : "none",
                             pointerEvents: this.state.accept_disable
@@ -3292,6 +3197,35 @@ export default class InputLaboratory extends Component {
                           className={
                             this.state[
                               item.id +
+                              "-" +
+                              item.label +
+                              "-" +
+                              item.unit +
+                              "-" +
+                              item.value +
+                              "-" +
+                              item.analysis +
+                              `[${item.min}, ${item.max}]` +
+                              "checkbox"
+                            ] === true
+                              ? "chk clr-full"
+                              : "chk"
+                          }
+                          onClick={(e) => {
+                            this.setState({
+                              [item.id +
+                                "-" +
+                                item.label +
+                                "-" +
+                                item.unit +
+                                "-" +
+                                item.value +
+                                "-" +
+                                item.analysis +
+                                `[${item.min}, ${item.max}]` +
+                                "checkbox"]:
+                                !this.state[
+                                item.id +
                                 "-" +
                                 item.label +
                                 "-" +
@@ -3302,35 +3236,6 @@ export default class InputLaboratory extends Component {
                                 item.analysis +
                                 `[${item.min}, ${item.max}]` +
                                 "checkbox"
-                            ] === true
-                              ? "chk clr-full"
-                              : "chk"
-                          }
-                          onClick={(e) => {
-                            this.setState({
-                              [item.id +
-                              "-" +
-                              item.label +
-                              "-" +
-                              item.unit +
-                              "-" +
-                              item.value +
-                              "-" +
-                              item.analysis +
-                              `[${item.min}, ${item.max}]` +
-                              "checkbox"]:
-                                !this.state[
-                                  item.id +
-                                    "-" +
-                                    item.label +
-                                    "-" +
-                                    item.unit +
-                                    "-" +
-                                    item.value +
-                                    "-" +
-                                    item.analysis +
-                                    `[${item.min}, ${item.max}]` +
-                                    "checkbox"
                                 ],
                             });
                           }}
@@ -3343,14 +3248,14 @@ export default class InputLaboratory extends Component {
                   <CCol>
                     {this.state[
                       item.label +
-                        "-" +
-                        item.analysis +
-                        "-" +
-                        item.unit +
-                        "-" +
-                        item.value +
-                        "-" +
-                        item.id
+                      "-" +
+                      item.analysis +
+                      "-" +
+                      item.unit +
+                      "-" +
+                      item.value +
+                      "-" +
+                      item.id
                     ] === true ? (
                       <>
                         <CDataTable
@@ -3453,8 +3358,6 @@ export default class InputLaboratory extends Component {
     var analysis_option = Array.from(
       a_type_list.reduce((a, o) => a.set(`${o[0]._id}`, o), new Map()).values()
     );
-
-    var error = this.state.double_error;
 
     return (
       <CCard>
@@ -3855,7 +3758,7 @@ export default class InputLaboratory extends Component {
   }
 
   render() {
-    const { analysisData, sampleTypesData, filteredData, pdfdata } = this.state;
+    const { analysisData, filteredData, pdfdata } = this.state;
     return (
       <div>
         <div>
@@ -3903,7 +3806,7 @@ export default class InputLaboratory extends Component {
               >
                 <i className="fa fa-upload" />
                 <span style={{ padding: "4px" }} />
-                upload
+                Upload
                 {this.state.import_label}
               </CButton>
             </ReactFileReader>
@@ -3915,7 +3818,7 @@ export default class InputLaboratory extends Component {
             >
               <i className="fa fa-download"></i>
               <span style={{ padding: "4px" }} />
-              download
+              Download
               {this.state.export_label}
             </CButton>
             <CSVLink
@@ -3934,7 +3837,7 @@ export default class InputLaboratory extends Component {
             >
               <i className="fa fa-plus" />
               <span style={{ padding: "4px" }} />
-              create
+              Create
               {this.state.create_new_label}
             </CButton>
           </div>
@@ -3976,7 +3879,7 @@ export default class InputLaboratory extends Component {
               },
               buttonGroups: (item, index) => {
                 var data = item;
-                if (item.client != undefined) {
+                if (item.client !== undefined) {
                   data.client = item.client.split("-")[0];
                   return (
                     <td>
@@ -4016,8 +3919,8 @@ export default class InputLaboratory extends Component {
                   );
                 }
               },
-              a_types: (item, index) => {
-                if (item.stockinfo == 0) {
+              a_types: (item) => {
+                if (item.stockinfo === 0) {
                   var data = [];
                   var color = "";
                   item.a_types.map((v, k) => {
@@ -4101,7 +4004,7 @@ export default class InputLaboratory extends Component {
                               }
                             }
 
-                            if (color == "") {
+                            if (color === "") {
                               color = "grey";
                             }
                             return (
@@ -4140,7 +4043,7 @@ export default class InputLaboratory extends Component {
                         {item.a_types.map((v, k) => {
                           if (data.length === 0) {
                             var analysis_name = "";
-                            if (v.toString().split("-").length == 1) {
+                            if (v.toString().split("-").length === 1) {
                               analysis_name = v;
                             } else {
                               analysis_name =
@@ -4168,7 +4071,7 @@ export default class InputLaboratory extends Component {
                           } else {
                             var analysis_history = [];
                             var color_group = [];
-                            if (v.toString().split("-").length == 1) {
+                            if (v.toString().split("-").length === 1) {
                               for (var i = data.length - 1; i >= 0; i--) {
                                 if (
                                   !analysis_history.some(
@@ -4194,10 +4097,10 @@ export default class InputLaboratory extends Component {
                               }
                             }
                             color = "";
-                            if (v.toString().split("-").length == 1) {
+                            if (v.toString().split("-").length === 1) {
                               analysis_history.map((temp, index) => {
-                                if (temp.stockok == "self") {
-                                  if (temp.id == item._id) {
+                                if (temp.stockok === "self") {
+                                  if (temp.id === item._id) {
                                     if (temp.analysis === v) {
                                       if (
                                         temp.limitValue >= temp.min &&
@@ -4222,12 +4125,12 @@ export default class InputLaboratory extends Component {
                                 }
                               });
                             } else {
-                              analysis_history.map((temp, index) => {
-                                if (temp.stockok == "other") {
+                              analysis_history.map((temp) => {
+                                if (temp.stockok === "other") {
                                   if (
                                     temp.analysis === v.toString().split("-")[0]
                                   ) {
-                                    if (temp.id == v.toString().split("-")[1]) {
+                                    if (temp.id === v.toString().split("-")[1]) {
                                       if (
                                         temp.limitValue >= temp.min &&
                                         temp.limitValue <= temp.max
@@ -4264,11 +4167,11 @@ export default class InputLaboratory extends Component {
                               }
                             }
 
-                            if (color == "") {
+                            if (color === "") {
                               color = "grey";
                             }
                             var analysis_name = "";
-                            if (v.toString().split("-").length == 1) {
+                            if (v.toString().split("-").length === 1) {
                               analysis_name = v;
                             } else {
                               analysis_name =
@@ -4300,8 +4203,8 @@ export default class InputLaboratory extends Component {
                   );
                 }
               },
-              c_types: (item, index) => {
-                if (item.stockinfo == 0) {
+              c_types: (item) => {
+                if (item.stockinfo === 0) {
                   return (
                     <td>
                       <div style={{ display: "column" }}>
@@ -4327,7 +4230,7 @@ export default class InputLaboratory extends Component {
                       <div style={{ display: "column" }}>
                         {item.c_types.map((v, k) => {
                           var certificate_name = "";
-                          if (v.toString().split("-").length == 1) {
+                          if (v.toString().split("-").length === 1) {
                             certificate_name = v;
                           } else {
                             certificate_name =
@@ -4352,7 +4255,7 @@ export default class InputLaboratory extends Component {
                   );
                 }
               },
-              Weight: (item, index) => {
+              Weight: (item) => {
                 if (item.Weight.length === 0) {
                   return (
                     <td>
@@ -4406,7 +4309,7 @@ export default class InputLaboratory extends Component {
                 }
               },
               stockSample: (item) => {
-                if (item.stockSample[0] == "") {
+                if (item.stockSample[0] === "") {
                   return <td></td>;
                 } else {
                   return (

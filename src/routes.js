@@ -68,6 +68,8 @@ const AnalysisLaboratory = React.lazy(() =>
   import("./views/LIMS/AnalysisLaboratory")
 );
 
+const InputLab = React.lazy(() => import("./views/LIMS/InputLab"));
+
 const routes = [
   { path: "/", exact: true, name: "Home" },
   { path: "/dashboard", name: "Dashboard", component: Dashboard },
@@ -131,6 +133,12 @@ const routes = [
     exact: true,
     name: "Administration",
     component: Administration,
+  },
+  {
+    path: "/input/laboratory1",
+    exact: true,
+    name: "InputLaboratory1",
+    component: InputLab,
   },
   {
     path: "/input/laboratory",

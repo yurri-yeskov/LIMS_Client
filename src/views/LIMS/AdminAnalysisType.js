@@ -9,11 +9,8 @@ import {
   CModalFooter,
   CModalHeader,
   CButton,
-  CSelect,
   CForm,
   CFormGroup,
-  CValidFeedback,
-  CInvalidFeedback,
   CLabel,
   CInput,
 } from "@coreui/react";
@@ -78,7 +75,7 @@ export default class AdminAnalysisType extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
         export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
@@ -163,7 +160,6 @@ export default class AdminAnalysisType extends Component {
 
       return true;
     });
-
     return returnVal;
   }
 
@@ -472,7 +468,7 @@ export default class AdminAnalysisType extends Component {
   on_create_clicked() {
     this.setState({
       current_id: '',
-      analysisType_id: '',
+      analysisType_id: this.state.analysisTypesData.length + 1,
       analysisType: '',
       norm: '',
       objectives: [],
@@ -547,14 +543,18 @@ export default class AdminAnalysisType extends Component {
     event.preventDefault();
 
     if (this.state.double_error !== "") return;
+    
     this.setModal_Create(false);
-    axios.post(Config.ServerUri + '/create_analysisType', {
+
+    const data = {
       analysisType_id: this.state.analysisType_id,
       analysisType: this.state.analysisType,
       norm: this.state.norm,
       objectives: this.state.objectives,
       remark: this.state.remark
-    })
+    }
+    
+    axios.post(Config.ServerUri + '/create_analysisType', data)
       .then((res) => {
         toast.success('AnalysisType successfully created');
         this.setState({

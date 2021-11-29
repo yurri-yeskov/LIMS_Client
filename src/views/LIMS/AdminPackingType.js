@@ -66,7 +66,7 @@ export default class AdminPackingType extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
         export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
@@ -352,7 +352,7 @@ export default class AdminPackingType extends Component {
     this.setState({
       current_id: '',
       packingType: '',
-      packingType_id: '',
+      packingType_id: this.state.packingTypesData.length + 1,
       remark: '',
       _create: true,
       double_error: "",

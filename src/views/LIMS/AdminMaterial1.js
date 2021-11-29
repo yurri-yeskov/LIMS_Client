@@ -1,4 +1,5 @@
-import React, { Component } from "react";
+import { useEffect, useRef, useState } from "react"
+import axios from "axios";
 import {
   CCard,
   CCardBody,
@@ -15,549 +16,691 @@ import {
   CInput,
   CRow,
   CCol,
-  CTooltip,
 } from "@coreui/react";
-
 import Select from "react-select";
-import { toast } from "react-hot-toast";
+// import { toast } from "react-hot-toast";
+import { CSVLink } from "react-csv";
+import ReactFileReader from 'react-file-reader';
 
-const axios = require("axios");
-const Config = require("../../Config.js");
+const AdminMaterial1 = ({ selected_language, language_data }) => {
 
-const fields = [
-  { key: "material", _style: { width: "25%" } },
-  { key: "remark", sorter: false },
-  {
-    key: "buttonGroups",
-    label: "",
-    _style: { width: "84px" },
-  },
-];
+    const import_label = language_data.filter(item => item.label === 'import')[0][selected_language]
+    const export_label = language_data.filter(item => item.label === 'export')[0][selected_language]
+    const create_new_label = language_data.filter(item => item.label === 'create_new')[0][selected_language]
 
-export default class AdminMaterial extends Component {
-  constructor(props) {
-    super(props);
-    this.getAllMaterials = this.getAllMaterials.bind(this);
-    this.deleteMaterial = this.deleteMaterial.bind(this);
-    this.createMaterial = this.createMaterial.bind(this);
-    this.updateMaterial = this.updateMaterial.bind(this);
-    this.handleInputChange = this.handleInputChange.bind(this);
+    const fields = [
+        { key: 'material_id', label: language_data.filter(item => item.label === 'material_id')[0][selected_language] },
+        { key: 'material', _style: { width: '25%' }, label: language_data.filter(item => item.label === 'material')[0][selected_language] },
+        { key: 'objectives', sorter: false, label: language_data.filter(item => item.label === 'analysistype_objectives')[0][selected_language] },
+        { key: 'remark', sorter: false, label: language_data.filter(item => item.label === 'remark')[0][selected_language] },
+        { key: 'buttonGroups', label: '', _style: { width: '84px' } }
+    ];
+    const header = [
+        { key: 'material_id', label: language_data.filter(item => item.label === 'material_id')[0][selected_language] },
+        { key: 'material', label: language_data.filter(item => item.label === 'material')[0][selected_language] },
+        { key: 'client', label: language_data.filter(item => item.label === 'clients')[0][selected_language] },
+        { key: 'combination', label: language_data.filter(item => item.label === 'analysistype_objectives')[0][selected_language] },
+        { key: 'remark', label: language_data.filter(item => item.label === 'remark')[0][selected_language] },
+    ];
 
-    this.state = {
-      materialsData: [],
-      objectivesData: [],
-      unitsData: [],
-      clientsData: [],
-      modal_delete: false,
-      modal_create: false,
-      current_id: null,
-      material: "",
-      objectives: [],
-      objectiveValues: [],
-      objectivesError: [],
-      clients: [],
-      _clients: [],
-      remark: "",
-      _create: false,
-      material_error: "",
+    const data = {
+        current_id: '',
+        material_id: '',
+        material: '',
+        remark: ''
+    }
 
-      analysisData: [],
-      analysisTypes: [],
-      minMaxValues: [],
-    };
-  }
+    const csvLink = useRef()
 
-  componentDidMount() {
-    this.getAllMaterials();
-  }
+    const [errors, setErrors] = useState('')
+    const [pending, setPending] = useState(false)
+    const [modalData, setModalData] = useState(data)
+    const [show_create_modal, setShowCreateModal] = useState(false)
+    const [show_delete_modal, setShowDeleteModal] = useState(false)
+    const [_clients, set_Clients] = useState([])
+    const [clients, setClients] = useState([])
+    const [excelData, setExportData] = useState([])
+    const [materialsData, setMaterialData] = useState([])
+    const [objectivesData, setObjectivesData] = useState([])
+    const [clientsData, setClientsData] = useState([])
+    const [objectives, setObjectives] = useState([])
+    const [unitsData, setUnitsData] = useState([])
+    const [objectiveValues, setObjectiveValues] = useState([])
+    const [filteredObjectives, setFilteredObjectives] = useState([])
+    const [analysisData, setAnalysisData] = useState([])
+    const [analysisTypes, setAnalysisTypes] = useState([])
+    const [objOptions, setObjOptions] = useState([])
+    const [clientOptions, setClientOptions] = useState([])
+    const [clientObjs, setClientObjs] = useState([{ label: "Default", value: "" }])
 
-  handleInputChange(e) {
-    var name = e.target.name;
-    var value = e.target.value;
+    useEffect(() => {
+        axios.get(process.env.REACT_APP_API_URL + "materials")
+        .then(res => {
+            console.log(res.data)
+            setMaterialData(res.data.materials)
+            setObjectivesData(res.data.objectives)
+            setUnitsData(res.data.units)
+            setClientsData(res.data.clients)
+            setAnalysisData(res.data.analysisTypes)
+            setObjOptions(res.data.obj_units)
+            const data = res.data.clients.map(client => {
+                return {
+                    label: client.name,
+                    value: client._id
+                }
+            })
+            setClientOptions(data)
 
-    if (name === "material") {
-      var found = false;
-      for (var i in this.state.materialsData) {
-        var item = this.state.materialsData[i];
-        if (item.material === value && item._id !== this.state.current_id) {
-          found = true;
-          break;
+            setModalData({...modalData, material_id: res.data.materials.length + 1})
+
+            let material_list = [];
+            let client_list = 'Default\n';
+            let combination_list = '';
+            Object.keys(res.data.materials).length > 0 && res.data.materials.map((material) => {
+                combination_list += getTooltip(material, '') + '\n';
+                material.clients.map((client) => {
+                    client_list += client.name + '\n';
+                    combination_list += getTooltip(material, client._id) + '\n';
+                });
+                material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
+            });
+            setExportData(material_list)
+            setPending(true)
+        })
+
+    }, [])
+
+    useEffect(() => {
+        if(Object.keys(_clients).length > 0) {
+            const data = _clients.map(_client => {
+                return {
+                    label: _client.label, 
+                    value: _client.value
+                }
+            })
+            setClientObjs([...clientObjs, data])
         }
-      }
+    }, [_clients, clientObjs])
 
-      if (found === true) {
-        this.setState({ material_error: "Value already exists" });
-      } else this.setState({ material_error: "" });
+    const handleMultiSelectChange_Client = (e) => {
+        const data = e.map((item) => { return item.value });
+        
+        set_Clients(e)
+        // setClients(clients)
     }
 
-    this.setState({
-      [name]: value,
-    });
-  }
+    const handleFiles = () => {
 
-  handleObjectiveInputChange(e, client, obj, type, typeIdx) {
-    var objectiveValues = this.state.objectiveValues;
-
-    objectiveValues[typeIdx][e.target.name] = e.target.value;
-
-    this.setState({ objectiveValues });
-  }
-
-  getObjectiveValue(id /*objective id*/, unit /*unit id*/, client) {
-    var values = this.state.objectiveValues;
-    var retVal = { id: id, unit: unit, client: client, min: 0, max: 0 };
-    for (var i = 0; i < values.length; i++) {
-      if (
-        values[i].id === id &&
-        values[i].unit === unit &&
-        values[i].client === client
-      ) {
-        retVal = values[i];
-        break;
-      }
     }
 
-    return retVal;
-  }
+    const on_export_clicked = () => {
 
-  handleMultiSelectChange_Obj(e, client) {
-    var objectives = [];
-    var objectiveValues = [];
-
-    this.state.objectives.map((item) => {
-      if (item.client !== client) objectives.push(item);
-      return true;
-    });
-
-    this.state.objectiveValues.map((item) => {
-      if (item.client !== client) objectiveValues.push(item);
-
-      return true;
-    });
-
-    e.map((item) => {
-      var ids = item.value.split("-");
-      objectives.push({ label: item.label, value: item.value, client: client });
-      objectiveValues.push(this.getObjectiveValue(ids[0], ids[1], client));
-      return true;
-    });
-    this.setState({ objectives: objectives, objectiveValues: objectiveValues });
-  }
-
-  handleMultiSelectChange_A_Types(e, obj, client) {
-    var analysisTypes = [];
-    var minMaxValues = [];
-    var objectiveValues = [];
-    this.state.analysisTypes.map((item) => {
-      if (item.obj !== obj || item.client !== client) {
-        analysisTypes.push(item);
-      }
-      return true;
-    });
-
-    e.map((item) => {
-      // var ids = obj.split('-');
-      analysisTypes.push({
-        label: item.label,
-        value: item.value,
-        obj: obj,
-        client: client,
-      });
-      // objectiveValues.push(this.getObjectiveValue(ids[0], ids[1], client));
-      return true;
-    });
-
-    this.setState({ analysisTypes: analysisTypes, objectiveValues });
-  }
-  handleMultiSelectChange_Client(e) {
-    var clients = [];
-    e.map((item) => {
-      clients.push(item.value);
-      return true;
-    });
-
-    this.setState({ clients: clients, _clients: e });
-  }
-
-  getObjectiveName(id) {
-    var objectives = this.state.objectivesData;
-    for (var i = 0; i < objectives.length; i++) {
-      if (objectives[i]._id === id) return objectives[i].objective;
     }
-    return "";
-  }
 
-  getClientName(id) {
-    var clients = this.state.clientsData;
-    for (var i = 0; i < clients.length; i++) {
-      if (clients[i]._id === id) return clients[i].name;
+    const on_create_clicked = () => {
+        const initialData = {
+            current_id: '',
+            material_id: materialsData.length + 1,
+            material: '',
+            remark: ''
+        }
+        // setModalData(initialData)
+        // setObjectives([])
+        // setObjectiveValues([])
+        // setClients([])
+        // set_Clients([])
+        // setErrors({})
+        // setFilteredObjectives([])
+        // setAnalysisTypes([])
+        setShowCreateModal(true)
     }
-    return "";
-  }
 
-  getUnitName(id) {
-    var units = this.state.unitsData;
-    for (var i = 0; i < units.length; i++) {
-      if (units[i]._id === id) return units[i].unit;
+    const on_update_clicked = () => {
+
     }
-    return "";
-  }
 
-  renderModalCreate() {
-    var objOptions = [];
-    this.state.objectivesData.map((item) => {
-      // options for objective multi-select
+    const on_delete_clicked = () => {
 
-      item.units.map((item0) => {
-        var unit = this.getUnitName(item0);
-        if (unit !== "")
-          objOptions.push({
-            label: item.objective + " " + unit,
-            value: item._id + "-" + item0,
-          });
+    }
 
-        return true;
-      });
-      return true;
-    });
-    objOptions.sort((a, b) =>
-      a.label > b.label ? 1 : b.label > a.label ? -1 : 0
-    );
+    const getClientName = (param) => {
 
-    var clientOptions = [];
-    this.state.clientsData.map((item) => {
-      // options for client multi-select
-      clientOptions.push({ label: item.name, value: item._id });
-      return true;
-    });
+    }
 
-    var clientObjs = []; // clients including default client
-    clientObjs.push({ label: "Default", value: "" });
-    this.state._clients.map((item) => {
-      clientObjs.push({ label: item.label, value: item.value });
-      return true;
-    });
-
-    var error = this.state.material_error;
-
-    return (
-      <CCard>
-        <CCardBody>
-          <CForm
-            className="was-validated"
-            onSubmit={
-              this.state._create === true
-                ? this.createMaterial
-                : this.updateMaterial
+    const getTooltip = (item, client) => {
+        let count = 0;
+        let ret = "";
+        item.objectiveValues.map((item0) => {
+            if (item0.client !== client) return false;
+            let name = getObjectiveName(item0.id);
+            let unit = getUnitName(item0.unit);
+            let analysis = getAnalysisName(item0.analysis);
+            if (name !== "" && unit !== "") {
+                ret =
+                ret +
+                analysis +
+                "-" +
+                name +
+                " " +
+                unit +
+                ": " +
+                "[" +
+                item0.min +
+                "-" +
+                item0.max +
+                "]" +
+                ", ";
+                count++;
             }
-          >
-            <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Material</CLabel>
-              <CInput
-                name="material"
-                value={this.state.material}
-                onChange={this.handleInputChange}
-                required
-              />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
-            </CFormGroup>
-            <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Clients</CLabel>
-              <Select
+
+            return true;
+        });
+
+        return count === 0 ? "No Objectives" : ret;
+    }
+
+    const getObjectiveName = (id) => {
+        let objectives = objectivesData;
+        for (let i = 0; i < objectives.length; i++) {
+            if (objectives[i]._id === id) return objectives[i].objective;
+        }
+        return "";
+    }
+
+    const getUnitName = (id) => {
+        let units = unitsData;
+        for (let i = 0; i < units.length; i++) {
+            if (units[i]._id === id) return units[i].unit;
+        }
+        return "";
+    }
+
+    const getAnalysisName = (id) => {
+        let analysis = analysisData;
+        for (let i = 0; i < analysis.length; i++) {
+            if (analysis[i]._id === id) return analysis[i].analysisType;
+        }
+        return "";
+    }
+
+    const deleteMaterial = () => {
+
+    }
+
+    const createMaterial = () => {
+
+    }
+
+    const updateMaterial = () => {
+        
+    }
+
+    const handleMultiSelectChange_Obj = () => {
+
+    }
+
+    const handleObjectiveInputChange = (e, client, obj, type, typeIdx) => {
+        let atData = analysisTypes
+
+        atData[typeIdx][e.target.name] = e.target.value;
+        setAnalysisTypes(atData)
+    }
+
+    const handleInputChange = (e) => {
+        let name = e.target.name;
+        let value = e.target.value;
+
+        if (name === "material") {
+            let found = false;
+            for (let i in materialsData) {
+                let item = materialsData[i];
+                if (item.material === value && item._id !== modalData.current_id) {
+                    found = true;
+                    break;
+                }
+            }
+            found === true ? setErrors("Value already exists") : setErrors("")
+
+            setModalData({ [name]: value });
+        }
+    }
+
+    const getObjectiveValue = (id /*objective id*/, unit /*unit id*/, client, analysis) => {
+        let values = objectiveValues;
+        let retVal;
+        if (analysis === undefined) {
+        retVal = {
+            id: id,
+            unit: unit,
+            client: client,
+            analysis: "",
+            min: 0,
+            max: 0,
+        };
+        } else {
+        retVal = {
+            id: id,
+            unit: unit,
+            client: client,
+            analysis: analysis,
+            min: 0,
+            max: 0,
+        };
+        }
+
+        for (let i = 0; i < values.length; i++) {
+        if (
+            values[i].id === id &&
+            values[i].unit === unit &&
+            values[i].client === client &&
+            values[i].analysis === analysis
+        ) {
+            retVal = values[i];
+            break;
+        }
+        }
+
+        return retVal;
+    }
+
+    const handleMultiSelectChange_A_Types = (e, obj, client) => {
+        let analysisTypes = [];
+        let objectiveValues = [];
+
+        analysisTypes.map((item) => {
+        if (item.obj !== obj || item.client !== client) {
+            analysisTypes.push(item);
+        }
+        return true;
+        });
+
+        objectiveValues.map((item) => {
+        if (item !== undefined) {
+            let unit = item.id + "-" + item.unit;
+            if (item.client !== client || unit !== obj) {
+            objectiveValues.push(item);
+            }
+            return true;
+        }
+        });
+
+        e.map((item) => {
+        let ids = obj.split("-");
+        objectiveValues.push(
+            getObjectiveValue(ids[0], ids[1], client, item.value)
+        );
+        analysisTypes.push({
+            label: item.label,
+            value: item.value,
+            obj: obj,
+            client: client,
+            min: 0,
+            max: 0,
+        });
+        return true;
+        });
+        setAnalysisTypes(analysisTypes)
+        setObjectiveValues(objectiveValues)
+    }
+
+
+    const renderObjectives = (client, objs, options, clientIndex) => {
+        let analysisOptions = [];
+        analysisData?.map((item) => {
+            objs.map((temp) => {
+                item.objectives.map((item0) => {
+                    if (temp.value === item0.id + "-" + item0.unit) {
+                        analysisOptions.push({
+                            label: item.analysisType,
+                            value: item._id,
+                            client: client.value,
+                            objective: item0.id + "-" + item0.unit,
+                        });
+                    }
+                });
+            });
+
+            return true;
+        });
+
+        return (
+        <CFormGroup key={clientIndex}>
+            <CRow>
+                <CCol md="2" style={{ fontWeight: "500" }}>
+                    {"Objectives - " + client.label}
+                </CCol>
+                <CCol md="10">
+                    <CFormGroup>
+                    <CRow>
+                        <CCol>
+                            <Select
+                                isMulti
+                                placeholder=""
+                                styles={{
+                                control: (base, state) => ({
+                                    ...base,
+                                    boxShadow: state.isFocused
+                                    ? "0 0 0 0.2rem rgba(46, 184, 92, 0.25)"
+                                    : 0,
+                                    borderColor: "#2eb85c",
+                                    "&:hover": {
+                                    borderColor: "#2eb85c",
+                                    },
+                                }),
+                                }}
+                                options={options}
+                                onChange={(e) => handleMultiSelectChange_Obj(e, client.value)}
+                                value={objs}
+                            />
+                        </CCol>
+                    </CRow>
+                    </CFormGroup>
+                    {filteredObjectives.length > 0 && filteredObjectives.map((obj, objIdx) => {
+                    let _analyisTypes = [];
+                    let label = "";
+                    let _analysisOptions = [];
+                    /**
+                     *  ....very important.....
+                     */
+                    if (obj.client !== client.value) return false;
+
+                    analysisTypes.map((type) => {
+                        if (type.obj === obj.value && type.client === client.value) {
+                        if (_analyisTypes.length === 0) {
+                            _analyisTypes.push({
+                            label: type.label,
+                            value: type.value,
+                            });
+                        } else {
+                            _analyisTypes.map((temp) => {
+                            if (
+                                temp.label !== type.label &&
+                                temp.value !== type.value
+                            ) {
+                                _analyisTypes.push({
+                                label: type.label,
+                                value: type.value,
+                                });
+                            }
+                            });
+                        }
+                        }
+
+                        return true;
+                    });
+
+                    _analyisTypes = Array.from(
+                        _analyisTypes
+                        .reduce(
+                            (a, o) => a.set(`${o.value}-${o.client}-${o.obj}`, o),
+                            new Map()
+                        )
+                        .values()
+                    );
+
+                    analysisOptions.map((item) => {
+                        if (item.objective === obj.value) {
+                        _analysisOptions.push(item);
+                        }
+
+                        return true;
+                    });
+
+                    label = obj.label;
+                    if (label !== "") {
+                        return renderATypes(
+                            client,
+                            obj,
+                            objIdx,
+                            _analysisOptions,
+                            _analyisTypes
+                        );
+                    }
+                    return true;
+                    })}
+                </CCol>
+            </CRow>
+        </CFormGroup>
+        );
+    }
+
+    const renderATypes = (client, obj, objIdx, aOptions, aTypes) => {
+        return (
+        <CFormGroup key={objIdx}>
+            <CRow>
+            <CCol md="5" style={{ fontWeight: "500" }}>
+                {"Analysis Types - " + obj.label}
+            </CCol>
+            <CCol md="7">
+                <Select
                 isMulti
                 placeholder=""
                 styles={{
-                  control: (base, state) => ({
+                    control: (base, state) => ({
                     ...base,
                     boxShadow: state.isFocused
-                      ? "0 0 0 0.2rem rgba(46, 184, 92, 0.25)"
-                      : 0,
+                        ? "0 0 0 0.2rem rgba(46, 184, 92, 0.25)"
+                        : 0,
                     borderColor: "#2eb85c",
                     "&:hover": {
-                      borderColor: "#2eb85c",
-                    },
-                  }),
-                }}
-                options={clientOptions}
-                onChange={(e) => this.handleMultiSelectChange_Client(e)}
-                value={this.state._clients}
-              />
-            </CFormGroup>
-            {clientObjs.map((item, index) => {
-              var _objectives = [];
-              this.state.objectives.map((item0) => {
-                if (item0.client === item.value)
-                  _objectives.push({ label: item0.label, value: item0.value });
-                return true;
-              });
-
-              return this.renderObjectives(
-                item,
-                _objectives,
-                objOptions,
-                index
-              );
-            })}
-            <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Remark</CLabel>
-              <CInput
-                name="remark"
-                value={this.state.remark}
-                onChange={this.handleInputChange}
-              />
-            </CFormGroup>
-            <div className="float-right">
-              <CButton type="submit" color="info">
-                {this.state._create === true ? "Create" : "Update"}
-              </CButton>
-              <span style={{ padding: "4px" }} />
-              <CButton
-                color="secondary"
-                onClick={() => this.setModal_Create(false)}
-              >
-                Cancel
-              </CButton>
-            </div>
-          </CForm>
-        </CCardBody>
-      </CCard>
-    );
-  }
-
-  renderObjectives(client, objs, options, clientIndex) {
-    var analysisOptions = [];
-    this.state.analysisData.map((item) => {
-      analysisOptions.push({ label: item.analysisType, value: item._id });
-      return true;
-    });
-    return (
-      <CFormGroup key={clientIndex}>
-        <CRow>
-          <CCol md="2" style={{ fontWeight: "500" }}>
-            {"Objectives - " + client.label}
-          </CCol>
-          <CCol md="10">
-            <CFormGroup>
-              <CRow>
-                <CCol>
-                  <Select
-                    isMulti
-                    placeholder=""
-                    styles={{
-                      control: (base, state) => ({
-                        ...base,
-                        boxShadow: state.isFocused
-                          ? "0 0 0 0.2rem rgba(46, 184, 92, 0.25)"
-                          : 0,
                         borderColor: "#2eb85c",
-                        "&:hover": {
-                          borderColor: "#2eb85c",
-                        },
-                      }),
-                    }}
-                    options={options}
-                    onChange={(e) =>
-                      this.handleMultiSelectChange_Obj(e, client.value)
-                    }
-                    value={objs}
-                  />
-                </CCol>
-              </CRow>
-            </CFormGroup>
-            {this.state.objectives.map((obj, objIdx) => {
-              var _analyisTypes = [];
-              var label = "";
-              /**
-               *  ....very important.....
-               */
-              if (obj.client !== client.value) return false;
-
-              this.state.analysisTypes.map((type) => {
-                if (type.obj === obj.value && type.client === client.value) {
-                  _analyisTypes.push({ label: type.label, value: type.value });
+                    },
+                    }),
+                }}
+                options={aOptions}
+                onChange={(e) =>
+                    handleMultiSelectChange_A_Types(e, obj.value, client.value)
                 }
-                return true;
-              });
-              label = obj.label;
-              if (label != "") {
-                return this.renderATypes(
-                  client,
-                  obj,
-                  objIdx,
-                  analysisOptions,
-                  _analyisTypes
-                );
-              }
-              return true;
+                value={aTypes}
+                />
+            </CCol>
+            </CRow>
+            {analysisTypes.map((type, typeIdx) => {
+            let label = type.label;
+
+            let objValue = {
+                min: type.min,
+                max: type.max,
+            };
+
+            if (type.obj !== obj.value) return true;
+            if (type.client !== client.value) return true;
+
+            return renderminMaxValues(
+                client,
+                obj,
+                type,
+                typeIdx,
+                label,
+                objValue
+            );
             })}
-          </CCol>
-        </CRow>
-      </CFormGroup>
-    );
-  }
+        </CFormGroup>
+        );
+    }
 
-  renderATypes(client, obj, objIdx, aOptions, aTypes) {
-    return (
-      <CFormGroup key={objIdx}>
-        <CRow>
-          <CCol md="5" style={{ fontWeight: "500" }}>
-            {"Analysis Types - " + obj.label}
-          </CCol>
-          <CCol md="7">
-            <Select
-              isMulti
-              placeholder=""
-              styles={{
-                control: (base, state) => ({
-                  ...base,
-                  boxShadow: state.isFocused
-                    ? "0 0 0 0.2rem rgba(46, 184, 92, 0.25)"
-                    : 0,
-                  borderColor: "#2eb85c",
-                  "&:hover": {
-                    borderColor: "#2eb85c",
-                  },
-                }),
-              }}
-              options={aOptions}
-              onChange={(e) =>
-                this.handleMultiSelectChange_A_Types(e, obj.value, client.value)
-              }
-              value={aTypes}
-            />
-          </CCol>
-        </CRow>
-        {this.state.analysisTypes.map((type, typeIdx) => {
-          var label = type.label;
-          var _minMaxValues = [];
-          if (type.obj !== obj.value) return true;
+    const renderminMaxValues = (client, obj, type, typeIdx, typeLabel, objValue) => {
+        return (
+        <CFormGroup key={typeIdx}>
+            <CRow style={{ marginTop: "13px" }}>
+            <CCol md="2"></CCol>
+            <CCol md="3">{typeLabel}</CCol>
+            <CCol md="2">Min Value</CCol>
+            <CCol md="1">
+                {/* <CInput pattern="[+-]?\d+(?:[.]\d+)?" name="min" value={objValue.min} onChange={(e) => handleObjectiveInputChange(e, client, obj, type, typeIdx)} /> */}
+                <input
+                type="number"
+                name="min"
+                style={{
+                    width: "50px",
+                    height: "30px",
+                    borderColor: "lightseagreen",
+                    borderRadius: "5px",
+                }}
+                value={objValue.min}
+                onChange={(e) =>
+                    handleObjectiveInputChange(e, client, obj, type, typeIdx)
+                }
+                />
+            </CCol>
+            <CCol md="2">Max Value</CCol>
+            <CCol md="1">
+                {/* <CInput pattern="[+-]?\d+(?:[.]\d+)?" name="max" value={objValue.max} onChange={(e) => handleObjectiveInputChange(e, client, obj, type, typeIdx)} /> */}
+                <input
+                type="number"
+                name="max"
+                style={{
+                    width: "50px",
+                    height: "30px",
+                    borderColor: "lightseagreen",
+                    borderRadius: "5px",
+                }}
+                value={objValue.max}
+                onChange={(e) =>
+                    handleObjectiveInputChange(e, client, obj, type, typeIdx)
+                }
+                />
+            </CCol>
+            </CRow>
+            <CRow style={{ marginLeft: "16%", paddingLeft: "15px" }}>
+            {/* {
+            error === undefined || error === '' ? <div></div> : 
+            <div style={{width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353'}}>Min value must be equal or less than Max Value</div>
+        } */}
+            </CRow>
+        </CFormGroup>
+        );
+    }
 
-          // this.state.minMaxValues.map(item => {
-          //   if(type.obj === obj.value && type.client === client.value) {
-          //     _minMaxValues.push({label: type.label, value: type.value});
-          //   }
-          // })
-          if (type.client !== client.value) return true;
+    const renderModalCreate = () => {
+        let error = errors;
+        let fileteredObj = []
+        if(Object.keys(objectives).length > 0) {
+            fileteredObj = Array.from(
+                objectives.reduce((a, o) => a.set(`${o.value}-${o.client}`, o), new Map()).values()
+            );
+        }
+        console.log(">>>", modalData)
+        console.log(fileteredObj)
+        // setFilteredObjectives(fileteredObj)
 
-          return this.renderminMaxValues(
-            client,
-            obj,
-            type,
-            typeIdx,
-            label,
-            objIdx,
-            objIdx
-          );
-        })}
-      </CFormGroup>
-    );
-  }
+        return (
+            <CCard>
+                <CCardBody>
+                    <CForm
+                    className="was-validated"
+                    onSubmit={ modalData.current_id === '' ? createMaterial : updateMaterial }>
+                    <CFormGroup>
+                        <CLabel style={{ fontWeight: '500' }}>Material ID</CLabel>
+                        <CInput name="material_id" value={modalData.material_id} onChange={(e) => setModalData({...modalData, material_id: e.target.value})} required />
+                        {
+                            errors.material_id && <div style={{ width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353' }}>{error}</div>
+                        }
+                    </CFormGroup>
+                    <CFormGroup>
+                        <CLabel style={{ fontWeight: "500" }}>Material</CLabel>
+                        <CInput name="material" value={modalData.material} onChange={(e) => setModalData({...modalData, material: e.target.value})} required/>
+                        {errors.errors && (
+                            <div className="w-100" style={{ marginTop: "0.25rem", fontSize: "80%", color: "#e55353" }}>
+                                {error}
+                            </div>
+                        )}
+                    </CFormGroup>
+                    <CFormGroup>
+                        <CLabel style={{ fontWeight: "500" }}>Clients</CLabel>
+                        <Select
+                            isMulti
+                            placeholder=""
+                            styles={{
+                                control: (base, state) => ({
+                                    ...base,
+                                    boxShadow: state.isFocused ? "0 0 0 0.2rem rgba(46, 184, 92, 0.25)" : 0,
+                                    borderColor: "#2eb85c",
+                                    "&:hover": {
+                                        borderColor: "#2eb85c",
+                                    },
+                                }),
+                            }}
+                            options={clientOptions}
+                            onChange={(e) => handleMultiSelectChange_Client(e)}
+                            value={_clients}
+                        />
+                    </CFormGroup>
+                    {Object.keys(clientObjs).length > 0 && clientObjs.map((item, index) => {
+                        let _objectives = [];
+                        Object.keys(filteredObjectives).length > 0 && filteredObjectives.map((item0) => {
+                            if (item0.client === item.value) {
+                                if (_objectives.length === 0) {
+                                    _objectives.push({
+                                        label: item0.label,
+                                        value: item0.value,
+                                    });
+                                } else {
+                                    for (let i = 0; i < _objectives.length; i++) {
+                                        if (_objectives[i].value !== item0.value) {
+                                            _objectives.push({
+                                                label: item0.label,
+                                                value: item0.value,
+                                            });
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            return true;
+                        });
+                        return renderObjectives(
+                            item,
+                            _objectives,
+                            objOptions,
+                            index
+                        );
+                    })}
+                    <CFormGroup>
+                        <CLabel style={{ fontWeight: "500" }}>Remark</CLabel>
+                        <CInput
+                        name="remark"
+                        value={modalData.remark}
+                        onChange={handleInputChange}
+                        />
+                    </CFormGroup>
+                    <div className="float-right">
+                        <CButton type="submit" color="info">
+                        {modalData.current_id === '' ? "Create" : "Update"}
+                        </CButton>
+                        <span style={{ padding: "4px" }} />
+                        <CButton
+                        color="secondary"
+                        onClick={(e) => setShowCreateModal(false)}
+                        >
+                        Cancel
+                        </CButton>
+                    </div>
+                    </CForm>
+                </CCardBody>
+            </CCard>
+        );
+    }
 
-  renderminMaxValues(client, obj, type, typeIdx, typeLabel, objIdx) {
-    return (
-      <CFormGroup key={typeIdx}>
-        <CRow style={{ marginTop: "13px" }}>
-          <CCol md="2"></CCol>
-          <CCol md="3">{typeLabel}</CCol>
-          <CCol md="2">Min Value</CCol>
-          <CCol md="1">
-            <input
-              type="text"
-              name="min"
-              style={{
-                width: "50px",
-                height: "30px",
-                borderColor: "lightseagreen",
-                borderRadius: "5px",
-              }}
-              value={this.state.objectiveValues[typeIdx].min}
-              onChange={(e) =>
-                this.handleObjectiveInputChange(e, client, obj, type, typeIdx)
-              }
-            />
-          </CCol>
-          <CCol md="2">Max Value</CCol>
-          <CCol md="1">
-            <input
-              type="text"
-              name="max"
-              style={{
-                width: "50px",
-                height: "30px",
-                borderColor: "lightseagreen",
-                borderRadius: "5px",
-              }}
-              value={this.state.objectiveValues[typeIdx].max}
-              onChange={(e) =>
-                this.handleObjectiveInputChange(e, client, obj, type, typeIdx)
-              }
-            />
-          </CCol>
-        </CRow>
-        <CRow style={{ marginLeft: "16%", paddingLeft: "15px" }}>
-          {/* {
-        error === undefined || error === '' ? <div></div> : 
-          <div style={{width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353'}}>Min value must be equal or less than Max Value</div>
-      } */}
-        </CRow>
-      </CFormGroup>
-    );
-  }
-
-  getTooltip(item, client) {
-    var count = 0;
-    var ret = '<div style="text-align: left">';
-    item.objectiveValues.map((item0) => {
-      if (item0.client !== client) return false;
-      var name = this.getObjectiveName(item0.id);
-      var unit = this.getUnitName(item0.unit);
-      if (name !== "" && unit !== "") {
-        ret = ret + name + " " + unit + ": " + item0.min + " - " + item0.max;
-        ret = ret + "<br>";
-        count++;
-      }
-
-      return true;
-    });
-    ret = ret + "</div>";
-
-    return count === 0 ? "No Objectives" : ret;
-  }
-
-  render() {
     return (
       <div>
         <div>
-          <CButton
-            color="info"
-            className="float-right"
-            style={{ margin: "0px 0px 0px 16px" }}
-            //style={{margin: '16px'}}
-            onClick={() => {
-              this.on_create_clicked();
-            }}
-          >
-            <i className="fa fa-plus" />
-            <span style={{ padding: "4px" }} />
-            Create New
+          <CButton color="info" className="float-right" style={{ margin: "0px 0px 0px 16px" }} onClick={on_create_clicked}>
+              <i className="fa fa-plus" />&nbsp;{create_new_label}
           </CButton>
+          <CButton  color="info" className="float-right" style={{ margin: "0px 0px 0px 16px" }} onClick={on_export_clicked}>
+            <i className="fa fa-download"></i>&nbsp;{export_label}
+          </CButton>
+          <CSVLink headers={header} filename="Export-Material.csv" data={excelData} ref={csvLink}></CSVLink>
+          <ReactFileReader handleFiles={handleFiles} fileTypes={'.csv'}>
+            <CButton color="info" className="float-right" style={{ margin: '0px 0px 0px 16px' }}>
+                <i className="fa fa-upload" />&nbsp;{import_label}
+            </CButton>
+          </ReactFileReader>
         </div>
         <div>
           <CDataTable
-            items={this.state.materialsData}
+            items={materialsData}
             fields={fields}
             itemsPerPage={50}
             itemsPerPageSelect
@@ -568,10 +711,10 @@ export default class AdminMaterial extends Component {
             clickableRows
             scopedSlots={{
               material: (item) => {
-                var clientObjs = []; // clients including default client
+                let clientObjs = []; // clients including default client
                 clientObjs.push({ label: "Default", value: "" });
                 item.clients.map((item0) => {
-                  var label = this.getClientName(item0);
+                  let label = getClientName(item0);
                   if (label !== "")
                     clientObjs.push({ label: label, value: item0 });
                   return true;
@@ -580,17 +723,14 @@ export default class AdminMaterial extends Component {
                 return (
                   <td>
                     {clientObjs.map((client, index) => {
-                      let tooltip = this.getTooltip(item, client.value);
                       return (
-                        <CTooltip content={tooltip} placement="bottom">
-                          <div
-                            style={{
-                              marginLeft: client.value === "" ? "0px" : "0.6em",
-                            }}
-                          >
-                            {item.material + " - " + client.label}
-                          </div>
-                        </CTooltip>
+                        <div
+                          style={{
+                            marginLeft: client.value === "" ? "0px" : "0.6em",
+                          }}
+                        >
+                          {item.material + " - " + client.label}
+                        </div>
                       );
                     })}
                   </td>
@@ -600,26 +740,32 @@ export default class AdminMaterial extends Component {
                 return (
                   <td>
                     <div style={{ display: "flex" }}>
-                      <CButton
-                        color="info"
-                        size="sm"
-                        onClick={() => {
-                          this.on_update_clicked(item);
-                        }}
-                      >
+                      <CButton color="info" size="sm" onClick={() => on_update_clicked(item)}>
                         <i className="fa fa-edit" />
                       </CButton>
                       <span style={{ padding: "4px" }} />
-                      <CButton
-                        color="danger"
-                        size="sm"
-                        onClick={() => {
-                          this.on_delete_clicked(item._id);
-                        }}
-                      >
+                      <CButton color="danger" size="sm" onClick={() => on_delete_clicked(item._id)}>
                         <i className="fa fa-trash" />
                       </CButton>
                     </div>
+                  </td>
+                );
+              },
+              objectives: (item, index) => {
+                let clientObjs = []; // clients including default client
+                clientObjs.push({ label: "Default", value: "" });
+                item.clients.map((item0) => {
+                  let label = getClientName(item0);
+                  if (label !== "")
+                    clientObjs.push({ label: label, value: item0 });
+                  return true;
+                });
+                return (
+                  <td>
+                    {clientObjs.map((client, index) => {
+                      let tooltip = getTooltip(item, client.value);
+                      return <div>{tooltip}</div>;
+                    })}
                   </td>
                 );
               },
@@ -627,10 +773,7 @@ export default class AdminMaterial extends Component {
           />
         </div>
 
-        <CModal
-          show={this.state.modal_delete}
-          onClose={() => this.setModal_Delete(false)}
-        >
+        <CModal style={{ width: "50vw" }} show={show_delete_modal} onClose={() => setShowDeleteModal(true)}>
           <CModalHeader>
             <CModalTitle>Confirm</CModalTitle>
           </CModalHeader>
@@ -638,227 +781,38 @@ export default class AdminMaterial extends Component {
             Do you really want to delete current material?
           </CModalBody>
           <CModalFooter>
-            <CButton color="danger" onClick={() => this.deleteMaterial()}>
+            <CButton color="danger" onClick={() => deleteMaterial()}>
               Delete
             </CButton>{" "}
             <CButton
               color="secondary"
-              onClick={() => this.setModal_Delete(false)}
+              onClick={() => setShowDeleteModal(false)}
             >
               Cancel
             </CButton>
           </CModalFooter>
         </CModal>
 
-        <CModal
-          show={this.state.modal_create}
-          onClose={() => this.setModal_Create(false)}
-          closeOnBackdrop={false}
-          centered
-          size="lg"
-        >
-          <CModalHeader>
-            <CModalTitle>
-              {this.state._create === true
-                ? "Create New Material"
-                : "Update Material"}
-            </CModalTitle>
-          </CModalHeader>
-          <CModalBody>{this.renderModalCreate()}</CModalBody>
-        </CModal>
+        {
+            show_create_modal && (
+                <CModal
+                    style={{ width: "50vw" }}
+                    show={show_create_modal}
+                    onClose={() => setShowCreateModal(true)}
+                    closeOnBackdrop={false}
+                    centered
+                    size="lg"
+                >
+                    <CModalHeader>
+                        <CModalTitle>{modalData.current_id === '' ? "Create New Material" : "Update Material"}</CModalTitle>
+                    </CModalHeader>
+                    <CModalBody>{renderModalCreate()}</CModalBody>
+                </CModal>
+            )
+        }
       </div>
-    );
-  }
-
-  getAllMaterials() {
-    axios
-      .get(Config.ServerUri + "/get_all_materials")
-      .then((res) => {
-        this.setState({
-          materialsData: res.data.materials,
-          objectivesData: res.data.objectives,
-          unitsData: res.data.units,
-          clientsData: res.data.clients,
-          analysisData: res.data.analysisTypes,
-        });
-      })
-      .catch((error) => {});
-  }
-
-  on_delete_clicked(id) {
-    this.setState({ current_id: id });
-
-    this.setModal_Delete(true);
-  }
-
-  on_create_clicked() {
-    this.setState({
-      current_id: "",
-      material: "",
-      remark: "",
-      objectives: [],
-      objectiveValues: [],
-      objectivesError: [],
-      clients: [],
-      _clients: [],
-      _create: true,
-      material_error: "",
-    });
-
-    this.setModal_Create(true);
-  }
-
-  on_update_clicked(item) {
-    var clients = [];
-    var _clients = [];
-
-    item.clients.map((item, index) => {
-      var label = this.getClientName(item);
-      if (label !== "") {
-        clients.push(item);
-        _clients.push({ label: label, value: item });
-      }
-      return true;
-    });
-
-    var objectives = [];
-    var objectiveValues = [];
-
-    item.objectiveValues.map((item, index) => {
-      var label = this.getObjectiveName(item.id);
-      var unit = this.getUnitName(item.unit);
-      var clientIndex = clients.indexOf(item.client);
-      if (item.client === "") clientIndex = 0;
-      if (label !== "" && unit !== "" && clientIndex >= 0) {
-        objectiveValues.push(item);
-        objectives.push({
-          label: label + " " + unit,
-          value: item.id + "-" + item.unit,
-          client: item.client,
-        });
-      }
-      return true;
-    });
-
-    this.setState({
-      current_id: item._id,
-      material: item.material,
-      objectives: objectives,
-      objectiveValues: objectiveValues,
-      objectivesError: [],
-      clients: clients,
-      _clients: _clients,
-      remark: item.remark,
-      _create: false,
-      material_error: "",
-    });
-
-    this.setModal_Create(true);
-  }
-
-  deleteMaterial() {
-    this.setModal_Delete(false);
-
-    axios
-      .post(Config.ServerUri + "/delete_material", {
-        id: this.state.current_id,
-      })
-      .then((res) => {
-        toast.success("Material successfully deleted");
-        this.setState({
-          materialsData: res.data.materials,
-          objectivesData: res.data.objectives,
-          unitsData: res.data.units,
-          clientsData: res.data.clients,
-        });
-      })
-      .catch((error) => {});
-  }
-
-  checkMinMax() {
-    var objectiveValues = this.state.objectiveValues;
-    var objectivesError = [];
-    var check = true;
-
-    objectiveValues.map((item, i) => {
-      item.min = parseFloat(item.min);
-      item.max = parseFloat(item.max);
-      if (item.min > item.max) {
-        objectivesError.push("error");
-        check = false;
-      } else objectivesError.push("");
-
-      return true;
-    });
-
-    this.setState({ objectiveValues, objectivesError });
-    return check;
-  }
-
-  createMaterial(event) {
-    event.preventDefault();
-
-    if (this.checkMinMax() === false) return;
-    if (this.state.material_error !== "") return;
-
-    this.setModal_Create(false);
-
-    axios
-      .post(Config.ServerUri + "/create_material", {
-        material: this.state.material,
-        objectiveValues: this.state.objectiveValues,
-        clients: this.state.clients,
-        remark: this.state.remark,
-      })
-      .then((res) => {
-        toast.success("Material successfully created");
-        this.setState({
-          materialsData: res.data.materials,
-          objectivesData: res.data.objectives,
-          unitsData: res.data.units,
-          clientsData: res.data.clients,
-        });
-      })
-      .catch((error) => {});
-  }
-
-  updateMaterial(event) {
-    event.preventDefault();
-
-    if (this.checkMinMax() === false) return;
-    if (this.state.material_error !== "") return;
-
-    this.setModal_Create(false);
-
-    axios
-      .post(Config.ServerUri + "/update_material", {
-        id: this.state.current_id,
-        material: this.state.material,
-        objectiveValues: this.state.objectiveValues,
-        clients: this.state.clients,
-        remark: this.state.remark,
-      })
-      .then((res) => {
-        toast.success("Material successfully updated");
-        this.setState({
-          materialsData: res.data.materials,
-          objectivesData: res.data.objectives,
-          unitsData: res.data.units,
-          clientsData: res.data.clients,
-        });
-      })
-      .catch((error) => {});
-  }
-
-  setModal_Delete(modal) {
-    this.setState({
-      modal_delete: modal,
-    });
-  }
-
-  setModal_Create(modal) {
-    this.setState({
-      modal_create: modal,
-    });
-  }
+    )
 }
+
+
+export default AdminMaterial1

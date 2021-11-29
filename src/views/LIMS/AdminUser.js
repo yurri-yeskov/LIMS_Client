@@ -22,8 +22,8 @@ import { CSVLink } from "react-csv";
 import ReactFileReader from "react-file-reader";
 import { toast } from "react-hot-toast";
 
-const axios = require("axios");
-const Config = require("../../Config.js");
+import axios from "axios";
+import Config from "../../Config.js";
 
 export default class AdminUser extends Component {
   constructor(props) {
@@ -81,7 +81,7 @@ export default class AdminUser extends Component {
       selected_language: props.selected_language,
       fields: [
         {
-          key: "auto_id",
+          key: "user_id",
           label: props.language_data.filter(
             (item) => item.label === "user_id"
           )[0][props.selected_language],
@@ -167,7 +167,7 @@ export default class AdminUser extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         import_label: nextProps.language_data.filter(
           (item) => item.label === "import"
@@ -280,6 +280,7 @@ export default class AdminUser extends Component {
       });
     }
   }
+
   getUserType(userType) {
     var result = "Unknown";
     this.state.userTypesData.map((item, i) => {
@@ -332,6 +333,158 @@ export default class AdminUser extends Component {
 
     this.setState({
       [name]: value,
+    });
+  }
+
+  getAllUsers() {
+    axios.get(Config.ServerUri + "/get_all_users")
+      .then((res) => {
+        this.setState({
+          export_all_data: res.data.users,
+          usersData: res.data.users,
+          userTypesData: res.data.userTypes,
+        });
+      })
+      .catch((error) => {});
+  }
+
+  on_delete_clicked(id) {
+    this.setState({ current_id: id });
+
+    this.setModal_Delete(true);
+  }
+
+  on_create_clicked() {
+    if (this.state.usersData.length === 0) {
+      this.setState({ lastUserID: 0 });
+    } else {
+      this.setState({
+        lastUserID:
+          this.state.usersData[this.state.usersData.length - 1].auto_id,
+      });
+    }
+    this.setState({
+      current_id: "",
+      user_id: this.state.usersData.length + 1,
+      userName: "",
+      email: "",
+      password: "",
+      userType: "",
+      remark: "",
+      _create: true,
+      double_error: "",
+    });
+    this.setModal_Create(true);
+  }
+
+  on_update_clicked(item) {
+    this.setState({
+      current_id: item._id,
+      user_id: item.user_id,
+      userName: item.userName,
+      email: item.email,
+      password: item.password,
+      userType: item.user_type,
+      remark: item.remark,
+      _create: false,
+      double_error: "",
+    });
+
+    this.setModal_Create(true);
+  }
+
+  deleteUser() {
+    this.setModal_Delete(false);
+
+    axios.post(Config.ServerUri + "/delete_user", {
+      id: this.state.current_id,
+    }).then((res) => {
+      toast.success("User successfully deleted");
+      this.setState({
+        export_all_data: res.data.users,
+        usersData: res.data.users,
+        userTypesData: res.data.userTypes,
+      });
+    })
+    .catch((error) => {});
+  }
+
+  createUser(event) {
+    event.preventDefault();
+    var last_userid = 0;
+    if (this.state.user_id === "") {
+      last_userid = Number(this.state.lastUserID) + 1;
+    } else {
+      last_userid = this.state.user_id;
+    }
+    if (
+      this.state.user_id.toString().split(".").length > 1 ||
+      this.state.user_id.toString().split("-").length > 1
+    ) {
+      toast.error("User ID Error");
+    } else if (
+      this.state.usersData.filter((e) => e.auto_id === last_userid).length > 0
+    ) {
+      toast.error("User ID Repeated");
+    } else {
+      if (this.state.double_error !== "") return;
+      this.setModal_Create(false);
+      axios
+        .post(Config.ServerUri + "/create_user", {
+          user_id: last_userid,
+          userName: this.state.userName,
+          email: this.state.email,
+          password: this.state.password,
+          userType: this.state.userType,
+          remark: this.state.remark,
+        })
+        .then((res) => {
+          toast.success("User successfully created");
+          this.setState({
+            export_all_data: res.data.users,
+            usersData: res.data.users,
+            userTypesData: res.data.userTypes,
+          });
+        })
+        .catch((error) => {});
+    }
+  }
+
+  updateUser(event) {
+    event.preventDefault();
+
+    if (this.state.double_error !== "") return;
+    const data = {
+      id: this.state.current_id,
+      user_id: this.state.user_id,
+      userName: this.state.userName,
+      email: this.state.email,
+      password: this.state.password,
+      userType: this.state.userType,
+      remark: this.state.remark,
+    }
+    this.setModal_Create(false);
+    axios.post(Config.ServerUri + "/update_user", data)
+      .then((res) => {
+        toast.success("User successfully updated");
+        this.setState({
+          export_all_data: res.data.users,
+          usersData: res.data.users,
+          userTypesData: res.data.userTypes,
+        });
+      })
+      .catch((error) => {});
+  }
+
+  setModal_Delete(modal) {
+    this.setState({
+      modal_delete: modal,
+    });
+  }
+
+  setModal_Create(modal) {
+    this.setState({
+      modal_create: modal,
     });
   }
 
@@ -546,7 +699,9 @@ export default class AdminUser extends Component {
             hover
             clickableRows
             scopedSlots={{
-              userType: (item) => <td>{this.getUserType(item.userType)}</td>,
+              user_id: (item) => <td>{item.user_id}</td>,
+              userType: (item) => <td>{item.user_type}</td>,
+              remark: (item) => <td>{item.remark}</td>,
               buttonGroups: (item, index) => {
                 return (
                   <td>
@@ -619,218 +774,4 @@ export default class AdminUser extends Component {
     );
   }
 
-  getAllUsers() {
-    axios
-      .get(Config.ServerUri + "/get_all_users")
-      .then((res) => {
-        var user_list = [];
-        res.data.users.map((user) => {
-          var usertype = res.data.userTypes.filter(
-            (usertype) => usertype._id === user.userType
-          );
-          user_list.push({
-            user_id: user.user_id,
-            userName: user.userName,
-            email: user.email,
-            password: user.password,
-            user_type: usertype[0].userType,
-            remark: user.remark,
-          });
-        });
-        this.setState({
-          export_all_data: user_list,
-          usersData: res.data.users,
-          userTypesData: res.data.userTypes,
-        });
-      })
-      .catch((error) => {});
-  }
-
-  on_delete_clicked(id) {
-    this.setState({ current_id: id });
-
-    this.setModal_Delete(true);
-  }
-
-  on_create_clicked() {
-    if (this.state.usersData.length == 0) {
-      this.setState({ lastUserID: 0 });
-    } else {
-      this.setState({
-        lastUserID:
-          this.state.usersData[this.state.usersData.length - 1].auto_id,
-      });
-    }
-    this.setState({
-      current_id: "",
-      user_id: "",
-      userName: "",
-      email: "",
-      password: "",
-      userType: "",
-      remark: "",
-      _create: true,
-      double_error: "",
-    });
-    this.setModal_Create(true);
-  }
-
-  on_update_clicked(item) {
-    this.setState({
-      current_id: item._id,
-      user_id: item.user_id,
-      userName: item.userName,
-      email: item.email,
-      password: item.password,
-      userType: item.userType,
-      remark: item.remark,
-      _create: false,
-      double_error: "",
-    });
-
-    this.setModal_Create(true);
-  }
-
-  deleteUser() {
-    this.setModal_Delete(false);
-
-    axios
-      .post(Config.ServerUri + "/delete_user", {
-        id: this.state.current_id,
-      })
-      .then((res) => {
-        toast.success("User successfully deleted");
-        var user_list = [];
-        res.data.users.map((user) => {
-          var usertype = res.data.userTypes.filter(
-            (usertype) => usertype._id === user.userType
-          );
-          user_list.push({
-            user_id: user.user_id,
-            userName: user.userName,
-            email: user.email,
-            password: user.password,
-            user_type: usertype[0].userType,
-            remark: user.remark,
-          });
-        });
-
-        this.setState({
-          export_all_data: user_list,
-          usersData: res.data.users,
-          userTypesData: res.data.userTypes,
-        });
-      })
-      .catch((error) => {});
-  }
-
-  createUser(event) {
-    event.preventDefault();
-    var last_userid = 0;
-    if (this.state.user_id == "") {
-      last_userid = Number(this.state.lastUserID) + 1;
-    } else {
-      last_userid = this.state.user_id;
-    }
-    if (
-      this.state.user_id.toString().split(".").length > 1 ||
-      this.state.user_id.toString().split("-").length > 1
-    ) {
-      toast.error("User ID Error");
-    } else if (
-      this.state.usersData.filter((e) => e.auto_id == last_userid).length > 0
-    ) {
-      toast.error("User ID Repeated");
-    } else {
-      if (this.state.double_error !== "") return;
-      this.setModal_Create(false);
-      axios
-        .post(Config.ServerUri + "/create_user", {
-          user_id: last_userid,
-          userName: this.state.userName,
-          email: this.state.email,
-          password: this.state.password,
-          userType: this.state.userType,
-          remark: this.state.remark,
-        })
-        .then((res) => {
-          toast.success("User successfully created");
-          var user_list = [];
-          res.data.users.map((user) => {
-            var usertype = res.data.userTypes.filter(
-              (usertype) => usertype._id === user.userType
-            );
-            user_list.push({
-              user_id: user.user_id,
-              userName: user.userName,
-              email: user.email,
-              password: user.password,
-              user_type: usertype[0].userType,
-              remark: user.remark,
-            });
-          });
-
-          this.setState({
-            export_all_data: user_list,
-            usersData: res.data.users,
-            userTypesData: res.data.userTypes,
-          });
-        })
-        .catch((error) => {});
-    }
-  }
-
-  updateUser(event) {
-    event.preventDefault();
-
-    if (this.state.double_error !== "") return;
-
-    this.setModal_Create(false);
-    axios
-      .post(Config.ServerUri + "/update_user", {
-        id: this.state.current_id,
-        user_id: this.state.user_id,
-        userName: this.state.userName,
-        email: this.state.email,
-        password: this.state.password,
-        userType: this.state.userType,
-        remark: this.state.remark,
-      })
-      .then((res) => {
-        toast.success("User successfully updated");
-        var user_list = [];
-        res.data.users.map((user) => {
-          var usertype = res.data.userTypes.filter(
-            (usertype) => usertype._id === user.userType
-          );
-          user_list.push({
-            user_id: user.user_id,
-            userName: user.userName,
-            email: user.email,
-            password: user.password,
-            user_type: usertype[0].userType,
-            remark: user.remark,
-          });
-        });
-
-        this.setState({
-          export_all_data: user_list,
-          usersData: res.data.users,
-          userTypesData: res.data.userTypes,
-        });
-      })
-      .catch((error) => {});
-  }
-
-  setModal_Delete(modal) {
-    this.setState({
-      modal_delete: modal,
-    });
-  }
-
-  setModal_Create(modal) {
-    this.setState({
-      modal_create: modal,
-    });
-  }
 }

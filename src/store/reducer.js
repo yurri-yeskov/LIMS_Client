@@ -5,6 +5,7 @@ const initialState = {
     sidebarShow: 'responsive',
     language: 'English',
     language_data: [],
+    isLogged: false
 }
 
 export const reducer = (state = initialState, { type, payload }) => {
@@ -23,6 +24,11 @@ export const reducer = (state = initialState, { type, payload }) => {
             return {
                 ...state,
                 language_data: payload
+            }
+        case actionConstants.SET_LOGIN_STATE:
+            return {
+                ...state,
+                isLogged: payload
             }
         default:
             return state

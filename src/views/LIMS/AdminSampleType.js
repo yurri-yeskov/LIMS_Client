@@ -253,7 +253,7 @@ export default class AdminSampleType extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         import_label: nextProps.language_data.filter(
           (item) => item.label === "import"
@@ -499,6 +499,167 @@ export default class AdminSampleType extends Component {
 
     this.setState({
       [name]: value,
+    });
+  }
+
+  getAllSampleTypes() {
+    axios.get(Config.ServerUri + "/get_all_sampleTypes")
+    .then((res) => {
+      this.setState({
+        export_all_data: res.data,
+        sampleTypesData: res.data,
+      });
+    })
+    .catch((error) => {});
+  }
+
+  on_delete_clicked(id) {
+    this.setState({ current_id: id });
+    this.setModal_Delete(true);
+  }
+
+  on_create_clicked() {
+    this.setState({
+      current_id: "",
+      sampleType: "",
+      sampleType_id: this.state.sampleTypesData.length + 1,
+      stockSample: false,
+      material: false,
+      client: false,
+      packingType: false,
+      dueDate: false,
+      sampleDate: false,
+      sendingDate: false,
+      analysisType: false,
+      incomingProduct: false,
+      distributor: false,
+      certificateType: false,
+      remark: "",
+      _create: true,
+      double_error: "",
+    });
+
+    this.setModal_Create(true);
+  }
+
+  on_update_clicked(item) {
+    this.setState({
+      current_id: item._id,
+      sampleType: item.sampleType,
+      sampleType_id: item.sampleType_id,
+      stockSample: item.stockSample,
+      material: item.material,
+      client: item.client,
+      packingType: item.packingType,
+      dueDate: item.dueDate,
+      sampleDate: item.sampleDate,
+      sendingDate: item.sendingDate,
+      analysisType: item.analysisType,
+      incomingProduct: item.incomingProduct,
+      distributor: item.distributor,
+      certificateType: item.certificateType,
+      remark: item.remark,
+      _create: false,
+      double_error: "",
+    });
+
+    this.setModal_Create(true);
+  }
+
+  deleteSampleType() {
+    this.setModal_Delete(false);
+    axios.post(Config.ServerUri + "/delete_sampleType", {
+        id: this.state.current_id,
+      })
+      .then((res) => {
+        toast.success("SampleType successfully deleted");
+        this.setState({
+          export_all_data: res.data,
+          sampleTypesData: res.data,
+        });
+      })
+      .catch((error) => {});
+  }
+
+  createSampleType(event) {
+    event.preventDefault();
+
+    if (this.state.double_error !== "") return;
+
+    const data = {
+      sampleType_id: this.state.sampleType_id,
+      sampleType: this.state.sampleType,
+      stockSample: this.state.stockSample,
+      material: this.state.material,
+      client: this.state.client,
+      packingType: this.state.packingType,
+      dueDate: this.state.dueDate,
+      sendingDate: this.state.sendingDate,
+      sampleDate: this.state.sampleDate,
+      analysisType: this.state.analysisType,
+      incomingProduct: this.state.incomingProduct,
+      distributor: this.state.distributor,
+      certificateType: this.state.certificateType,
+      remark: this.state.remark,
+    }
+    this.setModal_Create(false);
+
+    axios.post(Config.ServerUri + "/create_sampleType", data)
+      .then((res) => {
+        toast.success("SampleType successfully created");
+        this.setState({
+          export_all_data: res.data,
+          sampleTypesData: res.data,
+        });
+      })
+      .catch((error) => {});
+  }
+
+  updateSampleType(event) {
+    event.preventDefault();
+
+    if (this.state.double_error !== "") return;
+
+    const data = {
+      id: this.state.current_id,
+      sampleType: this.state.sampleType,
+      sampleType_id: this.state.sampleType_id,
+      stockSample: this.state.stockSample,
+      material: this.state.material,
+      client: this.state.client,
+      packingType: this.state.packingType,
+      dueDate: this.state.dueDate,
+      sendingDate: this.state.sendingDate,
+      sampleDate: this.state.sampleDate,
+      analysisType: this.state.analysisType,
+      incomingProduct: this.state.incomingProduct,
+      distributor: this.state.distributor,
+      certificateType: this.state.certificateType,
+      remark: this.state.remark,
+    }
+
+    this.setModal_Create(false);
+
+    axios.post(Config.ServerUri + "/update_sampleType", data)
+      .then((res) => {
+        toast.success("SampleType successfully updated");
+        this.setState({
+          export_all_data: res.data,
+          sampleTypesData: res.data,
+        });
+      })
+      .catch((error) => {});
+  }
+
+  setModal_Delete(modal) {
+    this.setState({
+      modal_delete: modal,
+    });
+  }
+
+  setModal_Create(modal) {
+    this.setState({
+      modal_create: modal,
     });
   }
 
@@ -779,7 +940,6 @@ export default class AdminSampleType extends Component {
             color="info"
             className="float-right"
             style={{ margin: "0px 0px 0px 16px" }}
-            //style={{margin: '16px'}}
             onClick={() => {
               this.on_create_clicked();
             }}
@@ -1068,244 +1228,5 @@ export default class AdminSampleType extends Component {
         </CModal>
       </div>
     );
-  }
-
-  getAllSampleTypes() {
-    axios
-      .get(Config.ServerUri + "/get_all_sampleTypes")
-      .then((res) => {
-        var sampletype_list = [];
-        res.data.map((sampletype) => {
-          sampletype_list.push({
-            sampleType_id: sampletype.sampleType_id,
-            sampleType: sampletype.sampleType,
-            stockSample: sampletype.stockSample,
-            material: sampletype.material,
-            client: sampletype.client,
-            packingType: sampletype.packingType,
-            dueDate: sampletype.dueDate,
-            sampleDate: sampletype.sampleDate,
-            sendingDate: sampletype.sendingDate,
-            analysisType: sampletype.analysisType,
-            incomingProduct: sampletype.incomingProduct,
-            distributor: sampletype.distributor,
-            certificateType: sampletype.certificateType,
-            remark: sampletype.remark,
-          });
-        });
-        this.setState({
-          export_all_data: sampletype_list,
-          sampleTypesData: res.data,
-        });
-      })
-      .catch((error) => {});
-  }
-
-  on_delete_clicked(id) {
-    this.setState({ current_id: id });
-
-    this.setModal_Delete(true);
-  }
-
-  on_create_clicked() {
-    this.setState({
-      current_id: "",
-      sampleType: "",
-      sampleType_id: "",
-      stockSample: false,
-      material: false,
-      client: false,
-      packingType: false,
-      dueDate: false,
-      sampleDate: false,
-      sendingDate: false,
-      analysisType: false,
-      incomingProduct: false,
-      distributor: false,
-      certificateType: false,
-      remark: "",
-      _create: true,
-      double_error: "",
-    });
-
-    this.setModal_Create(true);
-  }
-
-  on_update_clicked(item) {
-    this.setState({
-      current_id: item._id,
-      sampleType: item.sampleType,
-      sampleType_id: item.sampleType_id,
-      stockSample: item.stockSample,
-      material: item.material,
-      client: item.client,
-      packingType: item.packingType,
-      dueDate: item.dueDate,
-      sampleDate: item.sampleDate,
-      sendingDate: item.sendingDate,
-      analysisType: item.analysisType,
-      incomingProduct: item.incomingProduct,
-      distributor: item.distributor,
-      certificateType: item.certificateType,
-      remark: item.remark,
-      _create: false,
-      double_error: "",
-    });
-
-    this.setModal_Create(true);
-  }
-
-  deleteSampleType() {
-    this.setModal_Delete(false);
-    axios
-      .post(Config.ServerUri + "/delete_sampleType", {
-        id: this.state.current_id,
-      })
-      .then((res) => {
-        toast.success("SampleType successfully deleted");
-        var sampletype_list = [];
-        res.data.map((sampletype) => {
-          sampletype_list.push({
-            sampleType_id: sampletype.sampleType_id,
-            sampleType: sampletype.sampleType,
-            stockSample: sampletype.stockSample,
-            material: sampletype.material,
-            client: sampletype.client,
-            packingType: sampletype.packingType,
-            dueDate: sampletype.dueDate,
-            sampleDate: sampletype.sampleDate,
-            sendingDate: sampletype.sendingDate,
-            analysisType: sampletype.analysisType,
-            incomingProduct: sampletype.incomingProduct,
-            distributor: sampletype.distributor,
-            certificateType: sampletype.certificateType,
-            remark: sampletype.remark,
-          });
-        });
-        this.setState({
-          export_all_data: sampletype_list,
-          sampleTypesData: res.data,
-        });
-      })
-      .catch((error) => {});
-  }
-
-  createSampleType(event) {
-    event.preventDefault();
-
-    if (this.state.double_error !== "") return;
-
-    this.setModal_Create(false);
-
-    axios
-      .post(Config.ServerUri + "/create_sampleType", {
-        sampleType_id: this.state.sampleType_id,
-        sampleType: this.state.sampleType,
-        stockSample: this.state.stockSample,
-        material: this.state.material,
-        client: this.state.client,
-        packingType: this.state.packingType,
-        dueDate: this.state.dueDate,
-        sendingDate: this.state.sendingDate,
-        sampleDate: this.state.sampleDate,
-        analysisType: this.state.analysisType,
-        incomingProduct: this.state.incomingProduct,
-        distributor: this.state.distributor,
-        certificateType: this.state.certificateType,
-        remark: this.state.remark,
-      })
-      .then((res) => {
-        toast.success("SampleType successfully created");
-        var sampletype_list = [];
-        res.data.map((sampletype) => {
-          sampletype_list.push({
-            sampleType_id: sampletype.sampleType_id,
-            sampleType: sampletype.sampleType,
-            stockSample: sampletype.stockSample,
-            material: sampletype.material,
-            client: sampletype.client,
-            packingType: sampletype.packingType,
-            dueDate: sampletype.dueDate,
-            sampleDate: sampletype.sampleDate,
-            sendingDate: sampletype.sendingDate,
-            analysisType: sampletype.analysisType,
-            incomingProduct: sampletype.incomingProduct,
-            distributor: sampletype.distributor,
-            certificateType: sampletype.certificateType,
-            remark: sampletype.remark,
-          });
-        });
-        this.setState({
-          export_all_data: sampletype_list,
-          sampleTypesData: res.data,
-        });
-      })
-      .catch((error) => {});
-  }
-
-  updateSampleType(event) {
-    event.preventDefault();
-
-    if (this.state.double_error !== "") return;
-
-    this.setModal_Create(false);
-
-    axios
-      .post(Config.ServerUri + "/update_sampleType", {
-        id: this.state.current_id,
-        sampleType: this.state.sampleType,
-        sampleType_id: this.state.sampleType_id,
-        stockSample: this.state.stockSample,
-        material: this.state.material,
-        client: this.state.client,
-        packingType: this.state.packingType,
-        dueDate: this.state.dueDate,
-        sendingDate: this.state.sendingDate,
-        sampleDate: this.state.sampleDate,
-        analysisType: this.state.analysisType,
-        incomingProduct: this.state.incomingProduct,
-        distributor: this.state.distributor,
-        certificateType: this.state.certificateType,
-        remark: this.state.remark,
-      })
-      .then((res) => {
-        toast.success("SampleType successfully updated");
-        var sampletype_list = [];
-        res.data.map((sampletype) => {
-          sampletype_list.push({
-            sampleType_id: sampletype.sampleType_id,
-            sampleType: sampletype.sampleType,
-            stockSample: sampletype.stockSample,
-            material: sampletype.material,
-            client: sampletype.client,
-            packingType: sampletype.packingType,
-            dueDate: sampletype.dueDate,
-            sampleDate: sampletype.sampleDate,
-            sendingDate: sampletype.sendingDate,
-            analysisType: sampletype.analysisType,
-            incomingProduct: sampletype.incomingProduct,
-            distributor: sampletype.distributor,
-            certificateType: sampletype.certificateType,
-            remark: sampletype.remark,
-          });
-        });
-        this.setState({
-          export_all_data: sampletype_list,
-          sampleTypesData: res.data,
-        });
-      })
-      .catch((error) => {});
-  }
-
-  setModal_Delete(modal) {
-    this.setState({
-      modal_delete: modal,
-    });
-  }
-
-  setModal_Create(modal) {
-    this.setState({
-      modal_create: modal,
-    });
   }
 }

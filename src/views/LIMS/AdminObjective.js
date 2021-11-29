@@ -72,7 +72,7 @@ export default class AdminObjective extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
         export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
@@ -320,9 +320,11 @@ export default class AdminObjective extends Component {
             hover
             clickableRows
             scopedSlots={{
-              units: (item) => (
-                <td style={{ whiteSpace: "pre-line" }}>
-                  {this.getUnits(item.units)}
+              units: (item, index) => (
+                <td style={{ whiteSpace: "pre-line" }} key={index}>
+                  {
+                    item.units.length > 0 && item.units.map(unit => <p className="mb-0">{unit.unit}</p>)
+                  }
                 </td>
               ),
               buttonGroups: (item, index) => {
@@ -401,6 +403,14 @@ export default class AdminObjective extends Component {
     );
   }
 
+  formatedUnits(items) {
+    let str = ''
+    items.map(item => str += item.unit)
+    str.replace(/,/g, '<br/>')
+    console.log(str)
+    return str;
+  }
+
   getAllObjectives() {
     axios.get(Config.ServerUri + '/get_all_objectives')
     .then((res) => {
@@ -408,19 +418,19 @@ export default class AdminObjective extends Component {
         objectivesData: res.data.objectives,
         unitsData: res.data.units
       });
-      var objective_list = [];
-      res.data.objectives.map((objective)=>{
-        var unit_data_list = this.getUnits(objective.units);
-        objective_list.push({"objective_id":objective.objective_id, 'objective':objective.objective,'units':unit_data_list,'remark':objective.remark})
-      });
-      console.log(objective_list);
+      const excelData = res.data.objectives.map(obj => {
+        return {
+          objective: obj.objective,
+          objective_id: obj.objective_id,
+          remark: obj.remark,
+          units: obj.units.map(unit => unit.unit).toString().replace(/,/g, "\n")
+        }
+      })
       this.setState({
-        export_all_data:objective_list,
+        export_all_data: excelData,
       });
     })
-    .catch((error) => {
-      
-    })
+    .catch((error) => {})
   }
 
   on_delete_clicked(id) {
@@ -433,7 +443,7 @@ export default class AdminObjective extends Component {
     this.setState({
       current_id: '',
       objective: '',
-      objective_id:'',
+      objective_id: this.state.objectivesData.length + 1,
       units: [],
       _units: [],
       remark: "",
@@ -449,11 +459,8 @@ export default class AdminObjective extends Component {
     var _units = [];
 
     item.units.map((item, index) => {
-      var label = this.getUnitName(item);
-      if (label !== "") {
-        units.push(item);
-        _units.push({ label: label, value: item });
-      }
+      units.push(item);
+      _units.push({ label: item.unit, value: item._id });
       return true;
     });
 
@@ -501,14 +508,16 @@ export default class AdminObjective extends Component {
     event.preventDefault();
 
     if (this.state.objective_error !== "") return;
-
+    
     this.setModal_Create(false);
-    axios.post(Config.ServerUri + '/create_objective', {
+
+    const data = {
       objective: this.state.objective,
       objective_id: this.state.objective_id,
       units: this.state.units,
       remark: this.state.remark
-    })
+    }
+    axios.post(Config.ServerUri + '/create_objective', data)
     .then((res) => {
       if (res.data.status === 0) {
         toast.error("Objective already exists.")
@@ -519,20 +528,20 @@ export default class AdminObjective extends Component {
           objectivesData: res.data.objectives,
           unitsData: res.data.units
         });
-        var objective_list = [];
-        res.data.objectives.map((objective)=>{
-          var unit_data_list = this.getUnits(objective.units);
-          objective_list.push({"objective_id":objective.objective_id, 'objective':objective.objective,'units':unit_data_list,'remark':objective.remark})
-        });
-        console.log(objective_list);
+        const excelData = res.data.objectives.map(obj => {
+          return {
+            objective: obj.objective,
+            objective_id: obj.objective_id,
+            remark: obj.remark,
+            units: obj.units.map(unit => unit.unit).toString().replace(/,/g, "\n")
+          }
+        })
         this.setState({
-          export_all_data:objective_list,
+          export_all_data: excelData,
         });
       }
     })
-    .catch((error) => {
-      
-    })
+    .catch((error) => {})
   }
 
   updateObjective(event) {
@@ -541,13 +550,15 @@ export default class AdminObjective extends Component {
     if (this.state.objective_error !== "") return;
 
     this.setModal_Create(false);
-    axios.post(Config.ServerUri + '/update_objective', {
+
+    const data = {
       id: this.state.current_id,
       objective_id: this.state.objective_id,
       objective: this.state.objective,
       units: this.state.units,
       remark: this.state.remark
-    })
+    }
+    axios.post(Config.ServerUri + '/update_objective', data)
     .then((res) => {
       if (res.data.status === 0) {
         toast.error("Objective already exists.")
@@ -558,14 +569,16 @@ export default class AdminObjective extends Component {
           objectivesData: res.data.objectives,
           unitsData: res.data.units
         });
-        var objective_list = [];
-        res.data.objectives.map((objective)=>{
-          var unit_data_list = this.getUnits(objective.units);
-          objective_list.push({"objective_id":objective.objective_id, 'objective':objective.objective,'units':unit_data_list,'remark':objective.remark})
-        });
-        console.log(objective_list);
+        const excelData = res.data.objectives.map(obj => {
+          return {
+            objective: obj.objective,
+            objective_id: obj.objective_id,
+            remark: obj.remark,
+            units: obj.units.map(unit => unit.unit).toString().replace(/,/g, "\n")
+          }
+        })
         this.setState({
-          export_all_data:objective_list,
+          export_all_data: excelData,
         });
       }
     })

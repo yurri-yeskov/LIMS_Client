@@ -68,7 +68,7 @@ export default class Administration extends Component {
     })
   }
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         selected_language: nextProps.selected_language,
         user_label: nextProps.language_data.filter(item => item.label === 'user')[0][nextProps.selected_language],
@@ -164,60 +164,60 @@ export default class Administration extends Component {
                 </CNav>
                 <CTabContent>
                   <CTabPane>
-                    {this.state.current_tab !== 0 ? <div /> : <AdminUser selected_language={this.state.selected_language == '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                    {this.state.current_tab !== 0 ? <div /> : <AdminUser selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 1 ? <div /> : <AdminUserType selected_language={this.state.selected_language == '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                    {this.state.current_tab !== 1 ? <div /> : <AdminUserType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
                   </CTabPane>
                   <CTabPane>
                     {this.state.current_tab !== 2 ? (
                       <div />
                     ) : (
-                      <AdminSampleType selected_language={this.state.selected_language == '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
+                      <AdminSampleType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
                     )}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 3 ? <div /> : <AdminMaterial selected_language={this.state.selected_language == '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                    {this.state.current_tab !== 3 ? <div /> : <AdminMaterial selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
                   </CTabPane>
                   <CTabPane>
                     {this.state.current_tab !== 4 ? (
                       <div />
                     ) : (
-                      <AdminAnalysisType selected_language={this.state.selected_language == '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
+                      <AdminAnalysisType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
                     )}
                   </CTabPane>
                   <CTabPane>
                     {this.state.current_tab !== 5 ? (
                       <div />
                     ) : (
-                      <AdminObjective selected_language={this.state.selected_language == '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
+                      <AdminObjective selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
                     )}
                   </CTabPane>
                   <CTabPane>
                     {this.state.current_tab !== 6 ? (
                       <div />
                     ) : (
-                      <AdminPackingType selected_language={this.state.selected_language == '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
+                      <AdminPackingType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
                     )}
                   </CTabPane>
                   <CTabPane>
                     {this.state.current_tab !== 7 ? (
                       <div />
                     ) : (
-                      <AdminCertificateType selected_language={this.state.selected_language == '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
+                      <AdminCertificateType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
                     )}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 8 ? <div /> : <AdminUnit selected_language={this.state.selected_language == '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                    {this.state.current_tab !== 8 ? <div /> : <AdminUnit selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 9 ? <div /> : <AdminClient selected_language={this.state.selected_language == '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                    {this.state.current_tab !== 9 ? <div /> : <AdminClient selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 10 ? <div /> : <AdminReason selected_language={this.state.selected_language == '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                    {this.state.current_tab !== 10 ? <div /> : <AdminReason selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 11 ? <div /> : <AdminCertificate selected_language={this.state.selected_language == '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                    {this.state.current_tab !== 11 ? <div /> : <AdminCertificate selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
                   </CTabPane>
                 </CTabContent>
               </CTabs>

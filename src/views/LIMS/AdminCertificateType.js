@@ -851,7 +851,7 @@ export default class AdminCertificateType extends Component {
     this.setState({
       current_id: '',
       certificateType: '',
-      certificateType_id: '',
+      certificateType_id: this.state.certificateTypesData.length + 1,
       remark: '',
       analysises: [],
       _analysises: [],

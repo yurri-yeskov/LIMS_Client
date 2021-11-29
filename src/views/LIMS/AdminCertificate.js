@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { connect } from "react-redux";
-import { Table, Modal, Button, Input, Upload, Select } from "antd";
+import { Modal, Upload, Select } from "antd";
 import axios from "axios";
 import Config from "../../Config";
 import "./style.css";
@@ -19,7 +19,6 @@ import {
   CLabel,
   CInput,
   CTextarea,
-  CSelect,
 } from "@coreui/react";
 import { toast } from "react-hot-toast";
 const { Option } = Select;
@@ -175,7 +174,7 @@ class AdminCertificate extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         create_new_label: nextProps.language_data.filter(item => item.label === 'create_new')[0][nextProps.selected_language],
         columns : [
@@ -412,9 +411,9 @@ class AdminCertificate extends Component {
     let formData = new FormData();
     var arr = [];
     if (
-      fileList.length == 0 ||
-      fileList_Footer.length == 0 ||
-      samenameerror == true
+      fileList.length === 0 ||
+      fileList_Footer.length === 0 ||
+      samenameerror === true
     ) {
       return;
     }
@@ -503,8 +502,8 @@ class AdminCertificate extends Component {
 
   onChangeInput = (e) => {
     const { data } = this.state;
-    var err = data.filter((v) => v.name == e.target.value).length;
-    if (e.target.name == "name") {
+    var err = data.filter((v) => v.name === e.target.value).length;
+    if (e.target.name === "name") {
       this.setState({
         [e.target.name]: e.target.value,
         samenameerror: err > 0 ? true : false,
