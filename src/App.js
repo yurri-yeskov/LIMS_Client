@@ -1,7 +1,8 @@
 import React, { Component } from "react";
 import { HashRouter, Route, Switch } from "react-router-dom";
-import "./scss/style.scss";
+import axios from 'axios'
 import setAuthToken from "./utils/setAuthToken";
+import "./scss/style.scss";
 
 const loading = (
   <div className="pt-3 text-center">
@@ -26,6 +27,16 @@ class App extends Component {
     if (token) {
       setAuthToken(token)
     }
+    // axios.get(process.env.REACT_APP_API_URL + "users/currentUser")
+    //   .then(res => {
+    //     localStorage.setItem('token', res.data);
+    //     setAuthToken(res.data.token);
+    //   })
+    //   .catch(err => {
+    //     console.log(err.response.data)
+    //     // localStorage.removeItem('token')
+    //     // window.location.href = "/login"
+    //   })
   }
 
   render() {

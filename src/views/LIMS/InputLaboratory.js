@@ -37,7 +37,7 @@ import { toast } from "react-hot-toast";
 import "react-datepicker/dist/react-datepicker.css";
 import { CSVLink } from "react-csv";
 import moment from "moment";
-import GPDF from "./GeneratePDF";
+import GPDF from "../../utils/GeneratePDF";
 import axios from "axios";
 import Config from "../../Config.js";
 

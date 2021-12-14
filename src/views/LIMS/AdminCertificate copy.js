@@ -21,16 +21,51 @@ import {
   CTextarea,
 } from "@coreui/react";
 import { toast } from "react-hot-toast";
-import { header, client_fields, analysis_fields } from "src/utils/LaboratoryTableFields";
 const { Option } = Select;
 
-class AdminCertificate extends Component {
+const LabField = [
+  "Due Date",
+  "Sample Type",
+  "Material",
+  "Client",
+  "Packing Type",
+  "Analysis Type",
+  "Certificate",
+  "Sending Date",
+  "Sample Date",
+  "Weight(actual)",
+  "Charge",
+  "Remark",
+  "Delivering.Address.Name1",
+  "Delivering.Address.Title",
+  "Delivering.Address.Country",
+  "Delivering.Address.Name2",
+  "Delivering.Address.Name3",
+  "Delivering.Address.Street",
+  "Delivering.Address.ZIP",
+  "CustomerProductCode",
+  "E-mail Address",
+  "FetchDate",
+  "OrderId",
+  "Pos.ID",
+  "Weight(target)",
+];
+const AnalField = ["Analysis Type", "Norm", "Objectives", "Remark"];
+const ClientField = [
+  "Name",
+  "Country B",
+  "Zip Code B",
+  "City B",
+  "Address B",
+  "Address2 B",
+];
 
+class AdminCertificate extends Component {
   constructor(props) {
     super(props);
     this.state = {
       data: [],
-      openCreateModal: false,
+      addVisible: false,
       productdataVisible: false,
       freetextVisible: false,
       tableColVisible: false,
@@ -130,9 +165,11 @@ class AdminCertificate extends Component {
         },
       ],
     };
+
+
   }
 
-  componentDidMount() {
+  componentWillMount() {
     this.First();
   }
 
@@ -214,16 +251,15 @@ class AdminCertificate extends Component {
       this.setState({
         T_Modal_data: e.tablecol,
         tableColVisible: true,
-        rowid: e._id,
+        rowid: e.id,
       });
     else
       this.setState({
         T_Modal_data: tablecol_data,
         tableColVisible: true,
-        rowid: e._id,
+        rowid: e.id,
       });
   };
-
   FreetextModalOK = () => {
     axios
       .post(Config.ServerUri + "/update_Freetext", {
@@ -240,7 +276,9 @@ class AdminCertificate extends Component {
         console.log("err", err);
       });
   };
-
+  FreetextModalCancel = () => {
+    this.setState({ freetextVisible: false, rowid: "" });
+  };
   ShowProduct = (r) => {
     var empty_Modal_data = [
       { name: "", pagename: null, fieldname: "" },
@@ -259,32 +297,51 @@ class AdminCertificate extends Component {
         P_name: r.productdata.productTitle,
         P_Modal_data: r.productdata.productData,
         productdataVisible: true,
-        rowid: r._id,
+        rowid: r.id,
       });
     else
       this.setState({
         P_name: r.productdata.productTitle,
         productdataVisible: true,
-        rowid: r._id,
+        rowid: r.id,
         P_Modal_data: empty_Modal_data,
       });
   };
-
   First = () => {
-    axios.get(Config.ServerUri + "/get_certificate")
+    axios
+      .get(Config.ServerUri + "/get_certificate")
       .then((res) => {
         if (res) {
-          this.setState({ data: res.data })
+          var data = res.data.map((v, i) => {
+            return {
+              id: v._id,
+              key: i,
+              name: v.name,
+              company: v.company,
+              logo: v.logo.path,
+              certificatetitle: v.certificatetitle,
+              logodata: v.logo,
+              productdata: v.productdata,
+              place: v.place,
+              tablecol: v.tablecol,
+              date_format: v.date_format,
+              freetext: v.freetext,
+              footer: v.footer.path,
+              footerdata: v.footer,
+              logoUid: v.logoUid,
+              footerUid: v.footerUid,
+            };
+          });
+          this.setState({ data });
         }
       })
       .catch((err) => {
         console.log("err", err);
       });
   };
-
   addData = () => {
     this.setState({
-      openCreateModal: true,
+      addVisible: true,
       name: "",
       company: "",
       certificatetitle: "",
@@ -298,15 +355,17 @@ class AdminCertificate extends Component {
       date_format: "DD.MM.YYYY",
     });
   };
-
+  KhandleCancel = () => {
+    this.setState({ addVisible: false, rowid: "" });
+  };
   on_update_clicked = (e) => {
     var logodata = {
       originFileObj: { uid: e.logoUid },
-      url: `/uploads/certificates/${e.logo_filename}`,
+      url: e.logo.substr(e.logo.indexOf("public\\") + 6, e.logo.length),
     };
     var footerdata = {
       originFileObj: { uid: e.footerUid },
-      url: `/uploads/certificates/${e.footer_filename}`,
+      url: e.footer.substr(e.footer.indexOf("public\\") + 6, e.footer.length),
     };
     this.setState({
       name: e.name,
@@ -316,10 +375,14 @@ class AdminCertificate extends Component {
       place: e.place,
       fileList_Footer: [footerdata],
       fileList: [logodata],
-      openCreateModal: true,
+      addVisible: true,
       date_format: e.date_format,
     });
   };
+
+  date_format_func = (e) => this.setState({ date_format: e });
+
+  handleCancel = () => this.setState({ previewVisible: false });
 
   handlePreview = (file) => {
     this.setState({
@@ -347,17 +410,19 @@ class AdminCertificate extends Component {
     } = this.state;
     let formData = new FormData();
     var arr = [];
-    if (fileList.length === 0 || fileList_Footer.length === 0 || samenameerror === true) {
+    if (
+      fileList.length === 0 ||
+      fileList_Footer.length === 0 ||
+      samenameerror === true
+    ) {
       return;
     }
-    this.setState({ openCreateModal: false });
+    this.setState({ addVisible: false });
     arr.push(fileList[0].originFileObj);
     arr.push(fileList_Footer[0].originFileObj);
     for (let i = 0; i < 2; i++) {
       formData.append("files", arr[i]);
     }
-    formData.append("logo", fileList[0].originFileObj)
-    formData.append("footer", fileList_Footer[0].originFileObj)
     formData.append("logoUid", fileList[0].originFileObj.uid);
     formData.append("footerUid", fileList_Footer[0].originFileObj.uid);
     formData.append("name", name);
@@ -381,7 +446,8 @@ class AdminCertificate extends Component {
   };
 
   handleDelete = (id) => {
-    axios.post(Config.ServerUri + "/del_certificate", { id })
+    axios
+      .post(Config.ServerUri + "/del_certificate", { id })
       .then((res) => {
         if (res) {
           toast.success("successfully deleted");
@@ -400,25 +466,21 @@ class AdminCertificate extends Component {
     P_Modal_data[i].fieldname = "";
     this.setState({ P_Modal_data });
   };
-
   ProductFieldSelect = (e, i) => {
     let { P_Modal_data } = this.state;
     P_Modal_data[i].fieldname = e;
     this.setState({ P_Modal_data });
   };
-
   ProductFieldInput = (e, i) => {
     let { P_Modal_data } = this.state;
     P_Modal_data[i].name = e.target.value;
     this.setState({ P_Modal_data });
   };
-
   TableFieldInput = (e, i) => {
     let { T_Modal_data } = this.state;
     T_Modal_data[i].name = e.target.value;
     this.setState({ T_Modal_data });
   };
-
   TablePageSelect = (e, i) => {
     let { T_Modal_data } = this.state;
     T_Modal_data[i].fieldname = e;
@@ -427,6 +489,14 @@ class AdminCertificate extends Component {
 
   handleUpload_footer = ({ fileList }) => {
     this.setState({ fileList_Footer: fileList });
+  };
+  handleCancel_footer = () => this.setState({ previewVisible_Footer: false });
+
+  handlePreview_footer = (file) => {
+    this.setState({
+      previewImage_Footer: file.thumbUrl,
+      previewVisible_Footer: true,
+    });
   };
 
   onChangeInput = (e) => {
@@ -441,40 +511,47 @@ class AdminCertificate extends Component {
       this.setState({ [e.target.name]: e.target.value });
     }
   };
-
+  ProductModalCancel = () => {
+    this.setState({ productdataVisible: false, rowid: "" });
+  };
   ProductModalOK = () => {
     const { P_name, P_Modal_data, rowid } = this.state;
-    const data = {
-      title: P_name,
-      data: P_Modal_data,
-      rowid: rowid
-    }
-    axios.post(Config.ServerUri + "/update_productdata", data)
+    axios
+      .post(Config.ServerUri + "/update_productdata", {
+        title: P_name,
+        data: P_Modal_data,
+        rowid,
+      })
       .then((res) => {
         if (res) {
           this.First();
           this.setState({ rowid: "", productdataVisible: false });
         }
-      }).catch((err) => {
+      })
+      .catch((err) => {
         console.log(err);
       });
   };
-
   TableColOK = () => {
     const { T_Modal_data, rowid } = this.state;
-    axios.post(Config.ServerUri + "/update_tabledata", {
-      data: T_Modal_data,
-      rowid,
-    }).then((res) => {
-      if (res) {
-        this.First();
-        this.setState({ rowid: "", tableColVisible: false });
-      }
-    }).catch((err) => {
-      console.log(err);
-    });
+    axios
+      .post(Config.ServerUri + "/update_tabledata", {
+        data: T_Modal_data,
+        rowid,
+      })
+      .then((res) => {
+        if (res) {
+          this.First();
+          this.setState({ rowid: "", tableColVisible: false });
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
-
+  TableColCancel = () => {
+    this.setState({ tableColVisible: false, rowid: "" });
+  };
   render() {
     const {
       previewVisible,
@@ -490,7 +567,6 @@ class AdminCertificate extends Component {
       date_format,
       productdataVisible,
     } = this.state;
-
     const uploadButton = (
       <div>
         <div className="ant-upload-text">Upload</div>
@@ -507,9 +583,13 @@ class AdminCertificate extends Component {
           color="info"
           className="float-right"
           style={{ margin: "0 0 0 10px" }}
-          onClick={() => this.addData()}
+          onClick={() => {
+            this.addData();
+          }}
         >
-          <i className="fa fa-plus" /><span style={{ padding: "4px" }} />{this.state.create_new_label}
+          <i className="fa fa-plus" />
+          <span style={{ padding: "4px" }} />
+          {this.state.create_new_label}
         </CButton>
         <CDataTable
           items={this.state.data}
@@ -522,23 +602,26 @@ class AdminCertificate extends Component {
           hover
           clickableRows
           scopedSlots={{
-            buttonGroups: (item) => {
+            buttonGroups: (item, index) => {
               return (
                 <td>
                   <div>
                     <CButton
                       color="info"
                       size="sm"
-                      onClick={() => this.on_update_clicked(item)}
-                      className="mx-1"
+                      onClick={() => {
+                        this.on_update_clicked(item);
+                      }}
                     >
                       <i className="fa fa-edit" />
                     </CButton>
+                    <span style={{ padding: "4px" }} />
                     <CButton
                       color="danger"
                       size="sm"
-                      onClick={() => this.setState({ modal_delete: true, rowid: item.id })}
-                      className="mx-1"
+                      onClick={() =>
+                        this.setState({ modal_delete: true, rowid: item.id })
+                      }
                     >
                       <i className="fa fa-trash" />
                     </CButton>
@@ -546,30 +629,32 @@ class AdminCertificate extends Component {
                 </td>
               );
             },
-            logo: (item) => {
+            logo: (item, index) => {
               return (
                 <td>
-                  <img src={`/uploads/certificates/${item.logo_filename}`} width="50px" height="50px" />
+                  <img src={`/uploads/certificates/${item.logo.filename}`} width="50px" height="50px" />
                 </td>
               );
             },
-            footer: (item) => {
+            footer: (item, index) => {
               return (
                 <td>
-                  <img src={`/uploads/certificates/${item.footer_filename}`} width="50px" height="50px" />
+                  <img src={`/uploads/certificates/${item.footer.filename}`} width="50px" height="50px" />
                 </td>
               );
             },
-            productdata: (item) => {
+            productdata: (item, index) => {
               return (
                 <td>
                   <a onClick={() => this.ShowProduct(item)}>
-                    {item.productdata.productTitle ? item.productdata.productTitle : "N/A"}
+                    {item.productdata.productTitle
+                      ? item.productdata.productTitle
+                      : "N/A"}
                   </a>
                 </td>
               );
             },
-            freetext: (item) => {
+            freetext: (item, index) => {
               return (
                 <td>
                   <a
@@ -577,7 +662,7 @@ class AdminCertificate extends Component {
                       this.setState({
                         freetext: item.freetext,
                         freetextVisible: true,
-                        rowid: item._id,
+                        rowid: item.id,
                       })
                     }
                   >
@@ -586,7 +671,7 @@ class AdminCertificate extends Component {
                 </td>
               );
             },
-            tablecolumns: (item) => {
+            tablecolumns: (item, index) => {
               var filterdata = 0;
               if (item.tablecol.length == 0) filterdata = 0;
               else {
@@ -601,17 +686,20 @@ class AdminCertificate extends Component {
                     style={{ width: "100px", fontSize: "20px" }}
                     onClick={() => this.showTableCol(item)}
                   >
-                    <i className={filterdata != 0 ? "fa fa-check-circle" : "fa fa-ban"} />
+                    <i
+                      className={
+                        filterdata != 0 ? "fa fa-check-circle" : "fa fa-ban"
+                      }
+                    />
                   </CButton>
                 </td>
               );
             },
           }}
         />
-
         <CModal
-          show={this.state.openCreateModal}
-          onClose={() => this.setState({ openCreateModal: false, rowid: '' })}
+          show={this.state.addVisible}
+          onClose={this.KhandleCancel}
           centered={true}
           style={{ width: "50vw" }}
           closeOnBackdrop={false}
@@ -679,7 +767,7 @@ class AdminCertificate extends Component {
                         <Modal
                           visible={previewVisible}
                           footer={null}
-                          onCancel={() => this.setState({ previewVisible: false })}
+                          onCancel={this.handleCancel}
                         >
                           <img
                             alt="example"
@@ -701,12 +789,7 @@ class AdminCertificate extends Component {
                         <Upload
                           listType="picture-card"
                           fileList={fileList_Footer}
-                          onPreview={(file) => {
-                            this.setState({
-                              previewImage_Footer: file.thumbUrl,
-                              previewVisible_Footer: true,
-                            })
-                          }}
+                          onPreview={this.handlePreview_footer}
                           onChange={this.handleUpload_footer}
                           beforeUpload={() => false}
                         >
@@ -717,7 +800,7 @@ class AdminCertificate extends Component {
                         <Modal
                           visible={previewVisible_Footer}
                           footer={null}
-                          onCancel={() => this.setState({ previewVisible_Footer: false })}
+                          onCancel={this.handleCancel_footer}
                         >
                           <img
                             alt="example"
@@ -743,7 +826,7 @@ class AdminCertificate extends Component {
                       placeholder="Please select your Date Format"
                       className="form-control"
                       value={date_format}
-                      onChange={(e) => this.setState({ date_format: e })}
+                      onChange={this.date_format_func}
                     >
                       <Option value="DD.MM.YYYY">DD.MM.YYYY</Option>
                       <Option value="DD/MM/YYYY">DD/MM/YYYY</Option>
@@ -757,15 +840,17 @@ class AdminCertificate extends Component {
           </CModalBody>
           <CModalFooter>
             <CButton color="info" onClick={this.handleSubmit}>
-              {this.state.rowid !== "" ? "Update" : "Create"}
+              {this.state.rowid ? "Update" : "Create"}
             </CButton>
-            <CButton color="secondary" onClick={() => this.setState({ openCreateModal: false, rowid: '' })}>
+            <CButton color="secondary" onClick={this.KhandleCancel}>
               Cancel
             </CButton>
           </CModalFooter>
         </CModal>
-
-        <CModal show={this.state.modal_delete} onClose={() => this.setState({ modal_delete: false, rowid: "" })}>
+        <CModal
+          show={this.state.modal_delete}
+          onClose={() => this.setState({ modal_delete: false, rowid: "" })}
+        >
           <CModalHeader>
             <CModalTitle>Confirm</CModalTitle>
           </CModalHeader>
@@ -773,21 +858,26 @@ class AdminCertificate extends Component {
             Do you really want to delete current user type?
           </CModalBody>
           <CModalFooter>
-            <CButton color="danger" onClick={() => this.handleDelete(this.state.rowid)}>
+            <CButton
+              color="danger"
+              onClick={() => this.handleDelete(this.state.rowid)}
+            >
               Delete
             </CButton>
-            <CButton color="secondary" onClick={() => this.setState({ modal_delete: false, rowid: "" })}>
+            <CButton
+              color="secondary"
+              onClick={() => this.setState({ modal_delete: false, rowid: "" })}
+            >
               Cancel
             </CButton>
           </CModalFooter>
         </CModal>
-
         <CModal
           style={{ width: "70vw" }}
           centered={true}
           size="xl"
           show={productdataVisible}
-          onClose={() => this.setState({ productdataVisible: false, rowid: "" })}
+          onClose={this.ProductModalCancel}
         >
           <CModalHeader>
             <h3>Product Data</h3>
@@ -842,21 +932,21 @@ class AdminCertificate extends Component {
                         }}
                       >
                         {v.pagename === 0 &&
-                          header.map((vl, il) => (
-                            <Option value={vl.key} key={il + "l"}>
-                              {vl.label}
+                          LabField.map((vl, il) => (
+                            <Option value={vl} key={il + "l"}>
+                              {vl}
                             </Option>
                           ))}
                         {v.pagename === 1 &&
-                          analysis_fields.map((vl, il) => (
-                            <Option value={vl.key} key={il + "a"}>
-                              {vl.label}
+                          AnalField.map((vl, il) => (
+                            <Option value={vl} key={il + "a"}>
+                              {vl}
                             </Option>
                           ))}
                         {v.pagename === 2 &&
-                          client_fields.map((vl, il) => (
-                            <Option value={vl.key} key={il + "c"}>
-                              {vl.label}
+                          ClientField.map((vl, il) => (
+                            <Option value={vl} key={il + "c"}>
+                              {vl}
                             </Option>
                           ))}
                       </Select>
@@ -870,7 +960,7 @@ class AdminCertificate extends Component {
             <CButton color="info" onClick={this.ProductModalOK}>
               OK
             </CButton>
-            <CButton color="secondary" onClick={() => this.setState({ productdataVisible: false, rowid: "" })}>
+            <CButton color="secondary" onClick={this.ProductModalCancel}>
               Cancel
             </CButton>
           </CModalFooter>
@@ -881,7 +971,7 @@ class AdminCertificate extends Component {
           centered={true}
           style={{ width: "50vw" }}
           size="xl"
-          onClose={() => this.setState({ tableColVisible: false, rowid: "" })}
+          onClose={this.TableColCancel}
         >
           <CModalHeader>
             <h4>Table Columns</h4>
@@ -910,16 +1000,16 @@ class AdminCertificate extends Component {
                           this.TablePageSelect(e, i);
                         }}
                       >
-                        <Option value="analysis">Analysis Types</Option>
-                        <Option value="value">Value</Option>
-                        <Option value="user">Author</Option>
-                        <Option value="date">Date</Option>
-                        <Option value="reason">Reason</Option>
-                        <Option value="spec">Specification</Option>
-                        <Option value="comment">Comment</Option>
-                        <Option value="certificate">Certificate Type</Option>
-                        <Option value="obj">AnalysisType-Objective</Option>
-                        <Option value="norm">Norm</Option>
+                        <Option value={0}>Analysis Types</Option>
+                        <Option value={1}>Value</Option>
+                        <Option value={2}>Author</Option>
+                        <Option value={3}>Date</Option>
+                        <Option value={4}>Reason</Option>
+                        <Option value={5}>Specification</Option>
+                        <Option value={6}>Comment</Option>
+                        <Option value={7}>Certificate Type</Option>
+                        <Option value={8}>AnalysisType-Objective</Option>
+                        <Option value={9}>Norm</Option>
                       </Select>
                     </td>
                   </tr>
@@ -931,15 +1021,14 @@ class AdminCertificate extends Component {
             <CButton color="info" onClick={this.TableColOK}>
               OK
             </CButton>
-            <CButton color="secondary" onClick={() => this.setState({ tableColVisible: false, rowid: "" })}>
+            <CButton color="secondary" onClick={this.TableColCancel}>
               Cancel
             </CButton>
           </CModalFooter>
         </CModal>
-
         <CModal
           show={this.state.freetextVisible}
-          onClose={() => this.setState({ freetextVisible: false, rowid: "" })}
+          onClose={this.FreetextModalCancel}
           centered={true}
           style={{ width: "70vw" }}
           size="xl"
@@ -958,12 +1047,12 @@ class AdminCertificate extends Component {
             <CButton color="info" onClick={this.FreetextModalOK}>
               OK
             </CButton>
-            <CButton color="secondary" onClick={() => this.setState({ freetextVisible: false, rowid: "" })}>
+            <CButton color="secondary" onClick={this.FreetextModalCancel}>
               Cancel
             </CButton>
           </CModalFooter>
         </CModal>
-      </div >
+      </div>
     );
   }
 }

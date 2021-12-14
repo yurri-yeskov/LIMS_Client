@@ -64,14 +64,14 @@ const TheSidebar = () => {
       route: '/input',
       icon: 'cil-pencil',
       _children: [
+        // {
+        //   _tag: 'CSidebarNavItem',
+        //   name: language_state.laboratory_label,
+        //   to: '/input/laboratory',
+        // },
         {
           _tag: 'CSidebarNavItem',
           name: language_state.laboratory_label,
-          to: '/input/laboratory',
-        },
-        {
-          _tag: 'CSidebarNavItem',
-          name: "Temp",
           to: '/input/laboratory1',
         },
       ],
