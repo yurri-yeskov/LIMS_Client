@@ -311,7 +311,7 @@ class AdminCertificate extends Component {
     this.setState({
       name: e.name,
       company: e.company,
-      rowid: e.id,
+      rowid: e._id,
       certificatetitle: e.certificatetitle,
       place: e.place,
       fileList_Footer: [footerdata],

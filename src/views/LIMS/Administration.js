@@ -103,121 +103,121 @@ export default class Administration extends Component {
                 <CNav variant="tabs">
                   <CNavItem>
                     <CNavLink onClick={(e) => this.on_tab_clicked(e, 0)}>
-                      {this.state.user_label}
-                    </CNavLink>
-                  </CNavItem>
-                  <CNavItem>
-                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 1)}>
                       {this.state.user_types_label}
                     </CNavLink>
                   </CNavItem>
                   <CNavItem>
+                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 1)}>
+                      {this.state.user_label}
+                    </CNavLink>
+                  </CNavItem>
+                  <CNavItem>
                     <CNavLink onClick={(e) => this.on_tab_clicked(e, 2)}>
-                      {this.state.sample_types_label}
-                    </CNavLink>
-                  </CNavItem>
-                  <CNavItem>
-                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 3)}>
-                      {this.state.material_label}
-                    </CNavLink>
-                  </CNavItem>
-                  <CNavItem>
-                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 4)}>
-                      {this.state.analysis_types_label}
-                    </CNavLink>
-                  </CNavItem>
-                  <CNavItem>
-                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 5)}>
-                      {this.state.objectives_label}
-                    </CNavLink>
-                  </CNavItem>
-                  <CNavItem>
-                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 6)}>
                       {this.state.packing_types_label}
                     </CNavLink>
                   </CNavItem>
                   <CNavItem>
-                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 7)}>
-                      {this.state.certificate_types_label}
-                    </CNavLink>
-                  </CNavItem>
-                  <CNavItem>
-                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 8)}>
+                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 3)}>
                       {this.state.unit_types}
                     </CNavLink>
                   </CNavItem>
                   <CNavItem>
-                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 9)}>
+                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 4)}>
+                      {this.state.objectives_label}
+                    </CNavLink>
+                  </CNavItem>
+                  <CNavItem>
+                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 5)}>
+                      {this.state.analysis_types_label}
+                    </CNavLink>
+                  </CNavItem>
+                  <CNavItem>
+                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 6)}>
                       {this.state.clients_label}
                     </CNavLink>
                   </CNavItem>
                   <CNavItem>
+                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 7)}>
+                      {this.state.material_label}
+                    </CNavLink>
+                  </CNavItem>
+                  <CNavItem>
+                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 8)}>
+                      {this.state.certificate_types_label}
+                    </CNavLink>
+                  </CNavItem>
+                  <CNavItem>
+                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 9)}>
+                      {this.state.certificate_template_label}
+                    </CNavLink>
+                  </CNavItem>
+                  <CNavItem>
                     <CNavLink onClick={(e) => this.on_tab_clicked(e, 10)}>
-                      {this.state.reason_label}
+                      {this.state.sample_types_label}
                     </CNavLink>
                   </CNavItem>
                   <CNavItem>
                     <CNavLink onClick={(e) => this.on_tab_clicked(e, 11)}>
-                      {this.state.certificate_template_label}
+                      {this.state.reason_label}
                     </CNavLink>
                   </CNavItem>
                 </CNav>
                 <CTabContent>
                   <CTabPane>
-                    {this.state.current_tab !== 0 ? <div /> : <AdminUser selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                    {this.state.current_tab !== 0 ? <div /> : <AdminUserType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 1 ? <div /> : <AdminUserType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                    {this.state.current_tab !== 1 ? <div /> : <AdminUser selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
                   </CTabPane>
                   <CTabPane>
                     {this.state.current_tab !== 2 ? (
-                      <div />
-                    ) : (
-                      <AdminSampleType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
-                    )}
-                  </CTabPane>
-                  <CTabPane>
-                    {this.state.current_tab !== 3 ? <div /> : <AdminMaterial selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
-                  </CTabPane>
-                  <CTabPane>
-                    {this.state.current_tab !== 4 ? (
-                      <div />
-                    ) : (
-                      <AdminAnalysisType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
-                    )}
-                  </CTabPane>
-                  <CTabPane>
-                    {this.state.current_tab !== 5 ? (
-                      <div />
-                    ) : (
-                      <AdminObjective selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
-                    )}
-                  </CTabPane>
-                  <CTabPane>
-                    {this.state.current_tab !== 6 ? (
                       <div />
                     ) : (
                       <AdminPackingType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
                     )}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 7 ? (
+                    {this.state.current_tab !== 3 ? <div /> : <AdminUnit selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                  </CTabPane>
+                  <CTabPane>
+                    {this.state.current_tab !== 4 ? (
                       <div />
                     ) : (
-                      <AdminCertificateType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
+                      <AdminObjective selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
                     )}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 8 ? <div /> : <AdminUnit selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                    {this.state.current_tab !== 5 ? (
+                      <div />
+                    ) : (
+                      <AdminAnalysisType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
+                    )}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 9 ? <div /> : <AdminClient selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                    {this.state.current_tab !== 6 ? (
+                      <div />
+                    ) : (
+                      <AdminClient selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
+                    )}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 10 ? <div /> : <AdminReason selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                    {this.state.current_tab !== 7 ? (
+                      <div />
+                    ) : (
+                      <AdminMaterial selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />
+                    )}
                   </CTabPane>
                   <CTabPane>
-                    {this.state.current_tab !== 11 ? <div /> : <AdminCertificate selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                    {this.state.current_tab !== 8 ? <div /> : <AdminCertificateType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                  </CTabPane>
+                  <CTabPane>
+                    {this.state.current_tab !== 9 ? <div /> : <AdminCertificate selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                  </CTabPane>
+                  <CTabPane>
+                    {this.state.current_tab !== 10 ? <div /> : <AdminSampleType selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                  </CTabPane>
+                  <CTabPane>
+                    {this.state.current_tab !== 11 ? <div /> : <AdminReason selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
                   </CTabPane>
                 </CTabContent>
               </CTabs>

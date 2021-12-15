@@ -446,7 +446,7 @@ export default class AdminClient extends Component {
         </div>
         <div id="tableClients">
           <CDataTable
-            items={this.state.clientsData}
+            items={this.state.clientsData.filter(c => c.name !== 'Default')}
             fields={this.state.fields}
             itemsPerPage={50}
             itemsPerPageSelect
@@ -538,7 +538,7 @@ export default class AdminClient extends Component {
           clientsData: res.data
         });
       })
-      .catch((error) => {})
+      .catch((error) => { })
   }
 
   on_delete_clicked(id) {
@@ -551,7 +551,7 @@ export default class AdminClient extends Component {
     this.setState({
       current_id: "",
       name: "",
-      clientId: this.state.clientsData.length + 1,
+      clientId: this.state.clientsData.filter(c => c.name !== 'Default').length + 1,
       other: "",
       countryL: "",
       zipCodeL: "",

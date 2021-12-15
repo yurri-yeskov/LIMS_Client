@@ -73,6 +73,7 @@ class InputLab extends Component {
             user: {},
             errors: {},
             selected_aType: {},
+            defaultClient: {},
             filtered_aTypes: [],
             filtered_cTypes: [],
             allData: [],
@@ -329,7 +330,8 @@ class InputLab extends Component {
             sampleTypes: res.data.sampleTypes,
             packingTypes: res.data.packingTypes,
             analysisTypes: res.data.analysisTypes,
-            certificateTypes: res.data.certificateTypes
+            certificateTypes: res.data.certificateTypes,
+            defaultClient: res.data.defaultClient
         })
     }
 
@@ -589,7 +591,7 @@ class InputLab extends Component {
         Object.keys(this.state).filter(key => key.indexOf('analysis_table_flag') > -1)
             .map(s => this.setState({ [s]: false }))
 
-        axios.post(process.env.REACT_APP_API_URL + "inputLabs/analysisTypes", { labId: id, analysisId: aType._id })
+        axios.post(process.env.REACT_APP_API_URL + "inputLabs/analysisTypes", { labStockId: id, labRowId: rowId, analysisId: aType._id })
             .then(res => {
                 this.setState({
                     reasons: res.data.reasons,
@@ -1157,7 +1159,7 @@ class InputLab extends Component {
                                 value={this.state.modalData.client}
                                 onChange={this.handleChangeClient.bind(this)}
                             >
-                                <option value="">Default</option>
+                                <option value={this.state.defaultClient._id}>Default</option>
                                 {Object.keys(this.state.clients).length > 0 && this.state.clients
                                     .sort((a, b) => { return String(a.name).toUpperCase() > String(b.name).toUpperCase() ? 1 : -1 })
                                     .map((client, index) => (
@@ -2228,31 +2230,19 @@ class InputLab extends Component {
                                                     <CCol md="4">
                                                         <CRow>
                                                             <CCol md="6">
-                                                                {
-                                                                    this.state.sameId ? (
-                                                                        <CLabel className="cursor-pointer" htmlFor="objective" onClick={() => {
-                                                                            this.setState({
-                                                                                [`analysis_table_flag-${index}`]: (
-                                                                                    this.state[`analysis_table_flag-${index}`] === null || this.state[`analysis_table_flag-${index}`] === undefined
-                                                                                ) ? true : !this.state[`analysis_table_flag-${index}`]
-                                                                            })
-                                                                        }}>
-                                                                            {(Object.keys(this.state.objectives).length > 0 && Object.keys(this.state.units).length > 0) ?
-                                                                                this.state.objectives.filter(obj => obj._id === data.obj.split("-")[0])[0].objective + " " +
-                                                                                this.state.units.filter(u => u._id === data.obj.split("-")[1])[0].unit + " " +
-                                                                                "[" + data.min + ", " + data.max + "]" : ''
-                                                                            }
-                                                                        </CLabel>
-                                                                    ) : (
-                                                                        <CLabel htmlFor="objective">
-                                                                            {(Object.keys(this.state.objectives).length > 0 && Object.keys(this.state.units).length > 0) ?
-                                                                                this.state.objectives.filter(obj => obj._id === data.obj.split("-")[0])[0].objective + " " +
-                                                                                this.state.units.filter(u => u._id === data.obj.split("-")[1])[0].unit + " " +
-                                                                                "[" + data.min + ", " + data.max + "]" : ''
-                                                                            }
-                                                                        </CLabel>
-                                                                    )
-                                                                }
+                                                                <CLabel className="cursor-pointer" htmlFor="objective" onClick={() => {
+                                                                    this.setState({
+                                                                        [`analysis_table_flag-${index}`]: (
+                                                                            this.state[`analysis_table_flag-${index}`] === null || this.state[`analysis_table_flag-${index}`] === undefined
+                                                                        ) ? true : !this.state[`analysis_table_flag-${index}`]
+                                                                    })
+                                                                }}>
+                                                                    {(Object.keys(this.state.objectives).length > 0 && Object.keys(this.state.units).length > 0) ?
+                                                                        this.state.objectives.filter(obj => obj._id === data.obj.split("-")[0])[0].objective + " " +
+                                                                        this.state.units.filter(u => u._id === data.obj.split("-")[1])[0].unit + " " +
+                                                                        "[" + data.min + ", " + data.max + "]" : ''
+                                                                    }
+                                                                </CLabel>
                                                             </CCol>
                                                             <CCol md="6">
                                                                 <Input

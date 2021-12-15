@@ -749,7 +749,7 @@ export default class InputLaboratory extends Component {
     stock_data.splice(item, 1);
     onlynumarr.splice(item, 1);
     each_stock_element.splice(item, 1);
-    console.log(each_stock_element);
+    // console.log(each_stock_element);
     this.setState({
       mat,
       stock_data,
@@ -1410,7 +1410,7 @@ export default class InputLaboratory extends Component {
         }
       });
       pdfdata.history = pdfdata_history;
-      console.log(pdfdata.history);
+      // console.log(pdfdata.history);
       this.setState({
         pdfdata,
         pdfcolumns: tabletol,
@@ -1748,7 +1748,7 @@ export default class InputLaboratory extends Component {
         this.state.allData.map((e) => {
           newArray.map((m) => {
             if (e._id === m.id) {
-              console.log(123, e.a_types);
+              // console.log(123, e.a_types);
               e.a_types.map((ea) => {
                 analysisArr.push(
                   ea + "-" + e._id + "-" + e.client_id + "-" + e.sample_type

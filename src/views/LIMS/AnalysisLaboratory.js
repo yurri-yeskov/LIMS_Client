@@ -81,6 +81,7 @@ export default class AnalysisLaboratory extends Component {
         axios
             .get(Config.ServerUri + "/get_all_clients")
             .then((res) => {
+                console.log(">>>>>>>>>>", res.data)
                 this.setState({
                     clientsData: res.data,
                 });
@@ -411,32 +412,34 @@ export default class AnalysisLaboratory extends Component {
                 filtered_material.push(
                     this.state.materialsData.filter(
                         (material) => material.material === mat.value
-                    )
+                    )[0]
                 )
             });
+            console.log("filtered_material: ", filtered_material)
             filtered_material.map((filtered_mat) => {
-                avaiable_a_types.push(filtered_mat[0].aTypesValues);
+                avaiable_a_types.push(filtered_mat.aTypesValues);
             });
-            var filtered_clients_temp = []
+            var filtered_clients = []
             filtered_material.map((filtered_mat) => {
-                filtered_clients_temp.push(
-                    this.state.clientsData.filter(
-                        (client) => filtered_mat[0].clients.indexOf(client._id) > -1
-                    )
-                )
-            });
-            filtered_clients_temp.map((client_group) => {
-                client_group.map((client) => {
-                    filtered_clients.push(client);
+                const clients = filtered_mat.clients;
+                clients.map(client => {
+                    if (filtered_clients.indexOf(client) === -1) {
+                        filtered_clients.push(client)
+                    }
                 })
-            })
+            });
+            // filtered_clients_temp.map((client_group) => {
+            //     client_group.map((client) => {
+            //         filtered_clients.push(client);
+            //     })
+            // })
             var available_filtered_client = Array.from(
                 filtered_clients.reduce((a, o) => a.set(`${o._id}`, o), new Map()).values()
             );
 
 
             filtered_material.map((filtered_mat) => {
-                available_object_list.push(filtered_mat[0].objectiveValues);
+                available_object_list.push(filtered_mat.objectiveValues);
             })
         }
         var avaiable_client_list = []
