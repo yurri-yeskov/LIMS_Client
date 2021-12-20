@@ -65,6 +65,7 @@ export default class AnalysisLaboratory extends Component {
             combination_list: [],
             dataset: [],
             export_all_data: [],
+            defaultClient: {}
         }
 
     };
@@ -81,9 +82,9 @@ export default class AnalysisLaboratory extends Component {
         axios
             .get(Config.ServerUri + "/get_all_clients")
             .then((res) => {
-                console.log(">>>>>>>>>>", res.data)
                 this.setState({
                     clientsData: res.data,
+                    defaultClient: res.data.filter(d => d.name === 'Default')[0]
                 });
             })
             .catch((error) => { });
@@ -115,7 +116,7 @@ export default class AnalysisLaboratory extends Component {
         return axios
             .post(Config.ServerUri + "/get_input_laboratory_by_id", { data: data })
             .then((res) => {
-                if (res.data.client_id === "") {
+                if (res.data.client_id === this.state.defaultClient._id) {
                     res_client = "Default";
                 }
                 this.state.client_list.map((client) => {
@@ -253,7 +254,7 @@ export default class AnalysisLaboratory extends Component {
                                                     }
                                                     var material = filtered_input_data.material;
                                                     var client = '';
-                                                    if (filtered_input_data.client_id === "") {
+                                                    if (filtered_input_data.client_id === this.state.defaultClient._id) {
                                                         client = "Default";
                                                     }
                                                     else {
@@ -444,7 +445,7 @@ export default class AnalysisLaboratory extends Component {
         }
         var avaiable_client_list = []
         avaiable_client_list.push({ label: 'ALL', value: 'all' });
-        avaiable_client_list.push({ label: 'Default', value: "" });
+        avaiable_client_list.push({ label: 'Default', value: this.state.defaultClient._id });
         available_filtered_client.map((filter_client) => {
             avaiable_client_list.push({ label: filter_client.name, value: filter_client._id })
         });
@@ -559,7 +560,7 @@ export default class AnalysisLaboratory extends Component {
         var clientOption = [];
         if (this.state.client_list.length > 0) {
             clientOption.push({ label: 'ALL', value: "all" });
-            clientOption.push({ label: 'Default', value: "" });
+            clientOption.push({ label: 'Default', value: this.state.defaultClient._id });
         }
         this.state.client_list.map((item) => (
             clientOption.push({ label: item.name, value: item._id })

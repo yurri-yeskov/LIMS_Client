@@ -64,15 +64,10 @@ const TheSidebar = () => {
       route: '/input',
       icon: 'cil-pencil',
       _children: [
-        // {
-        //   _tag: 'CSidebarNavItem',
-        //   name: language_state.laboratory_label,
-        //   to: '/input/laboratory',
-        // },
         {
           _tag: 'CSidebarNavItem',
           name: language_state.laboratory_label,
-          to: '/input/laboratory1',
+          to: '/input/laboratory',
         },
       ],
     });
@@ -149,62 +144,6 @@ const TheSidebar = () => {
           _tag: 'CSidebarNavItem',
           name: language_state.excel_label,
           to: '/export/excel',
-        },
-      ],
-    })
-  }
-  if (userRole.indexOf('labInput') !== -1) {
-    navigation.push({
-      _tag: 'CSidebarNavDropdown',
-      name: language_state.input_label,
-      route: '/input',
-      icon: 'cil-pencil',
-      _children: [
-        {
-          _tag: 'CSidebarNavItem',
-          name: language_state.laboratory_label,
-          to: '/input/laboratory',
-        },
-      ],
-    })
-  }
-  if (userRole.indexOf('labAnalysis') !== -1) {
-    navigation.push({
-      _tag: 'CSidebarNavDropdown',
-      name: language_state.analysis_label,
-      route: '/analysis',
-      icon: 'cil-zoom',
-      _children: [
-        {
-          _tag: 'CSidebarNavItem',
-          name: language_state.laboratory_label,
-          to: '/analysis/laboratory',
-        },
-      ],
-    })
-  }
-  if (userRole.indexOf('labInput') !== -1 || userRole.indexOf('labAnalysis') !== -1) {
-    navigation.push({
-      _tag: 'CSidebarNavDropdown',
-      name: language_state.input_label,
-      route: '/input',
-      icon: 'cil-pencil',
-      _children: [
-        {
-          _tag: 'CSidebarNavItem',
-          name: language_state.laboratory_label,
-          to: '/input/laboratory',
-        },
-      ],
-      _tag: 'CSidebarNavDropdown',
-      name: language_state.analysis_label,
-      route: '/analysis',
-      icon: 'cil-zoom',
-      _children: [
-        {
-          _tag: 'CSidebarNavItem',
-          name: language_state.laboratory_label,
-          to: '/analysis/laboratory',
         },
       ],
     })

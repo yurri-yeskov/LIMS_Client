@@ -88,6 +88,7 @@ export default class InputLaboratory extends Component {
     this.DeleteItem = this.DeleteItem.bind(this);
 
     this.state = {
+      defaultClient: {},
       setunstockclient: "",
       setunstockdate: "",
       setunstockcer: [],
@@ -524,6 +525,7 @@ export default class InputLaboratory extends Component {
       .then((res) => {
         this.setState({
           clientsData: res.data,
+          defaultClient: res.data.filter(d => d.name === 'Default')[0]
         });
       })
       .catch((error) => { });
@@ -3415,7 +3417,7 @@ export default class InputLaboratory extends Component {
                 value={this.state.client}
                 onChange={this.handleSelectChangeClient}
               >
-                <option value="">Default</option>
+                <option value={this.state.defaultClient._id}>Default</option>
                 {client_list.map((client) => (
                   <option
                     key={client._id}
@@ -3855,7 +3857,7 @@ export default class InputLaboratory extends Component {
             scopedSlots={{
               client: (item, index) => {
                 var button_name = "";
-                if (item.client === "") {
+                if (item.client === this.state.defaultClient._id) {
                   button_name = "Default";
                 } else if (item.client === "undefined") {
                   button_name = "";

@@ -39,6 +39,7 @@ export default class AdminCertificateType extends Component {
     this.handleFiles = this.handleFiles.bind(this);
 
     this.state = {
+      defaultClient: {},
       materialsData: [],
       clientsData: [],
       certificateTypesData: [],
@@ -182,7 +183,7 @@ export default class AdminCertificateType extends Component {
     });
 
     this.setState({ [e.target.name]: e.target.value, analysisOpt: option });
-    this.setState({ client: "", analysises: [], _analysises: [] });
+    this.setState({ client: this.state.defaultClient._id, analysises: [], _analysises: [] });
   };
 
   handleClientInputChange = (e) => {
@@ -279,7 +280,7 @@ export default class AdminCertificateType extends Component {
   }
 
   getClientName(id) {
-    if (id === "") return "Default";
+    if (id === this.state.defaultClient._id) return "Default";
     var clients = this.state.clientsData;
     for (var i = 0; i < clients.length; i++) {
       if (clients[i]._id === id) {
@@ -463,7 +464,7 @@ export default class AdminCertificateType extends Component {
                 value={this.state.client}
                 onChange={this.handleClientInputChange}
               >
-                <option value="">Default</option>
+                <option value={this.state.defaultClient._id}>Default</option>
                 {clientOptions.map((item, i) => {
                   return (
                     <option key={i} value={item.id}>
@@ -803,6 +804,8 @@ export default class AdminCertificateType extends Component {
           analysisTypesData: res.data.analysises,
           unitsData: res.data.units,
           packingsData: res.data.packings,
+          defaultClient: res.data.defaultClient,
+          client: res.data.defaultClient._id
         });
         var certificate_list = [];
         res.data.certificateTypes.map((certificate) => {
@@ -810,7 +813,7 @@ export default class AdminCertificateType extends Component {
           var material_name = '';
           var packing_name = '';
           var analysis = '';
-          if (certificate.client === '') {
+          if (certificate.client === '' || certificate.client === res.data.defaultClient._id) {
             client_name = 'Default';
           }
           res.data.clients.map((client) => {
@@ -856,7 +859,7 @@ export default class AdminCertificateType extends Component {
       analysises: [],
       _analysises: [],
       material: "",
-      client: "",
+      client: this.state.defaultClient._id,
       packing: "",
       _create: true,
       double_error: "",
@@ -957,9 +960,7 @@ export default class AdminCertificateType extends Component {
     event.preventDefault();
 
     if (this.state.double_error !== "") return;
-
-    this.setModal_Create(false);
-    axios.post(Config.ServerUri + '/create_certificateType', {
+    const data = {
       material: this.state.material,
       client: this.state.client,
       certificateType_id: this.state.certificateType_id,
@@ -967,7 +968,9 @@ export default class AdminCertificateType extends Component {
       analysises: this.state.analysises,
       remark: this.state.remark,
       packing: this.state.packing,
-    })
+    }
+    this.setModal_Create(false);
+    axios.post(Config.ServerUri + '/create_certificateType', data)
       .then((res) => {
         toast.success('CertificateType successfully created');
         this.setState({

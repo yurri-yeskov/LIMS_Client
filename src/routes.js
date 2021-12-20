@@ -135,9 +135,9 @@ const routes = [
     component: Administration,
   },
   {
-    path: "/input/laboratory1",
+    path: "/input/laboratory",
     exact: true,
-    name: "InputLaboratory1",
+    name: "InputLaboratory",
     component: InputLab,
   },
   {

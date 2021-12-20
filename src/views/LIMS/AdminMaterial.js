@@ -36,6 +36,7 @@ export default class AdminMaterial extends Component {
     this.handleInputChange = this.handleInputChange.bind(this);
 
     this.state = {
+      defaultClient: {},
       materialsData: [],
       objectivesData: [],
       unitsData: [],
@@ -280,12 +281,14 @@ export default class AdminMaterial extends Component {
     axios.get(Config.ServerUri + "/get_all_materials")
       .then((res) => {
         console.log(res.data)
-        const data = res.data.clients.map(client => {
-          return {
-            label: client.name,
-            value: client._id
-          }
-        })
+        const data = res.data.clients.filter(c => c.name !== 'Default')
+          .sort((a, b) => { return a.clientId - b.clientId })
+          .map(client => {
+            return {
+              label: client.name,
+              value: client._id
+            }
+          })
 
         this.setState({
           materialsData: res.data.materials,
@@ -294,14 +297,15 @@ export default class AdminMaterial extends Component {
           clientsData: res.data.clients,
           analysisData: res.data.analysisTypes,
           objOptions: res.data.obj_units,
-          clientOptions: data
+          clientOptions: data,
+          defaultClient: res.data.clients.filter(c => c.name === 'Default')[0]
         });
 
         var material_list = [];
         Object.keys(res.data.materials).length > 0 && res.data.materials.map((material) => {
           var client_list = 'Default\n';
           var combination_list = '';
-          combination_list += this.getTooltip(material, '') + '\n';
+          combination_list += this.getTooltip(material, res.data.clients.filter(c => c.name === 'Default')[0]._id) + '\n';
           material.clients.map((client) => {
             client_list += client.name + '\n';
             combination_list += this.getTooltip(material, client._id) + '\n';
@@ -421,7 +425,7 @@ export default class AdminMaterial extends Component {
         res.data.materials.map((material) => {
           var client_list = 'Default\n';
           var combination_list = '';
-          combination_list += this.getTooltip(material, '') + '\n';
+          combination_list += this.getTooltip(material, this.state.defaultClient._id) + '\n';
           material.clients.map((client_id) => {
             client_list += this.state.clientsData.filter(d => d._id === client_id)[0].name + '\n';
             combination_list += this.getTooltip(material, client_id) + '\n';
@@ -492,12 +496,14 @@ export default class AdminMaterial extends Component {
     axios.post(Config.ServerUri + "/create_material", data)
       .then((res) => {
         toast.success("Material successfully created");
-        const data = res.data.clients.map(client => {
-          return {
-            label: client.name,
-            value: client._id
-          }
-        })
+        const data = res.data.clients.filter(c => c.name !== 'Default')
+          .sort((a, b) => { return a.clientId - b.clientId })
+          .map(client => {
+            return {
+              label: client.name,
+              value: client._id
+            }
+          })
         this.setState({
           materialsData: res.data.materials,
           objectivesData: res.data.objectives,
@@ -512,7 +518,7 @@ export default class AdminMaterial extends Component {
         Object.keys(res.data.materials).length > 0 && res.data.materials.map((material) => {
           var client_list = 'Default\n';
           var combination_list = '';
-          combination_list += this.getTooltip(material, '') + '\n';
+          combination_list += this.getTooltip(material, this.state.defaultClient._id) + '\n';
           material.clients.map((client) => {
             client_list += client.name + '\n';
             combination_list += this.getTooltip(material, client) + '\n';
@@ -564,12 +570,13 @@ export default class AdminMaterial extends Component {
     axios.post(Config.ServerUri + "/update_material", data)
       .then((res) => {
         toast.success("Material successfully updated");
-        const data = res.data.clients.map(client => {
-          return {
-            label: client.name,
-            value: client._id
-          }
-        })
+        const data = res.data.clients.filter(c => c.name !== 'Default')
+          .map(client => {
+            return {
+              label: client.name,
+              value: client._id
+            }
+          })
         this.setState({
           materialsData: res.data.materials,
           objectivesData: res.data.objectives,
@@ -583,7 +590,7 @@ export default class AdminMaterial extends Component {
         Object.keys(res.data.materials).length > 0 && res.data.materials.map((material) => {
           var client_list = 'Default\n';
           var combination_list = '';
-          combination_list += this.getTooltip(material, '') + '\n';
+          combination_list += this.getTooltip(material, this.state.defaultClient._id) + '\n';
           material.clients.map((client) => {
             client_list += client.name + '\n';
             combination_list += this.getTooltip(material, client) + '\n';
@@ -601,7 +608,7 @@ export default class AdminMaterial extends Component {
     const { objectives } = this.state;
 
     var clientObjs = []; // clients including default client
-    clientObjs.push({ label: "Default", value: "" });
+    clientObjs.push({ label: "Default", value: this.state.defaultClient._id });
     this.state._clients.map((item) => {
       clientObjs.push({ label: item.label, value: item.value });
       return true;
@@ -1041,7 +1048,7 @@ export default class AdminMaterial extends Component {
             scopedSlots={{
               material: (item, index) => {
                 var clientObjs = []; // clients including default client
-                clientObjs.push({ label: "Default", value: "" });
+                clientObjs.push({ label: "Default", value: this.state.defaultClient._id });
                 item.clients.map((item0) => {
                   clientObjs.push({ label: item0.name, value: item0._id });
                   return true;
@@ -1093,7 +1100,7 @@ export default class AdminMaterial extends Component {
               },
               objectives: (item, index) => {
                 var clientObjs = []; // clients including default client
-                clientObjs.push({ label: "Default", value: "" });
+                clientObjs.push({ label: "Default", value: this.state.defaultClient._id });
                 item.clients.map((item0) => {
                   clientObjs.push({ label: item0.name, value: item0._id });
                   return true;

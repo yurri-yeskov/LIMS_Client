@@ -39,16 +39,18 @@ export default class AdminUser extends Component {
       lastUserID: 0,
       usersData: [],
       userTypesData: [],
+      isMatched: true,
       modal_delete: false,
       modal_create: false,
       current_id: null,
       user_id: "",
       userName: "",
       password: "",
+      new_password: "",
+      confirm_password: "",
       email: "",
       userType: 0,
       remark: "",
-      _create: false,
       double_error: "",
       export_all_data: [],
       import_label: props.language_data.filter(
@@ -345,13 +347,7 @@ export default class AdminUser extends Component {
           userTypesData: res.data.userTypes,
         });
       })
-      .catch((error) => {});
-  }
-
-  on_delete_clicked(id) {
-    this.setState({ current_id: id });
-
-    this.setModal_Delete(true);
+      .catch((error) => { });
   }
 
   on_create_clicked() {
@@ -371,10 +367,11 @@ export default class AdminUser extends Component {
       password: "",
       userType: "",
       remark: "",
-      _create: true,
       double_error: "",
+      new_password: "",
+      confirm_password: "",
+      modal_create: true
     });
-    this.setModal_Create(true);
   }
 
   on_update_clicked(item) {
@@ -383,18 +380,20 @@ export default class AdminUser extends Component {
       user_id: item.user_id,
       userName: item.userName,
       email: item.email,
-      password: item.password,
-      userType: item.user_type,
+      password: item.password_text,
+      userType: this.state.userTypesData.filter(uType => uType.userType === item.user_type)[0]._id,
       remark: item.remark,
-      _create: false,
       double_error: "",
+      new_password: "",
+      confirm_password: "",
+      modal_create: true
     });
-
-    this.setModal_Create(true);
   }
 
   deleteUser() {
-    this.setModal_Delete(false);
+    this.setState({
+      modal_delete: false
+    })
 
     axios.post(Config.ServerUri + "/delete_user", {
       id: this.state.current_id,
@@ -406,7 +405,7 @@ export default class AdminUser extends Component {
         userTypesData: res.data.userTypes,
       });
     })
-    .catch((error) => {});
+      .catch((error) => { });
   }
 
   createUser(event) {
@@ -417,42 +416,45 @@ export default class AdminUser extends Component {
     } else {
       last_userid = this.state.user_id;
     }
-    if (
-      this.state.user_id.toString().split(".").length > 1 ||
-      this.state.user_id.toString().split("-").length > 1
-    ) {
+    if (this.state.user_id.toString().split(".").length > 1 || this.state.user_id.toString().split("-").length > 1) {
       toast.error("User ID Error");
-    } else if (
-      this.state.usersData.filter((e) => e.auto_id === last_userid).length > 0
-    ) {
-      toast.error("User ID Repeated");
-    } else {
-      if (this.state.double_error !== "") return;
-      this.setModal_Create(false);
-      axios
-        .post(Config.ServerUri + "/create_user", {
-          user_id: last_userid,
-          userName: this.state.userName,
-          email: this.state.email,
-          password: this.state.password,
-          userType: this.state.userType,
-          remark: this.state.remark,
-        })
-        .then((res) => {
-          toast.success("User successfully created");
-          this.setState({
-            export_all_data: res.data.users,
-            usersData: res.data.users,
-            userTypesData: res.data.userTypes,
-          });
-        })
-        .catch((error) => {});
+      return;
     }
+    if (this.state.usersData.filter((e) => e.auto_id === last_userid).length > 0) {
+      toast.error("User ID Repeated");
+      return;
+    }
+    if (this.state.double_error !== "") return;
+    this.setState({
+      modal_create: false
+    })
+    axios
+      .post(Config.ServerUri + "/create_user", {
+        user_id: last_userid,
+        userName: this.state.userName,
+        email: this.state.email,
+        password: this.state.password,
+        userType: this.state.userType,
+        remark: this.state.remark,
+      })
+      .then((res) => {
+        toast.success("User successfully created");
+        this.setState({
+          export_all_data: res.data.users,
+          usersData: res.data.users,
+          userTypesData: res.data.userTypes,
+        });
+      })
+      .catch((error) => { });
   }
 
   updateUser(event) {
     event.preventDefault();
-
+    if (this.state.new_password !== "" && this.state.new_password !== this.state.confirm_password) {
+      console.log("sdfsd")
+      this.setState({ isMatched: false })
+      return;
+    }
     if (this.state.double_error !== "") return;
     const data = {
       id: this.state.current_id,
@@ -460,10 +462,11 @@ export default class AdminUser extends Component {
       userName: this.state.userName,
       email: this.state.email,
       password: this.state.password,
+      new_password: this.state.new_password,
       userType: this.state.userType,
-      remark: this.state.remark,
+      remark: this.state.remark
     }
-    this.setModal_Create(false);
+    console.log(data)
     axios.post(Config.ServerUri + "/update_user", data)
       .then((res) => {
         toast.success("User successfully updated");
@@ -471,21 +474,10 @@ export default class AdminUser extends Component {
           export_all_data: res.data.users,
           usersData: res.data.users,
           userTypesData: res.data.userTypes,
+          modal_create: false
         });
       })
-      .catch((error) => {});
-  }
-
-  setModal_Delete(modal) {
-    this.setState({
-      modal_delete: modal,
-    });
-  }
-
-  setModal_Create(modal) {
-    this.setState({
-      modal_create: modal,
-    });
+      .catch(err => console.log(err.response.data));
   }
 
   renderModalCreate() {
@@ -497,7 +489,7 @@ export default class AdminUser extends Component {
           <CForm
             className="was-validated"
             onSubmit={
-              this.state._create === true ? this.createUser : this.updateUser
+              this.state.current_id === "" ? this.createUser : this.updateUser
             }
           >
             <CFormGroup>
@@ -572,12 +564,24 @@ export default class AdminUser extends Component {
               <CLabel style={{ fontWeight: "500" }}>
                 {this.state.password_label}
               </CLabel>
-              <CInput
-                name="password"
-                value={this.state.password}
-                onChange={this.handleInputChange}
-                required
-              />
+              {
+                this.state.current_id === '' ? (
+                  <CInput
+                    name="password"
+                    value={this.state.password}
+                    onChange={this.handleInputChange}
+                    required
+                  />
+                ) : (
+                  <CInput
+                    name="password"
+                    value={this.state.password}
+                    onChange={this.handleInputChange}
+                    required
+                    disabled
+                  />
+                )
+              }
               <CInvalidFeedback className="help-block">
                 Please provide a valid information
               </CInvalidFeedback>
@@ -585,6 +589,39 @@ export default class AdminUser extends Component {
                 Input provided
               </CValidFeedback>
             </CFormGroup>
+            {
+              this.state.current_id !== "" && (
+                <>
+                  <CFormGroup>
+                    <CLabel style={{ fontWeight: "500" }}>
+                      New Password
+                    </CLabel>
+                    <CInput
+                      type="password"
+                      value={this.state.new_password}
+                      onChange={(e) => this.setState({ new_password: e.target.value, isMatched: true })}
+                    />
+                  </CFormGroup>
+                  <CFormGroup>
+                    <CLabel style={{ fontWeight: "500" }}>
+                      Confirm Password
+                    </CLabel>
+                    <CInput
+                      type="password"
+                      value={this.state.confirm_password}
+                      onChange={(e) => this.setState({ confirm_password: e.target.value, isMatched: true })}
+                    />
+                    {
+                      !this.state.isMatched && (
+                        <CInvalidFeedback className="help-block d-block">
+                          New password does not matched
+                        </CInvalidFeedback>
+                      )
+                    }
+                  </CFormGroup>
+                </>
+              )
+            }
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>
                 {this.state.user_type_label}
@@ -624,12 +661,14 @@ export default class AdminUser extends Component {
             </CFormGroup>
             <div className="float-right">
               <CButton type="submit" color="info">
-                {this.state._create === true ? "Create" : "Update"}
+                {this.state.current_id === "" ? "Create" : "Update"}
               </CButton>
               <span style={{ padding: "4px" }} />
               <CButton
                 color="secondary"
-                onClick={() => this.setModal_Create(false)}
+                onClick={() => this.setState({
+                  modal_create: false
+                })}
               >
                 Cancel
               </CButton>
@@ -679,7 +718,7 @@ export default class AdminUser extends Component {
               color="info"
               className="float-right"
               style={{ margin: "0px 0px 0px 16px" }}
-              //style={{margin: '16px'}}
+            //style={{margin: '16px'}}
             >
               <i className="fa fa-upload" />
               <span style={{ padding: "4px" }} />
@@ -702,6 +741,7 @@ export default class AdminUser extends Component {
               user_id: (item) => <td>{item.user_id}</td>,
               userType: (item) => <td>{item.user_type}</td>,
               remark: (item) => <td>{item.remark}</td>,
+              password: (item) => <td>{item.password_text}</td>,
               buttonGroups: (item, index) => {
                 return (
                   <td>
@@ -719,9 +759,7 @@ export default class AdminUser extends Component {
                       <CButton
                         color="danger"
                         size="sm"
-                        onClick={() => {
-                          this.on_delete_clicked(item._id);
-                        }}
+                        onClick={() => this.setState({ current_id: item._id, modal_delete: true })}
                       >
                         <i className="fa fa-trash" />
                       </CButton>
@@ -736,7 +774,7 @@ export default class AdminUser extends Component {
         <CModal
           style={{ width: "40vw" }}
           show={this.state.modal_delete}
-          onClose={() => this.setModal_Delete(false)}
+          onClose={() => this.setState({ modal_delete: false })}
         >
           <CModalHeader>
             <CModalTitle>Confirm</CModalTitle>
@@ -748,24 +786,26 @@ export default class AdminUser extends Component {
             </CButton>{" "}
             <CButton
               color="secondary"
-              onClick={() => this.setModal_Delete(false)}
+              onClick={() => this.setState({ modal_delete: false })}
             >
               Cancel
             </CButton>
           </CModalFooter>
         </CModal>
+        {
 
+        }
         <CModal
           style={{ width: "40vw" }}
           show={this.state.modal_create}
-          onClose={() => this.setModal_Create(false)}
+          onClose={() => this.setState({ modal_create: false })}
           closeOnBackdrop={false}
           centered
           size="lg"
         >
           <CModalHeader>
             <CModalTitle>
-              {this.state._create === true ? "Create New User" : "Update User"}
+              {this.state.current_id === "" ? "Create New User" : "Update User"}
             </CModalTitle>
           </CModalHeader>
           <CModalBody>{this.renderModalCreate()}</CModalBody>

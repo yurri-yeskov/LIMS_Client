@@ -49,6 +49,7 @@ class InputLab extends Component {
         this.onChangeAnalyInput = this.onChangeAnalyInput.bind(this)
         // this.handleGetAnalysisHistory = this.handleGetAnalysisHistory.bind(this)
         this.handleClickCertificate = this.handleClickCertificate.bind(this)
+        this.handleClickClient = this.handleClickClient.bind(this)
 
         this.state = {
             fields: [
@@ -96,6 +97,7 @@ class InputLab extends Component {
             search_aType: '',
             labId: '',
             selectedId: '',
+            selectedDelivery: '',
             clientData: {},
             // deliveryData: {},
             selectedCertificate: {},
@@ -243,13 +245,14 @@ class InputLab extends Component {
 
     clearModalData() {
         this.setState({
+            selectedId: '',
             filtered_aTypes: [],
             filtered_cTypes: [],
             modalData: {
                 ...this.state.modalData,
                 sample_type: '',
                 material: '',
-                client: '',
+                client: this.state.defaultClient._id,
                 packing_type: '',
                 due_date: new Date(),
                 sample_date: new Date(),
@@ -417,8 +420,10 @@ class InputLab extends Component {
     handleSubmit() {
         const data = {
             labs: this.state.modalData,
-            delivery: this.state.deliveryData
+            delivery: this.state.deliveryData,
+            selectedId: this.state.selectedId
         }
+        data.selectedDelivery = this.state.selectedDelivery
         axios.post(process.env.REACT_APP_API_URL + "inputLabs", data)
             .then(res => {
                 this.setState({
@@ -692,27 +697,19 @@ class InputLab extends Component {
             _isStock = this.state.sampleTypes.filter(sT => sT._id === item.sample_type._id)[0].stockSample
         }
         if (_isStock) {
-            if (item.material_left === 0) {
-                notification.warning({
-                    message: "Warning",
-                    description: "Please Input Weight!",
-                    className: "not-css",
-                });
-                return;
+            if (item.material_left === 0 && item.charge.length === 0) {
+                const data = {
+                    value: item._id,
+                    label: item.material.material + " " + item.client.name + " " + "N/A" + " " + item.material_left
+                }
+                this.setState({ stock_data: [data] })
+            } else {
+                const data = {
+                    value: item._id,
+                    label: item.material.material + " " + item.client.name + " " + moment(item.charge[0].date).format("YYYY-MM-DD HH:mm:ss") + " " + item.material_left
+                }
+                this.setState({ stock_data: [data] })
             }
-            if (item.charge.length === 0) {
-                notification.warning({
-                    message: "Warning",
-                    description: "Please Input Charge!",
-                    className: "not-css",
-                });
-                return;
-            }
-            const data = {
-                value: item._id,
-                label: item.material.material + " " + item.client.name + " " + moment(item.charge[0].date).format("YYYY-MM-DD HH:mm:ss") + " " + item.material_left
-            }
-            this.setState({ stock_data: [data] })
         } else {
             const stocks = this.state.allData.filter(data => data.sample_type.stockSample === true)
                 .filter(data1 => data1.material._id === item.material._id)
@@ -1045,9 +1042,32 @@ class InputLab extends Component {
     }
 
     handleClickUpdate = (item) => {
+        axios.get(process.env.REACT_APP_API_URL + `materials/clients/${item.material._id}`)
+            .then(res => {
+                const aTypes = res.data.material.aTypesValues.filter(aType => aType.client === this.state.modalData.client)
+                this.setState({
+                    clients: res.data.material.clients,
+                    filtered_aTypes: aTypes,
+                    filtered_cTypes: res.data.certTypes
+                })
+            })
+            .catch(err => console.log(err.response.data))
+        const aTypeItems = item.a_types.map(aT => {
+            return {
+                label: aT.analysisType,
+                value: aT._id
+            }
+        })
+        const cTypeItems = item.c_types.map(cT => {
+            return {
+                label: cT.certificateType,
+                value: cT._id
+            }
+        })
         this.setState({
             selectedId: item._id,
             openCreateModal: true,
+            selectedDelivery: item.delivery._id,
             deliveryData: {
                 address_name1: item.delivery.name1,
                 address_name2: item.delivery.name2,
@@ -1057,7 +1077,7 @@ class InputLab extends Component {
                 address_street: item.delivery.street,
                 address_zip: item.delivery.zipcode,
                 customer_product_code: item.delivery.productCode,
-                email_address: item.delivery.email.split(","),
+                email_address: item.delivery.email === "" ? [] : item.delivery.email.split(","),
                 fetch_date: item.delivery.fetchDate,
                 order_id: item.delivery.orderId,
                 pos_id: item.delivery.posId,
@@ -1067,15 +1087,37 @@ class InputLab extends Component {
                 sample_type: item.sample_type._id,
                 material: item.material._id,
                 client: item.client._id,
-                packing_type: item.packing_type._id,
+                packing_type: item.packing_type[0]._id,
                 due_date: item.due_date,
                 sample_date: item.sample_date,
                 sending_date: item.sending_date,
-                aType: item.a_types.map(aT => aT._id),
-                cType: item.c_types.map(cT => cT._id),
+                aType: aTypeItems,
+                cType: cTypeItems,
                 distributor: item.distributor,
-                geo_locaion: item.geo_locaion,
+                geo_locaion: item.geo_location,
                 remark: item.remark
+            },
+        })
+    }
+
+    handleClickClient = (data) => {
+        this.setState({
+            openClientModal: true,
+            clientData: data.client,
+            deliveryData: {
+                address_name1: data.delivery.name1,
+                address_name2: data.delivery.name2,
+                address_name3: data.delivery.name3,
+                address_title: data.delivery.title,
+                address_country: data.delivery.country,
+                address_street: data.delivery.street,
+                address_zip: data.delivery.zipcode,
+                customer_product_code: data.delivery.productCode,
+                email_address: data.delivery.email,
+                fetch_date: data.delivery.fetchDate,
+                order_id: data.delivery.orderId,
+                pos_id: data.delivery.posId,
+                w_target: data.delivery.w_target
             },
         })
     }
@@ -1509,7 +1551,7 @@ class InputLab extends Component {
                             ref={(r) => (this.csvLink = r)}
                         />
                         <CButton color="info" className="float-right ml-4" onClick={() => {
-                            this.setState({ openCreateModal: true })
+                            this.setState({ openCreateModal: true, selectedDelivery: '' })
                             this.clearModalData()
                         }}>
                             <i className="fa fa-plus" />&nbsp;Create
@@ -1545,9 +1587,7 @@ class InputLab extends Component {
                             client: (item) => {
                                 return (
                                     <td>
-                                        <CButton className="cursor-pointer" onClick={() => {
-                                            this.setState({ openClientModal: true, clientData: item.client, deliveryData: item.delivery })
-                                        }}>
+                                        <CButton className="cursor-pointer" onClick={() => this.handleClickClient(item)}>
                                             {item.client === undefined ? '' : item.client.name}
                                         </CButton>
                                     </td>
