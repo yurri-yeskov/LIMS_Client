@@ -77,6 +77,7 @@ class InputLab extends Component {
             defaultClient: {},
             filtered_aTypes: [],
             filtered_cTypes: [],
+            filteredTableData: [],
             allData: [],
             materials: [],
             sampleTypes: [],
@@ -285,7 +286,7 @@ class InputLab extends Component {
 
     getInputLabData = async () => {
         const res = await axios.get(process.env.REACT_APP_API_URL + "inputLabs")
-        // console.log(res.data)
+        console.log(res.data)
         const excellData = res.data.inputLabs.map(data => {
             return {
                 _id: data._id,
@@ -328,6 +329,7 @@ class InputLab extends Component {
         })
         this.setState({
             allData: res.data.inputLabs,
+            filteredTableData: res.data.inputLabs,
             excellData: excellData,
             materials: res.data.materials,
             sampleTypes: res.data.sampleTypes,
@@ -428,6 +430,7 @@ class InputLab extends Component {
             .then(res => {
                 this.setState({
                     allData: res.data,
+                    filteredTableData: res.data,
                     openCreateModal: false
                 })
             })
@@ -502,7 +505,8 @@ class InputLab extends Component {
                 this.setState({
                     openAnalysisModal: false,
                     analysisTypeModalData: { comment: '' },
-                    allData: res.data
+                    allData: res.data,
+                    filteredTableData: res.data
                 })
             })
             .catch(err => console.log(err.response.data))
@@ -534,7 +538,10 @@ class InputLab extends Component {
                 this.setState({ openWeightModal: false })
                 toast.success('Weight data successfully saved')
                 const updatedData = this.state.allData.map(d => d._id === res.data._id ? res.data : d)
-                this.setState({ allData: updatedData })
+                this.setState({
+                    allData: updatedData,
+                    filteredTableData: updatedData
+                })
             })
             .catch(err => console.log(err.response.data))
     }
@@ -567,7 +574,10 @@ class InputLab extends Component {
                 this.setState({ openChargeModal: false })
                 toast.success('Lot number successfully saved')
                 const updatedData = this.state.allData.map(d => d._id === res.data._id ? res.data : d)
-                this.setState({ allData: updatedData })
+                this.setState({
+                    allData: updatedData,
+                    filteredTableData: updatedData
+                })
             })
             .catch(err => console.log(err.response.data))
     }
@@ -575,10 +585,11 @@ class InputLab extends Component {
     deleteInputLaboratory() {
         axios.delete(process.env.REACT_APP_API_URL + `inputLabs/${this.state.selectedId}`)
             .then(res => {
-                if (res.data.success) {
-                    const removedData = this.state.allData.filter(data => data._id !== this.state.selectedId)
-                    this.setState({ allData: removedData, openDeleteModal: false })
-                }
+                this.setState({
+                    allData: res.data,
+                    filteredTableData: res.data,
+                    openDeleteModal: false
+                })
             })
             .catch(err => console.log(err.response.data.message))
     }
@@ -597,18 +608,17 @@ class InputLab extends Component {
             .map(s => this.setState({ [s]: false }))
 
         axios.post(process.env.REACT_APP_API_URL + "inputLabs/analysisTypes", { labStockId: id, labRowId: rowId, analysisId: aType._id })
-            .then(res => {
-                this.setState({
+            .then(async res => {
+                await this.setState({
                     reasons: res.data.reasons,
                     objectives: res.data.objectives,
                     units: res.data.units,
                     analysisHistories: res.data.histories
                 })
-                // console.log("analysisHistory: ", res.data.histories)
                 let latestHistory = []
                 let modalData = []
                 if (id === rowId) {
-                    modalData = this.state.materials.filter(m => m._id === this.state.allData.filter(d => d._id === this.state.selectedId)[0].material._id)[0]
+                    modalData = await this.state.materials.filter(m => m._id === this.state.allData.filter(d => d._id === this.state.selectedId)[0].material._id)[0]
                         .aTypesValues.filter(aT => aT.client === this.state.allData.filter(d => d._id === this.state.selectedId)[0].client._id)
                         .filter(d => d.value === this.state.selected_aType._id)
                         .map((data, index) => {
@@ -625,7 +635,7 @@ class InputLab extends Component {
                                 [`isValid-${index}`]: histObj.length > 0 ? histObj[0].isValid === 1 : false
                             }
                         })
-                    modalData.map(mData => {
+                    await modalData.map(mData => {
                         Object.keys(mData).map(k => {
                             this.setState({
                                 analysisTypeModalData: {
@@ -635,7 +645,7 @@ class InputLab extends Component {
                             })
                         })
                     })
-                    this.setState({
+                    await this.setState({
                         analysisTypeModalData: {
                             ...this.state.analysisTypeModalData,
                             comment: latestHistory.length > 0 ? latestHistory[0].comment : '',
@@ -648,22 +658,24 @@ class InputLab extends Component {
                         },
                     })
                 } else {
-                    let hist = {}
+                    let hist = []
                     const specValues = this.state.allData.filter(d => d._id === rowId)[0].stock_specValues.filter(sv => sv.aType === aType._id)
-                    modalData = specValues.map((sv, index) => {
-                        hist = this.state.analysisHistories[index].filter(h => String(h._id) === String(sv.histId))[0]
+                    modalData = await specValues.map(async (sv, index) => {
+                        if (this.state.analysisHistories[index] !== null && this.state.analysisHistories[index] !== undefined) {
+                            hist = await this.state.analysisHistories[index].filter(h => String(h._id) === String(sv.histId))
+                        }
                         return {
                             [`obj-${index}`]: sv.obj,
                             [`input-${index}`]: sv.value,
-                            [`accept-${index}`]: hist.accept === 1,
-                            [`reason-${index}`]: (
-                                res.data.reasons.filter(r => r.reason === hist.reason).length > 0 ?
-                                    res.data.reasons.filter(r => r.reason === hist.reason)[0]._id : ''
-                            ),
+                            [`accept-${index}`]: hist.length > 0 ? hist[0].accept === 1 : false,
+                            [`reason-${index}`]: hist.length > 0 ? (
+                                res.data.reasons.filter(r => r.reason === hist[0].reason).length > 0 ?
+                                    res.data.reasons.filter(r => r.reason === hist[0].reason)[0]._id : ''
+                            ) : '',
                             [`isValid-${index}`]: sv.isValid === 1
                         }
                     })
-                    modalData.map(mData => {
+                    await modalData.map(mData => {
                         Object.keys(mData).map(k => {
                             this.setState({
                                 analysisTypeModalData: {
@@ -673,15 +685,15 @@ class InputLab extends Component {
                             })
                         })
                     })
-                    this.setState({
+                    await this.setState({
                         analysisTypeModalData: {
                             ...this.state.analysisTypeModalData,
-                            comment: hist.comment,
+                            comment: hist.length > 0 ? hist[0].comment : '',
                             analysisId: aType._id
                         },
                         origAnalysisModalData: {
                             ...this.state.analysisTypeModalData,
-                            comment: hist.comment,
+                            comment: hist.length > 0 ? hist[0].comment : '',
                             analysisId: aType._id
                         },
                     })
@@ -779,12 +791,25 @@ class InputLab extends Component {
             });
             return;
         }
+        let data = []
+        for (let j = 0; j < this.state.stockModalData.length; j++) {
+            if (data.filter(d => String(d.stock) === String(this.state.stockModalData[j].stock)).length > 0) {
+                data.filter(d => String(d.stock) === String(this.state.stockModalData[j].stock))[0].weight += Number(this.state.stockModalData[j].weight)
+            } else {
+                data.push({
+                    stock: this.state.stockModalData[j].stock,
+                    weight: Number(this.state.stockModalData[j].weight)
+                })
+            }
+        }
+        this.state.stockModalData.map(stockData => stockData.stock)
         axios.post(process.env.REACT_APP_API_URL + "inputLabs/saveStockSample", {
-            data: this.state.stockModalData,
+            data: data,
             selectedId: this.state.selectedId
         }).then(res => {
             this.setState({
                 allData: res.data,
+                filteredTableData: res.data,
                 openStockModal: false
             })
         }).catch(err => {
@@ -1120,6 +1145,71 @@ class InputLab extends Component {
                 w_target: data.delivery.w_target
             },
         })
+    }
+
+    handleSearch = (e) => {
+        const search_key = e.target.value
+        const valueContainFilter = val => String(val).toLowerCase().includes(search_key)
+        const filtered_result = this.state.allData.filter((row, index) => {
+            let isInclude = []
+            this.state.fields.map(field => {
+                switch (field.key) {
+                    case 'due_date':
+                    case 'sending_date':
+                    case 'sample_date':
+                    case 'material_left':
+                    case 'remark':
+                        isInclude.push(valueContainFilter(row[field.key]))
+                        break;
+                    case 'Weight':
+                        isInclude.push(valueContainFilter(row.weight))
+                        break;
+                    case 'sample_type':
+                        isInclude.push(valueContainFilter(row[field.key].sampleType))
+                        break;
+                    case 'material':
+                        isInclude.push(valueContainFilter(row[field.key].material))
+                        break;
+                    case 'client':
+                        isInclude.push(valueContainFilter(row[field.key].name))
+                        break;
+                    case 'packing_type':
+                        isInclude.push(valueContainFilter(row[field.key][0].packingType))
+                        break;
+                    case 'a_types':
+                        const result = row[field.key].map(aT => aT.analysisType.includes(search_key))
+                        isInclude.push(result.includes(true))
+                        break;
+                    case 'c_types':
+                        const result1 = row[field.key].map(cT => cT.certificateType.includes(search_key))
+                        isInclude.push(result1.includes(true))
+                        break;
+                    case 'Charge':
+                        const fff = row.charge.map(c => c.date.includes(search_key))
+                        isInclude.push(fff)
+                        break;
+                    case 'stockSample':
+                        let stockSamples = []
+                        row.sample_type.stockSample === false &&
+                            (
+                                this.state.allData.filter(data => data.sample_type.stockSample === true)
+                                    .filter(data1 =>
+                                        data1.material._id === row.material._id &&
+                                        data1.charge.length > 0 && row.charge.filter(i => i.date === data1.charge[0].date).length > 0
+                                    )
+                                    .map(i => (
+                                        stockSamples.push(i.sample_type.sampleType + " " + i.material.material + " " + i.client.name + " " + moment(i.charge[0].date).format('YYYY-MM-DD HH:mm:ss'))
+                                    ))
+                            )
+                        isInclude.push(stockSamples.filter(s => s.includes(search_key)).length > 0)
+                        break;
+                    default:
+                        break;
+                }
+            })
+            return isInclude.includes(true)
+        })
+        this.setState({ filteredTableData: filtered_result })
     }
 
     renderModalCreate() {
@@ -1558,14 +1648,20 @@ class InputLab extends Component {
                         </CButton>
                     </div>
                 </div>
-                <div className="mt-4">
+                <div className="mt-4 position-relative">
+                    <input
+                        type="text"
+                        className='form-control search-input position-absolute'
+                        placeholder='Enter search key'
+                        onChange={this.handleSearch.bind(this)}
+                    />
                     <CDataTable
-                        items={this.state.allData}
+                        items={this.state.filteredTableData}
                         fields={this.state.fields}
                         itemsPerPage={10}
                         itemsPerPageSelect
                         sorter
-                        tableFilter
+                        // tableFilter
                         pagination
                         hover
                         scopedSlots={{
@@ -1598,7 +1694,13 @@ class InputLab extends Component {
                                     return (
                                         <td>
                                             <div className="d-flex">
-                                                <CButton className="mx-1" color="warning" size="sm" onClick={() => this.handleClickMButton(item)}>M</CButton>
+                                                {
+                                                    item.sample_type.stockSample ? (
+                                                        <CButton className="mx-1" color="warning" size="sm" onClick={() => this.handleClickMButton(item)} disabled>M</CButton>
+                                                    ) : (
+                                                        <CButton className="mx-1" color="warning" size="sm" onClick={() => this.handleClickMButton(item)}>M</CButton>
+                                                    )
+                                                }
                                                 <CButton className="mx-1" color="info" size="sm" onClick={() => this.handleClickUpdate(item)}><i className="fa fa-edit" /></CButton>
                                                 <CButton className="mx-1" color="danger" size="sm" onClick={() => this.setState({ openDeleteModal: true, selectedId: item._id })}><i className="fa fa-trash" /></CButton>
                                             </div>
@@ -1618,7 +1720,7 @@ class InputLab extends Component {
                             },
                             packing_type: (item) => {
                                 return (
-                                    <td>{item.packing_type.map((pT, index) => <div key={index}>{pT.packingType}</div>)}</td>
+                                    <td>{item.packing_type.map((pT, index) => pT.packingType)}</td>
                                 )
                             },
                             a_types: (item) => {
@@ -1735,6 +1837,7 @@ class InputLab extends Component {
                                             {
                                                 item.charge.length > 0 &&
                                                 this.state.allData.filter(d => d.sample_type.stockSample === true && d.material._id === item.material._id)
+                                                    .filter(dd => item.stock_specValues.filter(ii => ii.stock === dd._id).length > 0)
                                                     .map(data => data.c_types.map((cT, i) => {
                                                         return (
                                                             <div key={i} className="px-2 py-1">
@@ -1778,12 +1881,18 @@ class InputLab extends Component {
                                 return (
                                     <td>
                                         {
-                                            this.state.sampleTypes.filter(st => st._id === item.sample_type._id)[0].stockSample ? (
+                                            item.sample_type.stockSample ? (
                                                 <CButton onClick={(e) => this.handleClickWeight(item._id)}>
                                                     {item.weight === 0 ? 'N/A' : item.weight}
                                                 </CButton>
                                             ) : (
-                                                <div>{item.weight === 0 ? 'N/A' : item.weight}</div>
+                                                (item.charge.length > 0 && item.weight !== 0) ? (
+                                                    <div className='py-1 px-2'>{item.weight === 0 ? 'N/A' : item.weight}</div>
+                                                ) : (
+                                                    <CButton onClick={(e) => this.handleClickWeight(item._id)}>
+                                                        {item.weight === 0 ? 'N/A' : item.weight}
+                                                    </CButton>
+                                                )
                                             )
                                         }
                                     </td>
@@ -1793,7 +1902,7 @@ class InputLab extends Component {
                                 return (
                                     <td>
                                         {
-                                            this.state.sampleTypes.filter(st => st._id === item.sample_type._id)[0].stockSample ? (
+                                            item.sample_type.stockSample ? (
                                                 item.charge.length > 0 ? item.charge.map((data, index) => (
                                                     <CButton key={index} onClick={() => this.handleClickCharge(item)}>
                                                         {(data.date === undefined || data.date === '') ? 'N/A' : moment(data.date).format('YYYY-MM-DD HH:mm:ss')}
@@ -1810,7 +1919,7 @@ class InputLab extends Component {
                                                             ))
                                                         }
                                                     </ul>
-                                                ) : <div className="text-center">N/A</div>
+                                                ) : <CButton onClick={() => this.handleClickCharge(item)}>N/A</CButton>
                                             )
                                         }
                                     </td>
@@ -2349,10 +2458,10 @@ class InputLab extends Component {
                                                         </CRow>
                                                     </CCol>
                                                     {
-                                                        (Object.keys(this.state.analysisHistories).length > 0 && Object.keys(this.state.analysisHistories[index]).length > 0 && this.state[`analysis_table_flag-${index}`] === true) && (
+                                                        (Object.keys(this.state.analysisHistories).length > 0 && this.state.analysisHistories[index] !== null && this.state.analysisHistories[index] !== undefined && Object.keys(this.state.analysisHistories[index]).length > 0 && this.state[`analysis_table_flag-${index}`] === true) && (
                                                             <CCol md="12" className="mt-2">
                                                                 <CDataTable
-                                                                    items={this.state.analysisHistories[index]}
+                                                                    items={(this.state.analysisHistories[index] !== null && this.state.analysisHistories[index] !== undefined) ? this.state.analysisHistories[index] : []}
                                                                     fields={object_fields}
                                                                     scopedSlots={{
                                                                         author: (item) => {

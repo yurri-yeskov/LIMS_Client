@@ -44,7 +44,6 @@ const header = [
 export default class AnalysisLaboratory extends Component {
     constructor(props) {
         super(props);
-        console.log(props)
         this.state = {
             dateRange: [],
             combinations: '',
@@ -67,7 +66,6 @@ export default class AnalysisLaboratory extends Component {
             export_all_data: [],
             defaultClient: {}
         }
-
     };
     _chartRef = React.createRef();
     componentDidMount() {
@@ -79,8 +77,7 @@ export default class AnalysisLaboratory extends Component {
         await this.csvLink.link.click();
     }
     getAllClients() {
-        axios
-            .get(Config.ServerUri + "/get_all_clients")
+        axios.get(Config.ServerUri + "/get_all_clients")
             .then((res) => {
                 this.setState({
                     clientsData: res.data,
@@ -90,8 +87,7 @@ export default class AnalysisLaboratory extends Component {
             .catch((error) => { });
     }
     getAllUnits() {
-        axios
-            .get(Config.ServerUri + "/get_all_units")
+        axios.get(Config.ServerUri + "/get_all_units")
             .then((res) => {
                 this.setState({
                     unitData: res.data,
@@ -100,8 +96,7 @@ export default class AnalysisLaboratory extends Component {
             .catch((error) => { });
     }
     getAllMaterials() {
-        axios
-            .get(Config.ServerUri + "/get_all_materials")
+        axios.get(Config.ServerUri + "/get_all_materials")
             .then((res) => {
                 this.setState({
                     materialsData: res.data.materials,
@@ -113,8 +108,7 @@ export default class AnalysisLaboratory extends Component {
     }
     getclientdata(data) {
         var res_client = '';
-        return axios
-            .post(Config.ServerUri + "/get_input_laboratory_by_id", { data: data })
+        return axios.post(Config.ServerUri + "/get_input_laboratory_by_id", { data: data })
             .then((res) => {
                 if (res.data.client_id === this.state.defaultClient._id) {
                     res_client = "Default";
@@ -155,8 +149,7 @@ export default class AnalysisLaboratory extends Component {
             }
             var token = localStorage.getItem("token");
 
-            axios
-                .post(Config.ServerUri + "/get_graph_data", { data, token: token })
+            axios.post(Config.ServerUri + "/get_graph_data", { data, token: token })
                 .then((res) => {
                     var input_id = []
                     var temp_range = []
@@ -183,8 +176,7 @@ export default class AnalysisLaboratory extends Component {
                         data_charge_date: range
                     })
                     if (input_id.length > 0) {
-                        axios
-                            .post(Config.ServerUri + "/get_objective_history_for_chart", { data: input_id })
+                        axios.post(Config.ServerUri + "/get_objective_history_for_chart", { data: input_id })
                             .then(async (history) => {
                                 var graph_data = [];
                                 input_ids_by_material.map((each_material_item_id) => {
@@ -481,61 +473,27 @@ export default class AnalysisLaboratory extends Component {
         axios
             .post(Config.ServerUri + "/get_available_analysis_type", { data })
             .then((res) => {
-                this.state.avaiable_a_types.map((available_items) => {
-                    available_items.map((item) => {
-                        clients.map((client) => {
-                            if (client.value === item.client) {
-                                res.data.map((record) => {
-                                    record.a_types.map((a_type) => {
-                                        if (a_type === item.label) {
-                                            available_a_type_names.push(
-                                                this.state.analysisData.filter((a_data) => a_data._id === item.value)
-                                            );
-                                        }
-                                    })
-                                })
-
-                            }
-                        });
+                let obj_list = []
+                res.data.objValues.map(obj => {
+                    obj_list.push({
+                        analysisId: obj.analysis,
+                        analysis: res.data.analysisTypes.filter(aT => aT._id === obj.analysis)[0].analysisType,
+                        objectiveId: obj.id,
+                        objective: res.data.objectives.filter(o => o._id === obj.id)[0].objective,
+                        unitId: obj.unit,
+                        unit: res.data.units.filter(u => u._id === obj.unit)[0].unit
                     })
-                });
-                var analysis_option = Array.from(
-                    available_a_type_names.reduce((a, o) => a.set(`${o[0]._id}`, o), new Map()).values()
-                );
-
-                // var temp = this.state.objectives_list;
-                var combination_list = []
-                this.state.objectives_list.map((temp) => {
-                    temp.map((obj) => {
-                        clients.map((client) => {
-                            if (obj.client === client.value) {
-                                var temp_object = this.state.objectives.filter((object) => object._id === obj.id);
-                                var temp_analysis = analysis_option.filter((option) => option[0]._id === obj.analysis);
-                                var temp_unit = this.state.unitData.filter((unit) => unit._id === temp_object[0].units[0]);
-                                if (temp_object.length > 0 && temp_analysis.length > 0) {
-                                    combination_list.push([temp_object, temp_analysis, temp_unit]);
-                                }
-                            }
-                        });
-                    });
                 })
-                var combination_list_temp = combination_list;
-                var finial_combination_list = [];
-                for (var i = 0; i < combination_list_temp.length; i++) {
-                    var flag = true;
-                    for (var j = i + 1; j < combination_list_temp.length; j++) {
-                        if (combination_list_temp[i][0][0]._id === combination_list_temp[j][0][0]._id && combination_list_temp[i][1][0][0]._id === combination_list_temp[j][1][0][0]._id) {
-                            flag = false;
-                        }
+
+                var result = obj_list.reduce((unique, o) => {
+                    if (!unique.some(obj => obj.analysisId === o.analysisId && obj.objectiveId === o.objectiveId && obj.unitId === o.unitId)) {
+                        unique.push(o);
                     }
-                    if (flag) {
-                        finial_combination_list.push(combination_list_temp[i]);
-                    }
-                }
-                console.log(finial_combination_list);
+                    return unique;
+                }, []);
                 this.setState({
                     clients: client_items,
-                    combination_list: finial_combination_list,
+                    combination_list: result,
                     client_id: clients,
                 }, () => {
                     this.handleGetChartdata();
@@ -555,7 +513,10 @@ export default class AnalysisLaboratory extends Component {
         })
         var options = [];
         this.state.combination_list.map((item) => (
-            options.push({ label: item[1][0][0].analysisType + '/' + item[0][0].objective + ' ' + item[2][0]['unit'], value: item[1][0][0].analysisType + '-' + item[0][0].objective + '-' + item[2][0]['unit'] })
+            options.push({
+                label: item.analysis + '-' + item.objective + ' ' + item.unit,
+                value: item.analysisId + '-' + item.objectiveId + '-' + item.unitId
+            })
         ));
         var clientOption = [];
         if (this.state.client_list.length > 0) {
