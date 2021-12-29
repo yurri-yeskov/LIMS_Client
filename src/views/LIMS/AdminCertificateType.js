@@ -172,9 +172,9 @@ export default class AdminCertificateType extends Component {
     this.state.materialsData.map((item) => {
       if (item._id == e.target.value) {
         this.setState({ analysisOption: item.aTypesValues });
-        if (this.state.client === "") {
+        if (this.state.client === this.state.defaultClient._id) {
           item.aTypesValues.map((temp) => {
-            if (temp.client === "") {
+            if (temp.client === this.state.defaultClient._id) {
               option.push({ label: temp.label, value: temp.value });
             }
           });

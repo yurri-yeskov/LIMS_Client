@@ -41,7 +41,7 @@ const Gpdf = (pdfdata) => {
         >
           <div ref={container}>
             <div className="d-flex justify-content-center align-items-center mb-4" id="pdfHeader">
-              <img src={`/uploads/certificates/${pdfdata.pdfdata.logo}`} width="70px" height="70px" />
+              <img src={`/uploads/certificates/${pdfdata.pdfdata.logo}`} />
             </div>
             <div className="reactPdf">
               <div className="d-flex">
@@ -49,19 +49,27 @@ const Gpdf = (pdfdata) => {
                   <p className="transform-scale-1-1 mb-1 pl-4">
                     {pdfdata.pdfdata.address.name}&nbsp;
                   </p>
-                  <p className="transform-scale-1-1 mb-1 pl-4">
-                    {pdfdata.pdfdata.address.addressB}&nbsp;
-                  </p>
-                  <p className="transform-scale-1-1 mb-1 pl-4">
-                    {pdfdata.pdfdata.address.zipcodeB}&nbsp;
-                    {pdfdata.pdfdata.address.cityB}&nbsp;
-                  </p>
-                  <p className="transform-scale-1-1 mb-1 pl-4">
-                    {pdfdata.pdfdata.address.address2B}&nbsp;
-                  </p>
-                  <p className="transform-scale-1-1 mb-1 pl-4">
-                    {pdfdata.pdfdata.address.country}&nbsp;
-                  </p>
+                  {pdfdata.pdfdata.address.addressB !== "" && (
+                    <p className="transform-scale-1-1 mb-1 pl-4">
+                      {pdfdata.pdfdata.address.addressB}&nbsp;
+                    </p>
+                  )}
+                  {(pdfdata.pdfdata.address.zipcodeB !== "" || pdfdata.pdfdata.address.cityB !== "") && (
+                    <p className="transform-scale-1-1 mb-1 pl-4">
+                      {pdfdata.pdfdata.address.zipcodeB}&nbsp;
+                      {pdfdata.pdfdata.address.cityB}&nbsp;
+                    </p>
+                  )}
+                  {pdfdata.pdfdata.address.address2B !== "" && (
+                    <p className="transform-scale-1-1 mb-1 pl-4">
+                      {pdfdata.pdfdata.address.address2B}&nbsp;
+                    </p>
+                  )}
+                  {pdfdata.pdfdata.address.country !== "" && (
+                    <p className="transform-scale-1-1 mb-1 pl-4">
+                      {pdfdata.pdfdata.address.country}&nbsp;
+                    </p>
+                  )}
                 </div>
                 <div className="d-flex justify-content-end w-50 pr-4">
                   <p className="transform-scale-1-1 mb-1 pr-4">
@@ -93,29 +101,29 @@ const Gpdf = (pdfdata) => {
               </div>
               <div className="mb-3">
                 {pdfdata.pdfcolumns.length > 0 && (
-                  <div className="ctable">
+                  <div className="ctable certificate-doc">
                     <CDataTable
                       items={pdfdata.pdfdata.tableValues}
                       fields={pdfcolumns}
-                      style={{ transform: "scale(1,1)", fontcolor: "black" }}
+                      style={{ transform: "scale(1,1)", fontcolor: "black", lineHeight: '1rem !important' }}
                     ></CDataTable>
                   </div>
                 )}
               </div>
 
               <div className="d-flex">
-                <table width="70%">
+                <table width="100%">
                   <tbody>
                     {txt.map((v, i) => (
                       <tr key={i}>
-                        <td align="left" className="transform-scale-1-1">{v}</td>
+                        <td align="left" style={{ lineHeight: '1rem !important' }}>{v}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               <div className="d-flex justify-content-center my-2">
-                <img src={`/uploads/certificates/${pdfdata.pdfdata.footer}`} width="70px" height="70px" />
+                <img src={`/uploads/certificates/${pdfdata.pdfdata.footer}`} />
               </div>
             </div>
           </div>

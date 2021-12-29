@@ -31,6 +31,7 @@ export const header = [
   { key: "delivering_w_target", label: "Weight(target)" },
 ];
 
+
 export const analysis_fields = [
   { key: "analysisType", label: "Analysis Type" },
   { key: "norm", label: "Norm" },

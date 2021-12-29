@@ -950,6 +950,12 @@ class InputLab extends Component {
                         case 'remark':
                             fieldValue = selectedRow.remark
                             break;
+                        case 'weight':
+                            fieldValue = selectedRow.weight
+                            break;
+                        case 'lot_number':
+                            fieldValue = selectedRow.charge.map(c => moment(c.date).format(row.date_format)).toString()
+                            break;
                         case 'delivering_address_name1':
                             fieldValue = selectedRow.delivery.name1
                             break;
@@ -988,6 +994,9 @@ class InputLab extends Component {
                             break;
                         case 'delivering_w_target':
                             fieldValue = selectedRow.delivery.w_target
+                            break;
+                        case 'productCode':
+                            fieldValue = selectedRow.delivery.productCode
                             break;
                         default:
                             break;
@@ -1149,7 +1158,7 @@ class InputLab extends Component {
 
     handleSearch = (e) => {
         const search_key = e.target.value
-        const valueContainFilter = val => String(val).toLowerCase().includes(search_key)
+        const valueContainFilter = val => String(val).toLowerCase().includes(search_key.toLowerCase())
         const filtered_result = this.state.allData.filter((row, index) => {
             let isInclude = []
             this.state.fields.map(field => {
@@ -1177,11 +1186,11 @@ class InputLab extends Component {
                         isInclude.push(valueContainFilter(row[field.key][0].packingType))
                         break;
                     case 'a_types':
-                        const result = row[field.key].map(aT => aT.analysisType.includes(search_key))
+                        const result = row[field.key].map(aT => aT.analysisType.toLowerCase().includes(search_key.toLowerCase()))
                         isInclude.push(result.includes(true))
                         break;
                     case 'c_types':
-                        const result1 = row[field.key].map(cT => cT.certificateType.includes(search_key))
+                        const result1 = row[field.key].map(cT => cT.certificateType.toLowerCase().includes(search_key.toLowerCase()))
                         isInclude.push(result1.includes(true))
                         break;
                     case 'Charge':
@@ -1201,7 +1210,7 @@ class InputLab extends Component {
                                         stockSamples.push(i.sample_type.sampleType + " " + i.material.material + " " + i.client.name + " " + moment(i.charge[0].date).format('YYYY-MM-DD HH:mm:ss'))
                                     ))
                             )
-                        isInclude.push(stockSamples.filter(s => s.includes(search_key)).length > 0)
+                        isInclude.push(stockSamples.filter(s => s.toLowerCase().includes(search_key.toLowerCase())).length > 0)
                         break;
                     default:
                         break;
@@ -1658,7 +1667,7 @@ class InputLab extends Component {
                     <CDataTable
                         items={this.state.filteredTableData}
                         fields={this.state.fields}
-                        itemsPerPage={10}
+                        itemsPerPage={50}
                         itemsPerPageSelect
                         sorter
                         // tableFilter
@@ -1886,7 +1895,7 @@ class InputLab extends Component {
                                                     {item.weight === 0 ? 'N/A' : item.weight}
                                                 </CButton>
                                             ) : (
-                                                (item.charge.length > 0 && item.weight !== 0) ? (
+                                                (item.stock_weights.length > 0) ? (
                                                     <div className='py-1 px-2'>{item.weight === 0 ? 'N/A' : item.weight}</div>
                                                 ) : (
                                                     <CButton onClick={(e) => this.handleClickWeight(item._id)}>
@@ -1911,7 +1920,7 @@ class InputLab extends Component {
                                                     <CButton onClick={() => this.handleClickCharge(item)}>N/A</CButton>
                                                 </div>
                                             ) : (
-                                                item.charge.length > 0 ? (
+                                                item.stock_weights.length > 0 ? (
                                                     <ul>
                                                         {
                                                             item.charge.map((data, index) => (
@@ -1919,7 +1928,9 @@ class InputLab extends Component {
                                                             ))
                                                         }
                                                     </ul>
-                                                ) : <CButton onClick={() => this.handleClickCharge(item)}>N/A</CButton>
+                                                ) : <CButton onClick={() => this.handleClickCharge(item)}>
+                                                    {item.charge.length > 0 ? item.charge[0].date : 'N/A'}
+                                                </CButton>
                                             )
                                         }
                                     </td>

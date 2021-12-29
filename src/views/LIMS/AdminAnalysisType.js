@@ -543,7 +543,7 @@ export default class AdminAnalysisType extends Component {
     event.preventDefault();
 
     if (this.state.double_error !== "") return;
-    
+
     this.setModal_Create(false);
 
     const data = {
@@ -553,7 +553,7 @@ export default class AdminAnalysisType extends Component {
       objectives: this.state.objectives,
       remark: this.state.remark
     }
-    
+
     axios.post(Config.ServerUri + '/create_analysisType', data)
       .then((res) => {
         toast.success('AnalysisType successfully created');

@@ -119,3 +119,7 @@
 .search-input {
     max-width: 200px !important;
 }
+
+.certificate-doc table td {
+    line-height: 1.2rem !important;
+}

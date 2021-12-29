@@ -110,11 +110,11 @@ export default class AnalysisLaboratory extends Component {
         var res_client = '';
         return axios.post(Config.ServerUri + "/get_input_laboratory_by_id", { data: data })
             .then((res) => {
-                if (res.data.client_id === this.state.defaultClient._id) {
+                if (res.data.client === this.state.defaultClient._id) {
                     res_client = "Default";
                 }
                 this.state.client_list.map((client) => {
-                    if (client._id === res.data.client_id) {
+                    if (client._id === res.data.client) {
                         res_client = client.name;
                     }
 
@@ -138,6 +138,7 @@ export default class AnalysisLaboratory extends Component {
                 client_id_list.push(client.value);
             })
             var material_id_list = [];
+            // console.log(this.state.materials)
             this.state.materials.map((material_item) => {
                 material_id_list.push(material_item.value);
             });
@@ -151,12 +152,13 @@ export default class AnalysisLaboratory extends Component {
 
             axios.post(Config.ServerUri + "/get_graph_data", { data, token: token })
                 .then((res) => {
+                    console.log(res.data)
                     var input_id = []
                     var temp_range = []
                     var inputLaboratory_data = res.data;
                     for (var i = 0; i < res.data.length; i++) {
                         input_id.push(res.data[i]._id);
-                        temp_range.push(res.data[i].Charge[res.data[i].Charge.length - 1].charge)
+                        temp_range.push(res.data[i].charge[res.data[i].charge.length - 1].date)
                     }
                     var range = Array.from(
                         temp_range.reduce((a, o) => a.set(`${o}`, o), new Map()).values()
@@ -165,7 +167,7 @@ export default class AnalysisLaboratory extends Component {
                     material_id_list.map((material_item) => {
                         var temp_material_id = []
                         for (var i = 0; i < res.data.length; i++) {
-                            if (material_item === res.data[i].material) {
+                            if (material_item === res.data[i].material.material) {
                                 temp_material_id.push(res.data[i]);
                             }
                         }
@@ -176,21 +178,21 @@ export default class AnalysisLaboratory extends Component {
                         data_charge_date: range
                     })
                     if (input_id.length > 0) {
-                        axios.post(Config.ServerUri + "/get_objective_history_for_chart", { data: input_id })
+                        axios.post(process.env.REACT_APP_API_URL + "analysis/input_history", { labId: input_id })
                             .then(async (history) => {
                                 var graph_data = [];
                                 input_ids_by_material.map((each_material_item_id) => {
                                     var mat_list = [];
-                                    result_selectedcombination.map((record) => {
+                                    result_selectedcombination.map((record) => {    //record[0]: analysisId, record[1]: objectiveId
                                         var temp_list = [];
                                         for (var i = 0; i < range.length; i++) {
                                             var record_list = [];
                                             var flag = true;
                                             each_material_item_id.map((material_item_id) => {
-                                                if (range[i] === material_item_id.Charge[material_item_id.Charge.length - 1].charge) {
+                                                if (range[i] === material_item_id.charge[material_item_id.charge.length - 1].date) {
                                                     input_id.map((record_value) => {
                                                         history.data.filter(function (item, index) {
-                                                            if (item.analysis === record[0] && item.label === record[1] && item.id === record_value && item.id === material_item_id._id) {
+                                                            if (item.analysisId === record[0] && item.obj.split('-')[0] === record[1] && item.labId === record_value && item.labId === material_item_id._id) {
                                                                 record_list.push(item)
                                                             }
                                                         })
@@ -221,9 +223,9 @@ export default class AnalysisLaboratory extends Component {
                                         }
                                     });
 
-                                    graph_data.push(mat_list)
+                                    graph_data.push(mat_list)   //objective history list
                                 });
-                                console.log(graph_data);
+                                // console.log(graph_data);
                                 var export_data = [];
                                 for (var index = 0; index < graph_data.length; index++) {
                                     if (graph_data[index].length === 0) {
@@ -234,72 +236,76 @@ export default class AnalysisLaboratory extends Component {
                                             if (graph_data_detail_group[0] != "") {
                                                 var filtered_input_data = {}
                                                 for (var kk = 0; kk < inputLaboratory_data.length; kk++) {
-                                                    if (inputLaboratory_data[kk]._id === graph_data_detail_group[graph_data_detail_group.length - 1].id) {
+                                                    if (inputLaboratory_data[kk]._id === graph_data_detail_group[graph_data_detail_group.length - 1].labId) {
                                                         filtered_input_data = inputLaboratory_data[kk];
                                                     }
                                                 }
                                                 if (filtered_input_data._id !== undefined) {
-                                                    var charge_data = filtered_input_data.Charge[filtered_input_data.Charge.length - 1].charge;
+                                                    var charge_data = filtered_input_data.charge[filtered_input_data.charge.length - 1].date;     //to do
                                                     var weight_data = ''
-                                                    if (filtered_input_data.Weight.length > 0) {
-                                                        weight_data = filtered_input_data.Weight[filtered_input_data.Weight.length - 1].weight;
-                                                    }
-                                                    var material = filtered_input_data.material;
+                                                    weight_data = filtered_input_data.weight;     //to do
+                                                    // if (filtered_input_data.weight.length > 0) {
+                                                    //     // weight_data = filtered_input_data.Weight[filtered_input_data.Weight.length - 1].weight;     //to do
+                                                    // }
+                                                    var material = filtered_input_data.material.material;
                                                     var client = '';
-                                                    if (filtered_input_data.client_id === this.state.defaultClient._id) {
+                                                    if (filtered_input_data.client === this.state.defaultClient._id) {
                                                         client = "Default";
                                                     }
                                                     else {
                                                         this.state.client_list.map((client_item) => {
-                                                            if (client_item._id === filtered_input_data.client_id) {
+                                                            if (client_item._id === filtered_input_data.client) {
                                                                 client = client_item.name;
                                                             }
                                                         });
                                                     }
-                                                    var combination_data = graph_data_detail_group[0].analysis + '/' + graph_data_detail_group[0].label + '(' + material + ')';
-                                                    var cur_date = graph_data_detail_group[graph_data_detail_group.length - 1].update_date;
-                                                    var limitValue = graph_data_detail_group[graph_data_detail_group.length - 1].limitValue;
+                                                    var combination_data = this.state.analysisData.filter(aType => aType._id === graph_data_detail_group[0].analysisId).length > 0
+                                                        ? this.state.analysisData.filter(aType => aType._id === graph_data_detail_group[0].analysisId)[0].analysisType : '' + '/' +
+                                                            this.state.objectives.filter(obj => String(obj._id) === String(graph_data_detail_group[0].obj.split('-')[0])).length > 0
+                                                            ? this.state.objectives.filter(obj => String(obj._id) === String(graph_data_detail_group[0].obj.split('-')[0]))[0].objective : '' + '(' + material + ')';     //to do
+                                                    var cur_date = graph_data_detail_group[graph_data_detail_group.length - 1].date;
+                                                    var limitValue = graph_data_detail_group[graph_data_detail_group.length - 1].value;
                                                     var his_date_1 = '';
                                                     var his_val_1 = '';
                                                     if (graph_data_detail_group.length >= 2) {
-                                                        his_date_1 = graph_data_detail_group[graph_data_detail_group.length - 2].update_date;
-                                                        his_val_1 = graph_data_detail_group[graph_data_detail_group.length - 2].limitValue;
+                                                        his_date_1 = graph_data_detail_group[graph_data_detail_group.length - 2].date;
+                                                        his_val_1 = graph_data_detail_group[graph_data_detail_group.length - 2].value;
                                                     }
                                                     var his_date_2 = '';
                                                     var his_val_2 = '';
                                                     if (graph_data_detail_group.length >= 3) {
-                                                        his_date_2 = graph_data_detail_group[graph_data_detail_group.length - 3].update_date;
-                                                        his_val_2 = graph_data_detail_group[graph_data_detail_group.length - 3].limitValue;
+                                                        his_date_2 = graph_data_detail_group[graph_data_detail_group.length - 3].date;
+                                                        his_val_2 = graph_data_detail_group[graph_data_detail_group.length - 3].value;
                                                     }
                                                     var his_date_3 = '';
                                                     var his_val_3 = '';
                                                     if (graph_data_detail_group.length >= 4) {
-                                                        his_date_3 = graph_data_detail_group[graph_data_detail_group.length - 4].update_date;
-                                                        his_val_3 = graph_data_detail_group[graph_data_detail_group.length - 4].limitValue;
+                                                        his_date_3 = graph_data_detail_group[graph_data_detail_group.length - 4].date;
+                                                        his_val_3 = graph_data_detail_group[graph_data_detail_group.length - 4].value;
                                                     }
                                                     var his_date_4 = '';
                                                     var his_val_4 = '';
                                                     if (graph_data_detail_group.length >= 5) {
-                                                        his_date_4 = graph_data_detail_group[graph_data_detail_group.length - 5].update_date;
-                                                        his_val_4 = graph_data_detail_group[graph_data_detail_group.length - 5].limitValue;
+                                                        his_date_4 = graph_data_detail_group[graph_data_detail_group.length - 5].date;
+                                                        his_val_4 = graph_data_detail_group[graph_data_detail_group.length - 5].value;
                                                     }
                                                     var his_date_5 = '';
                                                     var his_val_5 = '';
                                                     if (graph_data_detail_group.length >= 6) {
-                                                        his_date_5 = graph_data_detail_group[graph_data_detail_group.length - 6].update_date;
-                                                        his_val_5 = graph_data_detail_group[graph_data_detail_group.length - 6].limitValue;
+                                                        his_date_5 = graph_data_detail_group[graph_data_detail_group.length - 6].date;
+                                                        his_val_5 = graph_data_detail_group[graph_data_detail_group.length - 6].value;
                                                     }
                                                     var his_date_6 = '';
                                                     var his_val_6 = '';
                                                     if (graph_data_detail_group.length >= 7) {
-                                                        his_date_6 = graph_data_detail_group[graph_data_detail_group.length - 7].update_date;
-                                                        his_val_6 = graph_data_detail_group[graph_data_detail_group.length - 7].limitValue;
+                                                        his_date_6 = graph_data_detail_group[graph_data_detail_group.length - 7].date;
+                                                        his_val_6 = graph_data_detail_group[graph_data_detail_group.length - 7].value;
                                                     }
                                                     var his_date_7 = '';
                                                     var his_val_7 = '';
                                                     if (graph_data_detail_group.length >= 8) {
-                                                        his_date_7 = graph_data_detail_group[graph_data_detail_group.length - 8].update_date;
-                                                        his_val_7 = graph_data_detail_group[graph_data_detail_group.length - 8].limitValue;
+                                                        his_date_7 = graph_data_detail_group[graph_data_detail_group.length - 8].date;
+                                                        his_val_7 = graph_data_detail_group[graph_data_detail_group.length - 8].value;
                                                     }
 
                                                     export_data.push({ "charge": charge_data, "material": material, "client": client, "combination": combination_data, "weight": weight_data, "limitValue": limitValue, "c_date": cur_date, "his_val_1": his_val_1, "his_date_1": his_date_1, "his_val_2": his_val_2, "his_date_2": his_date_2, "his_val_3": his_val_3, "his_date_3": his_date_3, "his_val_4": his_val_4, "his_date_4": his_date_4, "his_val_5": his_val_5, "his_date_5": his_date_5, "his_val_6": his_val_6, "his_date_6": his_date_6, "his_val_7": his_val_7, "his_date_7": his_date_7 })
@@ -316,7 +322,9 @@ export default class AnalysisLaboratory extends Component {
                                 for (var p = 0; p < graph_data.length; p++) {
                                     for (var i = 0; i < graph_data[p].length; i++) {
                                         var tmp_list = [];
-                                        tmp_list['label'] = result_selectedcombination[i][0] + ' / ' + result_selectedcombination[i][1] + '  ' + result_selectedcombination[i][2] + ' (' + material_id_list[p] + ')';
+                                        tmp_list['label'] = this.state.analysisData.filter(aType => String(aType._id) === String(result_selectedcombination[i][0]))[0].analysisType + ' / ' +
+                                            this.state.objectives.filter(obj => String(obj._id) === String(result_selectedcombination[i][1]))[0].objective + ' ' +
+                                            this.state.unitData.filter(unit => String(unit._id) === String(result_selectedcombination[i][2]))[0].unit + ' (' + material_id_list[p] + ')';
                                         var value_list = [];
                                         var tooltip_list = [];
                                         var chart_client_list = [];
@@ -331,13 +339,13 @@ export default class AnalysisLaboratory extends Component {
                                                     continue
                                                 }
                                                 if (k === graph_data[p][i][j].length - 1) {
-                                                    value_list.push(graph_data[p][i][j][k].limitValue);
-                                                    var res_client = await this.getclientdata(graph_data[p][i][j][k].id);
+                                                    value_list.push(graph_data[p][i][j][k].value);
+                                                    var res_client = await this.getclientdata(graph_data[p][i][j][k].labId);
                                                     chart_client_list.push(res_client);
-                                                    temp_tooltip_list.push([graph_data[p][i][j][k].limitValue, graph_data[p][i][j][k].userid.userName, graph_data[p][i][j][k].update_date]);
+                                                    temp_tooltip_list.push([graph_data[p][i][j][k].value, graph_data[p][i][j][k].user.userName, graph_data[p][i][j][k].date]);
                                                 }
                                                 else {
-                                                    temp_tooltip_list.push([graph_data[p][i][j][k].limitValue, graph_data[p][i][j][k].userid.userName, graph_data[p][i][j][k].update_date])
+                                                    temp_tooltip_list.push([graph_data[p][i][j][k].value, graph_data[p][i][j][k].user.userName, graph_data[p][i][j][k].date])
                                                 }
                                             }
                                             tooltip_list.push(temp_tooltip_list);
@@ -408,7 +416,6 @@ export default class AnalysisLaboratory extends Component {
                     )[0]
                 )
             });
-            console.log("filtered_material: ", filtered_material)
             filtered_material.map((filtered_mat) => {
                 avaiable_a_types.push(filtered_mat.aTypesValues);
             });

@@ -21,6 +21,8 @@ import {
   CTextarea,
 } from "@coreui/react";
 import { toast } from "react-hot-toast";
+import { CSVLink } from "react-csv";
+import ReactFileReader from "react-file-reader";
 import { header, client_fields, analysis_fields } from "src/utils/LaboratoryTableFields";
 const { Option } = Select;
 
@@ -49,6 +51,12 @@ class AdminCertificate extends Component {
       fileList_Footer: [],
       freetext: "",
       date_format: "DD.MM.YYYY",
+      import_label: props.language_data.filter(
+        (item) => item.label === "import"
+      )[0][props.selected_language],
+      export_label: props.language_data.filter(
+        (item) => item.label === "export"
+      )[0][props.selected_language],
       create_new_label: props.language_data.filter(item => item.label === 'create_new')[0][props.selected_language],
       //Product Modal data variable
       P_name: "",
@@ -129,6 +137,85 @@ class AdminCertificate extends Component {
           label: "",
         },
       ],
+      header: [
+        {
+          key: "name",
+          label: props.language_data.filter(
+            (item) => item.label === "name"
+          )[0][props.selected_language],
+        },
+        {
+          key: "certificatetitle",
+          label: props.language_data.filter(
+            (item) => item.label === "certificate_title"
+          )[0][props.selected_language],
+        },
+        {
+          key: "company",
+          label: props.language_data.filter(
+            (item) => item.label === "company"
+          )[0][props.selected_language],
+        },
+        {
+          key: "logo",
+          label: props.language_data.filter(
+            (item) => item.label === "logo"
+          )[0][props.selected_language],
+        },
+        {
+          key: "place",
+          label: props.language_data.filter(
+            (item) => item.label === "place"
+          )[0][props.selected_language],
+        },
+        {
+          key: "date_format",
+          label: props.language_data.filter(
+            (item) => item.label === "date_format"
+          )[0][props.selected_language],
+        },
+        {
+          key: "productTitle",
+          label: 'Product Title',
+        },
+        {
+          key: "productdata",
+          label: props.language_data.filter(
+            (item) => item.label === "product_data"
+          )[0][props.selected_language],
+        },
+        {
+          key: "tablecolumns",
+          label: props.language_data.filter(
+            (item) => item.label === "table_columns"
+          )[0][props.selected_language],
+        },
+        {
+          key: "freetext",
+          label: props.language_data.filter(
+            (item) => item.label === "free_text"
+          )[0][props.selected_language],
+        },
+        {
+          key: "footer",
+          label: props.language_data.filter(
+            (item) => item.label === "footer"
+          )[0][props.selected_language],
+        },
+        {
+          key: "logoUid",
+          label: 'Logo Uid',
+        },
+        {
+          key: "footerUid",
+          label: 'Footer Uid',
+        },
+        {
+          key: "id",
+          label: 'ID',
+        },
+      ],
+      export_all_data: []
     };
   }
 
@@ -274,7 +361,32 @@ class AdminCertificate extends Component {
     axios.get(Config.ServerUri + "/get_certificate")
       .then((res) => {
         if (res) {
-          this.setState({ data: res.data })
+          const export_data = res.data.map(data => {
+            return {
+              name: data.name,
+              certificatetitle: data.certificatetitle,
+              company: data.company,
+              logo: data.logo_filename,
+              place: data.place,
+              date_format: data.date_format,
+              productTitle: data.productdata.productTitle,
+              productdata: data.productdata.productData
+                .filter(pData => pData.name !== '')
+                .map(pData => pData.name + " " + pData.pagename + " " + pData.fieldname + "\n").toString().replace(/\,/g, ""),
+              tablecolumns: data.tablecol
+                .filter(col => col.name !== "")
+                .map(col => col.name + " " + col.fieldname + "\n").toString().replace(/\,/g, ""),
+              freetext: data.freetext,
+              footer: data.footer_filename,
+              logoUid: data.logoUid,
+              footerUid: data.footerUid,
+              id: data._id
+            }
+          })
+          this.setState({
+            export_all_data: export_data,
+            data: res.data
+          })
         }
       })
       .catch((err) => {
@@ -383,7 +495,7 @@ class AdminCertificate extends Component {
   handleDelete = (id) => {
     axios.post(Config.ServerUri + "/del_certificate", { id })
       .then((res) => {
-        if (res) {
+        if (res.data.success) {
           toast.success("successfully deleted");
           this.First();
           this.setState({ rowid: "", modal_delete: false });
@@ -475,6 +587,63 @@ class AdminCertificate extends Component {
     });
   };
 
+  async on_export_clicked() {
+    await this.csvLink.link.click();
+  }
+
+  handleFiles = async (files) => {
+    var reader = new FileReader();
+    reader.readAsText(files[0]);
+    const result = await new Promise((resolve, reject) => {
+      reader.onload = function (e) {
+        resolve(reader.result);
+      }
+    })
+    axios.post(Config.ServerUri + '/upload_certificate_template', {
+      data: result
+    }).then((res) => {
+      const export_data = res.data.map(data => {
+        return {
+          name: data.name,
+          certificatetitle: data.certificatetitle,
+          company: data.company,
+          logo: data.logo_filename,
+          place: data.place,
+          date_format: data.date_format,
+          productTitle: data.productdata.productTitle,
+          productdata: data.productdata.productData
+            .filter(pData => pData.name !== '')
+            .map(pData => pData.name + " " + pData.pagename + " " + pData.fieldname + "\n").toString().replace(/\,/g, ""),
+          tablecolumns: data.tablecol
+            .filter(col => col.name !== "")
+            .map(col => col.name + " " + col.fieldname + "\n").toString().replace(/\,/g, ""),
+          freetext: data.freetext,
+          footer: data.footer_filename,
+          logoUid: data.logoUid,
+          footerUid: data.footerUid,
+          id: data._id
+        }
+      })
+      this.setState({
+        export_all_data: export_data,
+        data: res.data
+      })
+      toast.success('AnalysisType CSV file successfully imported');
+    });
+  }
+
+  on_copy_clicked = (id) => {
+    axios.post(Config.ServerUri + "/copy_productdata", { id })
+      .then((res) => {
+        if (res) {
+          this.First();
+          this.setState({ rowid: "", productdataVisible: false });
+        }
+      }).catch((err) => {
+        console.log(err);
+      });
+  }
+
   render() {
     const {
       previewVisible,
@@ -503,111 +672,151 @@ class AdminCertificate extends Component {
     );
     return (
       <div>
-        <CButton
-          color="info"
-          className="float-right"
-          style={{ margin: "0 0 0 10px" }}
-          onClick={() => this.addData()}
-        >
-          <i className="fa fa-plus" /><span style={{ padding: "4px" }} />{this.state.create_new_label}
-        </CButton>
-        <CDataTable
-          items={this.state.data}
-          fields={this.state.columns}
-          itemsPerPage={50}
-          itemsPerPageSelect
-          sorter
-          //tableFilter
-          pagination
-          hover
-          clickableRows
-          scopedSlots={{
-            buttonGroups: (item) => {
-              return (
-                <td>
-                  <div>
+        <div>
+          <CButton
+            color="info"
+            className="float-right"
+            style={{ margin: "0 0 0 10px" }}
+            onClick={() => this.addData()}
+          >
+            <i className="fa fa-plus" /><span style={{ padding: "4px" }} />{this.state.create_new_label}
+          </CButton>
+          <CButton
+            color="info"
+            className="float-right"
+            style={{ margin: "0px 0px 0px 16px" }}
+            onClick={() => this.on_export_clicked()}
+          >
+            <i className="fa fa-download"></i>
+            <span style={{ padding: "4px" }} />
+            {this.state.export_label}
+          </CButton>
+          <CSVLink
+            headers={this.state.header}
+            filename="Export-User.csv"
+            data={this.state.export_all_data}
+            ref={(r) => (this.csvLink = r)}
+          ></CSVLink>
+          <ReactFileReader handleFiles={this.handleFiles} fileTypes={".csv"}>
+            <CButton
+              color="info"
+              className="float-right"
+              style={{ margin: "0px 0px 0px 16px" }}
+            //style={{margin: '16px'}}
+            >
+              <i className="fa fa-upload" />
+              <span style={{ padding: "4px" }} />
+              {this.state.import_label}
+            </CButton>
+          </ReactFileReader>
+        </div>
+        <div>
+          <CDataTable
+            items={this.state.data}
+            fields={this.state.columns}
+            itemsPerPage={50}
+            itemsPerPageSelect
+            sorter
+            //tableFilter
+            pagination
+            hover
+            clickableRows
+            scopedSlots={{
+              buttonGroups: (item) => {
+                return (
+                  <td>
+                    <div>
+                      <CButton
+                        color="success"
+                        size="sm"
+                        onClick={() => this.on_copy_clicked(item._id)}
+                        className="mx-1"
+                      >
+                        <i className="fa fa-copy" />
+                      </CButton>
+                      <CButton
+                        color="info"
+                        size="sm"
+                        onClick={() => this.on_update_clicked(item)}
+                        className="mx-1"
+                      >
+                        <i className="fa fa-edit" />
+                      </CButton>
+                      <CButton
+                        color="danger"
+                        size="sm"
+                        onClick={() => this.setState({ modal_delete: true, rowid: item._id })}
+                        className="mx-1"
+                      >
+                        <i className="fa fa-trash" />
+                      </CButton>
+                    </div>
+                  </td>
+                );
+              },
+              logo: (item) => {
+                return (
+                  <td>
+                    <img src={`/uploads/certificates/${item.logo_filename}`} width="50px" height="50px" />
+                  </td>
+                );
+              },
+              footer: (item) => {
+                return (
+                  <td>
+                    <img src={`/uploads/certificates/${item.footer_filename}`} width="50px" height="50px" />
+                  </td>
+                );
+              },
+              productdata: (item) => {
+                return (
+                  <td>
+                    <a onClick={() => this.ShowProduct(item)}>
+                      {item.productdata.productTitle ? item.productdata.productTitle : "N/A"}
+                    </a>
+                  </td>
+                );
+              },
+              freetext: (item) => {
+                return (
+                  <td>
+                    <a
+                      onClick={() =>
+                        this.setState({
+                          freetext: item.freetext,
+                          freetextVisible: true,
+                          rowid: item._id,
+                        })
+                      }
+                    >
+                      {item.freetext ? item.freetext.substr(0, 5) + "..." : "N/A"}
+                    </a>
+                  </td>
+                );
+              },
+              tablecolumns: (item) => {
+                var filterdata = 0;
+                if (item.tablecol.length == 0) filterdata = 0;
+                else {
+                  filterdata = item.tablecol.filter(
+                    (v) => v.name || v.fieldname
+                  ).length;
+                }
+                return (
+                  <td>
                     <CButton
                       color="info"
-                      size="sm"
-                      onClick={() => this.on_update_clicked(item)}
-                      className="mx-1"
+                      style={{ width: "100px", fontSize: "20px" }}
+                      onClick={() => this.showTableCol(item)}
                     >
-                      <i className="fa fa-edit" />
+                      <i className={filterdata != 0 ? "fa fa-check-circle" : "fa fa-ban"} />
                     </CButton>
-                    <CButton
-                      color="danger"
-                      size="sm"
-                      onClick={() => this.setState({ modal_delete: true, rowid: item.id })}
-                      className="mx-1"
-                    >
-                      <i className="fa fa-trash" />
-                    </CButton>
-                  </div>
-                </td>
-              );
-            },
-            logo: (item) => {
-              return (
-                <td>
-                  <img src={`/uploads/certificates/${item.logo_filename}`} width="50px" height="50px" />
-                </td>
-              );
-            },
-            footer: (item) => {
-              return (
-                <td>
-                  <img src={`/uploads/certificates/${item.footer_filename}`} width="50px" height="50px" />
-                </td>
-              );
-            },
-            productdata: (item) => {
-              return (
-                <td>
-                  <a onClick={() => this.ShowProduct(item)}>
-                    {item.productdata.productTitle ? item.productdata.productTitle : "N/A"}
-                  </a>
-                </td>
-              );
-            },
-            freetext: (item) => {
-              return (
-                <td>
-                  <a
-                    onClick={() =>
-                      this.setState({
-                        freetext: item.freetext,
-                        freetextVisible: true,
-                        rowid: item._id,
-                      })
-                    }
-                  >
-                    {item.freetext ? item.freetext.substr(0, 5) + "..." : "N/A"}
-                  </a>
-                </td>
-              );
-            },
-            tablecolumns: (item) => {
-              var filterdata = 0;
-              if (item.tablecol.length == 0) filterdata = 0;
-              else {
-                filterdata = item.tablecol.filter(
-                  (v) => v.name || v.fieldname
-                ).length;
-              }
-              return (
-                <td>
-                  <CButton
-                    color="info"
-                    style={{ width: "100px", fontSize: "20px" }}
-                    onClick={() => this.showTableCol(item)}
-                  >
-                    <i className={filterdata != 0 ? "fa fa-check-circle" : "fa fa-ban"} />
-                  </CButton>
-                </td>
-              );
-            },
-          }}
-        />
+                  </td>
+                );
+              },
+            }}
+          />
+        </div>
 
         <CModal
           show={this.state.openCreateModal}
