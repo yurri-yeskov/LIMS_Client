@@ -628,7 +628,7 @@ class AdminCertificate extends Component {
         export_all_data: export_data,
         data: res.data
       })
-      toast.success('AnalysisType CSV file successfully imported');
+      toast.success('Certificate Template file successfully imported');
     });
   }
 
@@ -693,7 +693,7 @@ class AdminCertificate extends Component {
           </CButton>
           <CSVLink
             headers={this.state.header}
-            filename="Export-User.csv"
+            filename="Export-CertificateTemplate.csv"
             data={this.state.export_all_data}
             ref={(r) => (this.csvLink = r)}
           ></CSVLink>
@@ -957,6 +957,7 @@ class AdminCertificate extends Component {
                       <Option value="DD.MM.YYYY">DD.MM.YYYY</Option>
                       <Option value="DD/MM/YYYY">DD/MM/YYYY</Option>
                       <Option value="YYYY-MM-DD">YYYY-MM-DD</Option>
+                      <Option value="MM-DD-YYYY">MM-DD-YYYY</Option>
                       <Option value="YYYY/MM/DD">YYYY/MM/dd</Option>
                     </Select>
                   </CFormGroup>
