@@ -8,10 +8,10 @@ import {
     CFormGroup
 } from '@coreui/react';
 import { DatePicker as AtndDatePicker } from "antd";
-import "react-datepicker/dist/react-datepicker.css";
 import { Line } from 'react-chartjs-2';
 import Select from 'react-select';
 import { CSVLink } from "react-csv";
+import moment from "moment";
 const axios = require("axios");
 const Config = require("../../Config.js");
 const { RangePicker } = AtndDatePicker;
@@ -42,8 +42,12 @@ const header = [
 ];
 
 export default class AnalysisLaboratory extends Component {
+
     constructor(props) {
         super(props);
+
+        this._chartRef = React.createRef();
+
         this.state = {
             dateRange: [],
             combinations: '',
@@ -54,7 +58,6 @@ export default class AnalysisLaboratory extends Component {
             materialsData: [],
             analysisData: [],
             objectives: [],
-            objectives_list: [],
             clientsData: [],
             client_list: [],
             selected_clients: [],
@@ -64,52 +67,44 @@ export default class AnalysisLaboratory extends Component {
             combination_list: [],
             dataset: [],
             export_all_data: [],
-            defaultClient: {}
+            defaultClient: {},
+            date_format: 'MM/DD/YYYY'
         }
     };
-    _chartRef = React.createRef();
+
     componentDidMount() {
-        this.getAllClients();
-        this.getAllMaterials();
-        this.getAllUnits();
+        this.getData();
     }
+
     async on_export_clicked() {
         await this.csvLink.link.click();
     }
-    getAllClients() {
-        axios.get(Config.ServerUri + "/get_all_clients")
-            .then((res) => {
-                this.setState({
-                    clientsData: res.data,
-                    defaultClient: res.data.filter(d => d.name === 'Default')[0]
-                });
-            })
-            .catch((error) => { });
-    }
-    getAllUnits() {
-        axios.get(Config.ServerUri + "/get_all_units")
-            .then((res) => {
-                this.setState({
-                    unitData: res.data,
-                });
-            })
-            .catch((error) => { });
-    }
-    getAllMaterials() {
+
+    getData() {
         axios.get(Config.ServerUri + "/get_all_materials")
             .then((res) => {
                 this.setState({
                     materialsData: res.data.materials,
                     analysisData: res.data.analysisTypes,
                     objectives: res.data.objectives,
+                    clientsData: res.data.clients,
+                    defaultClient: res.data.clients.filter(d => d.name === 'Default')[0],
+                    unitData: res.data.units,
                 });
             })
             .catch((error) => { });
+
+        axios.get(process.env.REACT_APP_API_URL + "settings/date_format")
+            .then(res => {
+                this.setState({ date_format: res.data.date_format })
+            }).catch(err => console.log(err.response.data))
     }
+
     getclientdata(data) {
         var res_client = '';
         return axios.post(Config.ServerUri + "/get_input_laboratory_by_id", { data: data })
             .then((res) => {
+                console.log(res.data.client)
                 if (res.data.client === this.state.defaultClient._id) {
                     res_client = "Default";
                 }
@@ -122,357 +117,223 @@ export default class AnalysisLaboratory extends Component {
                 return res_client;
             });
     }
-    handleGetChartdata() {
+
+    getGraphData = async () => {
         if (!this.state.dateRange.length || !this.state.selected_combinations.length) {
             return;
         }
-        else {
-            var selectedcombination = []
-            var result_selectedcombination = []
-            this.state.selected_combinations.map((combination) => {
-                selectedcombination.push(combination.value.split('-')[0])
-                result_selectedcombination.push(combination.value.split('-'))
-            });
-            var client_id_list = []
-            this.state.clients.map((client) => {
-                client_id_list.push(client.value);
-            })
-            var material_id_list = [];
-            // console.log(this.state.materials)
-            this.state.materials.map((material_item) => {
-                material_id_list.push(material_item.value);
-            });
-            var data = {
-                combinations: selectedcombination,
-                dateRange: this.state.dateRange,
-                client: client_id_list,
-                material: material_id_list,
-            }
-            var token = localStorage.getItem("token");
+        // var selectedcombination = []
+        // var result_selectedcombination = []
+        // this.state.selected_combinations.map((combination) => {
+        //     selectedcombination.push(combination.value.split('-')[0])       //Analysis Type
+        //     result_selectedcombination.push(combination.value.split('-'))
+        // });
+        var client_id_list = []
+        this.state.clients.map((client) => {
+            client_id_list.push(client.value);
+        })
+        var material_id_list = [];
+        // console.log(this.state.materials)
+        this.state.materials.map((material_item) => {
+            material_id_list.push(material_item.value);
+        });
+        var data = {
+            combinations: this.state.selected_combinations.map(com => com.value),       //aType-objective-unit-material-client
+            dateRange: this.state.dateRange,
+            client: client_id_list,
+            material: material_id_list,
+        }
+        // console.log("Selected Combinations: ", this.state.selected_combinations);
+        console.log("Data: ", data);
+        var token = localStorage.getItem("token");
 
-            axios.post(Config.ServerUri + "/get_graph_data", { data, token: token })
-                .then((res) => {
-                    console.log(res.data)
-                    var input_id = []
-                    var temp_range = []
-                    var inputLaboratory_data = res.data;
-                    for (var i = 0; i < res.data.length; i++) {
-                        input_id.push(res.data[i]._id);
-                        temp_range.push(res.data[i].charge[res.data[i].charge.length - 1].date)
+        try {
+            const res = await axios.post(Config.ServerUri + "/get_graph_data", { data, token: token });
+            console.log("Input History: ", res.data)
+            var chart_info = [];
+            var export_all_data = [];
+            res.data.map(item => {
+
+                let y_axis = [];
+                let y_tooltip = [];
+                let x_axis = [];
+                let tooltip_materials = [];
+                let tooltip_clients = [];
+                let temp_tooltip_list = [];
+                let tooltip_histories = [];
+
+                const historical_values = this.getHistoricalValues(item.history);
+                historical_values.map(hh => {
+                    tooltip_histories = [];
+                    temp_tooltip_list = [];
+                    temp_tooltip_list.push(hh.value + " " + hh.user.userName + " " + moment(hh.date).format(this.state.date_format + ' HH:mm') + " " + hh.reason);
+                    if (hh.reason !== 'Mehrfach-Probe') {
+                        item.history.filter(hist => hist.length > 0 && hist[0].labId._id === hh.labId._id)[0]
+                            .filter(hhh => hhh.labId._id === hh.labId._id && hhh._id !== hh._id)
+                            .map(hhh => hhh.value + " " + hhh.user.userName + " " + moment(hhh.date).format(this.state.date_format + ' HH:mm') + " " + hhh.reason)
+                            .map(hhhh => temp_tooltip_list.push(hhhh));
                     }
-                    var range = Array.from(
-                        temp_range.reduce((a, o) => a.set(`${o}`, o), new Map()).values()
-                    );
-                    var input_ids_by_material = [];
-                    material_id_list.map((material_item) => {
-                        var temp_material_id = []
-                        for (var i = 0; i < res.data.length; i++) {
-                            if (material_item === res.data[i].material.material) {
-                                temp_material_id.push(res.data[i]);
-                            }
-                        }
-                        input_ids_by_material.push(temp_material_id)
-                    });
-                    range.sort((a, b) => (a > b) ? 1 : -1)
-                    this.setState({
-                        data_charge_date: range
-                    })
-                    if (input_id.length > 0) {
-                        axios.post(process.env.REACT_APP_API_URL + "analysis/input_history", { labId: input_id })
-                            .then(async (history) => {
-                                var graph_data = [];
-                                input_ids_by_material.map((each_material_item_id) => {
-                                    var mat_list = [];
-                                    result_selectedcombination.map((record) => {    //record[0]: analysisId, record[1]: objectiveId
-                                        var temp_list = [];
-                                        for (var i = 0; i < range.length; i++) {
-                                            var record_list = [];
-                                            var flag = true;
-                                            each_material_item_id.map((material_item_id) => {
-                                                if (range[i] === material_item_id.charge[material_item_id.charge.length - 1].date) {
-                                                    input_id.map((record_value) => {
-                                                        history.data.filter(function (item, index) {
-                                                            if (item.analysisId === record[0] && item.obj.split('-')[0] === record[1] && item.labId === record_value && item.labId === material_item_id._id) {
-                                                                record_list.push(item)
-                                                            }
-                                                        })
-                                                    });
-                                                    flag = false;
-                                                }
-                                            });
-                                            if (flag === true) {
-                                                record_list.push('')
-                                            }
-                                            if (record_list.length === 0) {
-                                                record_list.push('')
-                                            }
-                                            temp_list.push(record_list);
-                                        }
 
-                                        if (temp_list.length != 0) {
-                                            mat_list.push(temp_list);
-                                        }
-                                        var empty_flag = 0;
-                                        for (var k = 0; k < temp_list.length; k++) {
-                                            if (temp_list[k][0] == '') {
-                                                empty_flag++;
-                                            }
-                                        }
-                                        if (empty_flag == range.length) {
-                                            mat_list.pop()
-                                        }
-                                    });
-
-                                    graph_data.push(mat_list)   //objective history list
-                                });
-                                // console.log(graph_data);
-                                var export_data = [];
-                                for (var index = 0; index < graph_data.length; index++) {
-                                    if (graph_data[index].length === 0) {
-                                        continue;
-                                    }
-                                    graph_data[index].map((graph_data_index) => {
-                                        graph_data_index.map((graph_data_detail_group) => {
-                                            if (graph_data_detail_group[0] != "") {
-                                                var filtered_input_data = {}
-                                                for (var kk = 0; kk < inputLaboratory_data.length; kk++) {
-                                                    if (inputLaboratory_data[kk]._id === graph_data_detail_group[graph_data_detail_group.length - 1].labId) {
-                                                        filtered_input_data = inputLaboratory_data[kk];
-                                                    }
-                                                }
-                                                if (filtered_input_data._id !== undefined) {
-                                                    var charge_data = filtered_input_data.charge[filtered_input_data.charge.length - 1].date;     //to do
-                                                    var weight_data = ''
-                                                    weight_data = filtered_input_data.weight;     //to do
-                                                    // if (filtered_input_data.weight.length > 0) {
-                                                    //     // weight_data = filtered_input_data.Weight[filtered_input_data.Weight.length - 1].weight;     //to do
-                                                    // }
-                                                    var material = filtered_input_data.material.material;
-                                                    var client = '';
-                                                    if (filtered_input_data.client === this.state.defaultClient._id) {
-                                                        client = "Default";
-                                                    }
-                                                    else {
-                                                        this.state.client_list.map((client_item) => {
-                                                            if (client_item._id === filtered_input_data.client) {
-                                                                client = client_item.name;
-                                                            }
-                                                        });
-                                                    }
-                                                    var combination_data = this.state.analysisData.filter(aType => aType._id === graph_data_detail_group[0].analysisId).length > 0
-                                                        ? this.state.analysisData.filter(aType => aType._id === graph_data_detail_group[0].analysisId)[0].analysisType : '' + '/' +
-                                                            this.state.objectives.filter(obj => String(obj._id) === String(graph_data_detail_group[0].obj.split('-')[0])).length > 0
-                                                            ? this.state.objectives.filter(obj => String(obj._id) === String(graph_data_detail_group[0].obj.split('-')[0]))[0].objective : '' + '(' + material + ')';     //to do
-                                                    var cur_date = graph_data_detail_group[graph_data_detail_group.length - 1].date;
-                                                    var limitValue = graph_data_detail_group[graph_data_detail_group.length - 1].value;
-                                                    var his_date_1 = '';
-                                                    var his_val_1 = '';
-                                                    if (graph_data_detail_group.length >= 2) {
-                                                        his_date_1 = graph_data_detail_group[graph_data_detail_group.length - 2].date;
-                                                        his_val_1 = graph_data_detail_group[graph_data_detail_group.length - 2].value;
-                                                    }
-                                                    var his_date_2 = '';
-                                                    var his_val_2 = '';
-                                                    if (graph_data_detail_group.length >= 3) {
-                                                        his_date_2 = graph_data_detail_group[graph_data_detail_group.length - 3].date;
-                                                        his_val_2 = graph_data_detail_group[graph_data_detail_group.length - 3].value;
-                                                    }
-                                                    var his_date_3 = '';
-                                                    var his_val_3 = '';
-                                                    if (graph_data_detail_group.length >= 4) {
-                                                        his_date_3 = graph_data_detail_group[graph_data_detail_group.length - 4].date;
-                                                        his_val_3 = graph_data_detail_group[graph_data_detail_group.length - 4].value;
-                                                    }
-                                                    var his_date_4 = '';
-                                                    var his_val_4 = '';
-                                                    if (graph_data_detail_group.length >= 5) {
-                                                        his_date_4 = graph_data_detail_group[graph_data_detail_group.length - 5].date;
-                                                        his_val_4 = graph_data_detail_group[graph_data_detail_group.length - 5].value;
-                                                    }
-                                                    var his_date_5 = '';
-                                                    var his_val_5 = '';
-                                                    if (graph_data_detail_group.length >= 6) {
-                                                        his_date_5 = graph_data_detail_group[graph_data_detail_group.length - 6].date;
-                                                        his_val_5 = graph_data_detail_group[graph_data_detail_group.length - 6].value;
-                                                    }
-                                                    var his_date_6 = '';
-                                                    var his_val_6 = '';
-                                                    if (graph_data_detail_group.length >= 7) {
-                                                        his_date_6 = graph_data_detail_group[graph_data_detail_group.length - 7].date;
-                                                        his_val_6 = graph_data_detail_group[graph_data_detail_group.length - 7].value;
-                                                    }
-                                                    var his_date_7 = '';
-                                                    var his_val_7 = '';
-                                                    if (graph_data_detail_group.length >= 8) {
-                                                        his_date_7 = graph_data_detail_group[graph_data_detail_group.length - 8].date;
-                                                        his_val_7 = graph_data_detail_group[graph_data_detail_group.length - 8].value;
-                                                    }
-
-                                                    export_data.push({ "charge": charge_data, "material": material, "client": client, "combination": combination_data, "weight": weight_data, "limitValue": limitValue, "c_date": cur_date, "his_val_1": his_val_1, "his_date_1": his_date_1, "his_val_2": his_val_2, "his_date_2": his_date_2, "his_val_3": his_val_3, "his_date_3": his_date_3, "his_val_4": his_val_4, "his_date_4": his_date_4, "his_val_5": his_val_5, "his_date_5": his_date_5, "his_val_6": his_val_6, "his_date_6": his_date_6, "his_val_7": his_val_7, "his_date_7": his_date_7 })
-                                                }
-                                            }
-                                        });
-                                    });
-                                }
-
-                                this.setState({
-                                    export_all_data: export_data
-                                });
-                                var graph_show_list = [];
-                                for (var p = 0; p < graph_data.length; p++) {
-                                    for (var i = 0; i < graph_data[p].length; i++) {
-                                        var tmp_list = [];
-                                        tmp_list['label'] = this.state.analysisData.filter(aType => String(aType._id) === String(result_selectedcombination[i][0]))[0].analysisType + ' / ' +
-                                            this.state.objectives.filter(obj => String(obj._id) === String(result_selectedcombination[i][1]))[0].objective + ' ' +
-                                            this.state.unitData.filter(unit => String(unit._id) === String(result_selectedcombination[i][2]))[0].unit + ' (' + material_id_list[p] + ')';
-                                        var value_list = [];
-                                        var tooltip_list = [];
-                                        var chart_client_list = [];
-                                        for (var j = 0; j < graph_data[p][i].length; j++) {
-                                            if (graph_data[p][i][j][0] === "") {
-                                                value_list.push(null);
-                                                chart_client_list.push('');
-                                            }
-                                            var temp_tooltip_list = [];
-                                            for (var k = 0; k < graph_data[p][i][j].length; k++) {
-                                                if (graph_data[p][i][j][k] === "") {
-                                                    continue
-                                                }
-                                                if (k === graph_data[p][i][j].length - 1) {
-                                                    value_list.push(graph_data[p][i][j][k].value);
-                                                    var res_client = await this.getclientdata(graph_data[p][i][j][k].labId);
-                                                    chart_client_list.push(res_client);
-                                                    temp_tooltip_list.push([graph_data[p][i][j][k].value, graph_data[p][i][j][k].user.userName, graph_data[p][i][j][k].date]);
-                                                }
-                                                else {
-                                                    temp_tooltip_list.push([graph_data[p][i][j][k].value, graph_data[p][i][j][k].user.userName, graph_data[p][i][j][k].date])
-                                                }
-                                            }
-                                            tooltip_list.push(temp_tooltip_list);
-                                        }
-                                        tmp_list['value'] = value_list;
-                                        tmp_list['client'] = chart_client_list;
-                                        tmp_list['tooltip'] = tooltip_list;
-                                        graph_show_list.push(tmp_list);
-                                    }
-                                }
-                                var dataset_list = [];
-                                graph_show_list.map((item) => {
-                                    var randomColor = Math.floor(Math.random() * 16777215).toString(16);
-                                    dataset_list.push(
-                                        {
-                                            label: item.label,
-                                            fill: false,
-                                            tooltip_list: item.tooltip,
-                                            client: item.client,
-                                            lineTension: 0,
-                                            backgroundColor: '#' + randomColor,
-                                            borderColor: '#' + randomColor,
-                                            borderWidth: 1,
-                                            data: item.value
-                                        }
-                                    )
-                                });
-                                this.setState({
-                                    dataset: dataset_list
-                                });
-                            });
-                    }
+                    y_axis.push(hh.value);
+                    y_tooltip.push(temp_tooltip_list);
+                    x_axis.push(moment(hh.date).format(this.state.date_format + ' HH:mm'));
+                    tooltip_materials.push(this.state.materialsData.filter(m => m._id === hh.labId.material)[0].material);
+                    tooltip_clients.push(this.state.clientsData.filter(c => c._id === hh.labId.client)[0].name);
+                    return true;
                 });
 
-        }
+                let label = this.state.selected_combinations.filter(com => com.value === item.combination).length > 0 ?
+                    this.state.selected_combinations.filter(com => com.value === item.combination)[0].label : '';
 
+                let randomColor = Math.floor(Math.random() * 16777215).toString(16);
+                chart_info.push({
+                    backgroundColor: '#' + randomColor,
+                    borderColor: '#' + randomColor,
+                    fill: false,
+                    label: label.replace('-', ' / '),
+                    lineTension: 0,
+                    borderWidth: 1,
+                    data: y_axis,
+                    tooltip: y_tooltip,
+                    x_axis: x_axis,
+                    tooltip_materials: tooltip_materials,
+                    tooltip_clients: tooltip_clients
+                })
+
+                // export_all_data.push({
+                //     c_date: x_axis[0],
+                //     charge: item.labId.charge[lab.charge.length - 1].date,
+                //     client: this.state.clientsData.filter(c => c._id === item.labId.client)[0].name,
+                //     combination: label,
+                //     his_date_1: x_axis.length > 1 ? x_axis[1] : '',
+                //     his_date_2: x_axis.length > 2 ? x_axis[2] : '',
+                //     his_date_3: x_axis.length > 3 ? x_axis[3] : '',
+                //     his_date_4: x_axis.length > 4 ? x_axis[4] : '',
+                //     his_date_5: x_axis.length > 5 ? x_axis[5] : '',
+                //     his_date_6: x_axis.length > 6 ? x_axis[6] : '',
+                //     his_date_7: x_axis.length > 7 ? x_axis[7] : '',
+                //     his_val_1: y_axis.length > 1 ? y_axis[1] : '',
+                //     his_val_2: y_axis.length > 2 ? y_axis[2] : '',
+                //     his_val_3: y_axis.length > 3 ? y_axis[3] : '',
+                //     his_val_4: y_axis.length > 4 ? y_axis[4] : '',
+                //     his_val_5: y_axis.length > 5 ? y_axis[5] : '',
+                //     his_val_6: y_axis.length > 6 ? y_axis[6] : '',
+                //     his_val_7: y_axis.length > 7 ? y_axis[7] : '',
+                //     limitValue: y_axis[0],
+                //     material: this.state.materialsData.filter(m => m._id === item.labId.material)[0].material,
+                //     weight: item.labId.weight,
+                // })
+
+
+            });
+            console.log("Chart Info: ", chart_info)
+            setTimeout(() => {
+                // console.log("Excel Data: ", export_all_data)
+                this.setState({
+                    dataset: chart_info,
+                    export_all_data: export_all_data
+                });
+
+            }, 1000);
+        } catch (err) {
+            console.log(err);
+        }
     }
-    handleRangeDateChange = (date, dateString) => {
+
+    getHistoricalValues(history_info) {
+        let temp_history_list = [];
+        let history_list = [];
+        let correctValues = [];
+        for (let j = 0; j < history_info.length; j++) {
+            temp_history_list = [];
+            history_list = [];
+            const sorted_histories = history_info[j].sort((a, b) => {
+                return new Date(a.date) > new Date(b.date) ? 1 : -1
+            })
+            for (let i = 0; i < sorted_histories.length; i++) {
+                if (i === sorted_histories.length - 1) {
+                    if (sorted_histories[i].reason === "Mehrfach-Probe") {
+                        history_list.push(temp_history_list);
+                        temp_history_list = [];
+                        temp_history_list.push(sorted_histories[i]);
+                        history_list.push(temp_history_list);
+                        correctValues.push(sorted_histories[i - 1]);
+                    } else {
+                        temp_history_list.push(sorted_histories[i]);
+                        history_list.push(temp_history_list);
+                        temp_history_list = [];
+                    }
+                    correctValues.push(sorted_histories[i]);
+                } else {
+                    if (sorted_histories[i].reason !== "Mehrfach-Probe") {
+                        temp_history_list.push(sorted_histories[i]);
+                        continue;
+                    } else {
+                        history_list.push(temp_history_list);
+                        temp_history_list = [];
+                        temp_history_list.push(sorted_histories[i]);
+                        correctValues.push(sorted_histories[i - 1]);
+                    }
+                }
+            }
+        }
+        console.log("<<<<<<<<<<<<<<<<<", history_list)
+        const sorted_hist = correctValues.sort((a, b) => {
+            return new Date(a.date) > new Date(b.date) ? 1 : -1
+        });
+        return sorted_hist;
+    }
+
+    handleChangeRangeDate = (date, dateString) => {
         this.setState({ dateRange: dateString }, () => {
-            this.handleGetChartdata();
+            this.getGraphData();
         });
     }
 
-    handleSubMultiSelectChange = (items) => {
+    handleChangeAnalysisType = (items) => {
         this.setState({
             selected_combinations: items
         }, () => {
-            this.handleGetChartdata();
+            this.getGraphData();
         });
     }
-    handleSelectChangeMaterials = (selected_materials) => {
-        var filtered_material = [];
+
+    handleChangeMaterial = (selected_materials) => {
+
         var filtered_clients = [];
-        var avaiable_a_types = [];
-        var available_object_list = [];
         this.setState({ materials: selected_materials });
-        if (selected_materials === []) {
-            filtered_material = [];
-            filtered_clients = [];
-            avaiable_a_types = [];
-            available_object_list = [];
-        }
-        else {
-            selected_materials.map((mat) => {
-                filtered_material.push(
-                    this.state.materialsData.filter(
-                        (material) => material.material === mat.value
-                    )[0]
-                )
-            });
-            filtered_material.map((filtered_mat) => {
-                avaiable_a_types.push(filtered_mat.aTypesValues);
-            });
-            var filtered_clients = []
-            filtered_material.map((filtered_mat) => {
-                const clients = filtered_mat.clients;
-                clients.map(client => {
-                    if (filtered_clients.indexOf(client) === -1) {
-                        filtered_clients.push(client)
-                    }
-                })
-            });
-            // filtered_clients_temp.map((client_group) => {
-            //     client_group.map((client) => {
-            //         filtered_clients.push(client);
-            //     })
-            // })
-            var available_filtered_client = Array.from(
-                filtered_clients.reduce((a, o) => a.set(`${o._id}`, o), new Map()).values()
-            );
 
+        const filtered_material = this.state.materialsData
+            .filter(item => selected_materials.map(m => m.value).indexOf(item.material) > -1)
 
-            filtered_material.map((filtered_mat) => {
-                available_object_list.push(filtered_mat.objectiveValues);
+        filtered_material.map((filtered_mat) => {
+            filtered_mat.clients.map(client => {
+                if (filtered_clients.indexOf(client) === -1) {
+                    filtered_clients.push(client)
+                }
             })
-        }
+        });
         var avaiable_client_list = []
         avaiable_client_list.push({ label: 'ALL', value: 'all' });
         avaiable_client_list.push({ label: 'Default', value: this.state.defaultClient._id });
-        available_filtered_client.map((filter_client) => {
+        filtered_clients.map((filter_client) => {
             avaiable_client_list.push({ label: filter_client.name, value: filter_client._id })
         });
-        this.setState({ objectives_list: available_object_list });
-        this.setState({ client_list: available_filtered_client });
-        this.setState({ avaiable_a_types: avaiable_a_types, client: "" }, () => {
-            this.handleGetChartdata();
-        });
-        // this.setState({selected_clients: []})
-        // this.setState({selected_combinations : []});
+        this.setState({ client_list: avaiable_client_list });
 
+        const avaiable_a_types = filtered_material.map(filtered_mat => filtered_mat.aTypesValues);
+
+        this.setState({ avaiable_a_types: avaiable_a_types, client: "" }, () => {
+            this.getGraphData();
+        });
     }
 
-    handleSelectChangeClients = (client_items) => {
-        var available_a_type_names = [];
-        var clients = [];
-        if (client_items) {
-            clients = client_items;
-            this.setState({ selected_clients: client_items })
-        }
-        var client_id_list = []
-        clients.map((client_item) => {
-            client_id_list.push(client_item.value);
-        })
-        var material_id_group = [];
-        this.state.materials.map((material_item) => {
-            material_id_group.push(material_item.value);
-        });
+    handleChangeClient = (client_items) => {
+        this.setState({ selected_clients: client_items })
+
+        const client_id_list = client_items.map(client_item => client_item.value);
+        const material_id_group = this.state.materials.map((material_item) => material_item.value);     //materials: selected materials
+
         var data = {
             client: client_id_list,
             material: material_id_group,
@@ -481,14 +342,17 @@ export default class AnalysisLaboratory extends Component {
             .post(Config.ServerUri + "/get_available_analysis_type", { data })
             .then((res) => {
                 let obj_list = []
-                res.data.objValues.map(obj => {
+                res.data.objValues.map((obj, index) => {
                     obj_list.push({
+                        material_id: res.data.material_ids[index],
                         analysisId: obj.analysis,
                         analysis: res.data.analysisTypes.filter(aT => aT._id === obj.analysis)[0].analysisType,
                         objectiveId: obj.id,
                         objective: res.data.objectives.filter(o => o._id === obj.id)[0].objective,
                         unitId: obj.unit,
-                        unit: res.data.units.filter(u => u._id === obj.unit)[0].unit
+                        unit: res.data.units.filter(u => u._id === obj.unit)[0].unit,
+                        clientId: obj.client,
+                        // clientName: this.state.clientsData.filter(c => c._id === obj.client)[0].name
                     })
                 })
 
@@ -501,18 +365,15 @@ export default class AnalysisLaboratory extends Component {
                 this.setState({
                     clients: client_items,
                     combination_list: result,
-                    client_id: clients,
+                    client_id: client_items,
                 }, () => {
-                    this.handleGetChartdata();
+                    this.getGraphData();
                 });
 
             });
     }
+
     render() {
-        const state = {
-            labels: this.state.data_charge_date,
-            datasets: this.state.dataset
-        }
         var materialOption = [];
         materialOption.push({ label: 'ALL', value: 'all' });
         this.state.materialsData.map((material) => {
@@ -522,72 +383,17 @@ export default class AnalysisLaboratory extends Component {
         this.state.combination_list.map((item) => (
             options.push({
                 label: item.analysis + '-' + item.objective + ' ' + item.unit,
-                value: item.analysisId + '-' + item.objectiveId + '-' + item.unitId
+                value: item.analysisId + '-' + item.objectiveId + '-' + item.unitId + '-' + item.material_id + '-' + item.clientId
             })
         ));
         var clientOption = [];
-        if (this.state.client_list.length > 0) {
-            clientOption.push({ label: 'ALL', value: "all" });
-            clientOption.push({ label: 'Default', value: this.state.defaultClient._id });
-        }
         this.state.client_list.map((item) => (
-            clientOption.push({ label: item.name, value: item._id })
+            clientOption.push({ label: item.label, value: item.value })
         ));
         return (
             <div className="col-sm-12">
                 <div className="row">
-                    <div className="col-sm-7">
-                        <CCard>
-                            <CCardHeader className="text-center">
-                                Analysis
-                            </CCardHeader>
-                            <CCardBody>
-                                <Line
-                                    data={state}
-                                    options={{
-                                        spanGaps: true,
-                                        plugins: {
-                                            tooltip: {
-                                                callbacks: {
-                                                    title: function (context) {
-                                                        console.log(context);
-                                                        return context[0].dataset.client[context[0].dataIndex] + '  < ' + context[0].dataset.label + ' >';
-                                                    },
-                                                    label: function (context) {
-                                                        var tooltipIndex = context.dataIndex;
-                                                        var label = [];
-                                                        if (context.dataset.tooltip_list[tooltipIndex].length === 0) {
-                                                            label = 'No history';
-                                                        }
-                                                        else {
-                                                            var tooltipdata = context.dataset.tooltip_list[tooltipIndex];
-                                                            for (var i = 0; i < tooltipdata.length; i++) {
-                                                                label.unshift(tooltipdata[i][0] + ', ' + tooltipdata[i][1] + ', ' + tooltipdata[i][2]);
-                                                            }
-                                                        }
-                                                        return label;
-                                                    }
-                                                }
-                                            },
-                                            responsive: true,
-                                            legend: {
-                                                display: true,
-                                                position: 'top'
-                                            },
-                                        },
-                                        scales: {
-                                            y: {
-                                                beginAtZero: true,
-                                            },
-                                        },
-                                    }}
-                                    ref={this._chartRef}
-                                />
-
-                            </CCardBody>
-                        </CCard>
-                    </div>
-                    <div className="col-sm-5">
+                    <div className="col-6">
                         <CCard>
                             <CCardBody>
                                 <CFormGroup>
@@ -603,8 +409,8 @@ export default class AnalysisLaboratory extends Component {
                                         onChange={selected => {
                                             selected.length &&
                                                 selected.find(option => option.value === "all")
-                                                ? this.handleSelectChangeMaterials(materialOption.slice(1))
-                                                : this.handleSelectChangeMaterials(selected);
+                                                ? this.handleChangeMaterial(materialOption.slice(1))
+                                                : this.handleChangeMaterial(selected);
                                         }}
                                     />
                                 </CFormGroup>
@@ -615,15 +421,14 @@ export default class AnalysisLaboratory extends Component {
                                         name="colors"
                                         value={this.state.selected_clients}
                                         options={clientOption}
-                                        // onChange = {(e) =>this.handleSelectChangeClients(e)}
                                         placeholder="Select Clients"
                                         className="basic-multi-select"
                                         classNamePrefix="select"
                                         onChange={selected => {
                                             selected.length &&
                                                 selected.find(option => option.value === "all")
-                                                ? this.handleSelectChangeClients(clientOption.slice(1))
-                                                : this.handleSelectChangeClients(selected);
+                                                ? this.handleChangeClient(clientOption.slice(1))
+                                                : this.handleChangeClient(selected);
                                         }}
                                     />
                                 </CFormGroup>
@@ -633,19 +438,21 @@ export default class AnalysisLaboratory extends Component {
                                         isMulti
                                         name="colors"
                                         options={options}
-                                        onChange={(e) => this.handleSubMultiSelectChange(e)}
+                                        onChange={(e) => this.handleChangeAnalysisType(e)}
                                         placeholder="Select combinations"
                                         className="basic-multi-select"
                                         classNamePrefix="select"
                                     />
                                 </CFormGroup>
                                 <CFormGroup>
-                                    <div style={{ textAlign: "center" }}>
+                                    <div style={{ textAlign: "left" }}>
                                         <CLabel >Select Charge Range</CLabel>
                                     </div>
                                     <RangePicker
+                                        className="w-100"
+                                        style={{ minHeight: '38px' }}
                                         showTime
-                                        onChange={(date, dateString) => this.handleRangeDateChange(date, dateString)}
+                                        onChange={(date, dateString) => this.handleChangeRangeDate(date, dateString)}
                                     />
                                 </CFormGroup>
                                 <CFormGroup>
@@ -669,6 +476,69 @@ export default class AnalysisLaboratory extends Component {
                             </CCardBody>
                         </CCard>
                     </div>
+                    {
+                        this.state.dataset.map((dataset, index) => {
+                            const data = {
+                                labels: dataset.x_axis,
+                                datasets: [{
+                                    label: dataset.label,
+                                    data: dataset.data,
+                                    fill: false,
+                                    backgroundColor: dataset.backgroundColor,
+                                    borderColor: dataset.borderColor,
+                                    tooltip_materials: dataset.tooltip_materials,
+                                    tooltip_clients: dataset.tooltip_clients,
+                                    tooltip_list: dataset.tooltip
+                                }]
+                            }
+                            return <div className="col-6" key={index}>
+                                <CCard>
+                                    <CCardHeader className="text-center">
+                                        Analysis
+                                    </CCardHeader>
+                                    <CCardBody>
+                                        <Line
+                                            data={data}
+                                            options={{
+                                                spanGaps: true,
+                                                plugins: {
+                                                    tooltip: {
+                                                        callbacks: {
+                                                            title: function (context) {
+                                                                return ' < ' + context[0].dataset.label + ' >' + context[0].dataset.tooltip_materials[context[0].dataIndex] + context[0].dataset.tooltip_clients[context[0].dataIndex];
+                                                            },
+                                                            label: function (context) {
+                                                                var tooltipIndex = context.dataIndex;
+                                                                var label = [];
+                                                                if (context.dataset.tooltip_list[tooltipIndex].length === 0) {
+                                                                    label = 'No history';
+                                                                }
+                                                                else {
+                                                                    label = context.dataset.tooltip_list[tooltipIndex];
+                                                                }
+                                                                return label;
+                                                            }
+                                                        }
+                                                    },
+                                                    responsive: true,
+                                                    legend: {
+                                                        display: true,
+                                                        position: 'top'
+                                                    },
+                                                },
+                                                scales: {
+                                                    y: {
+                                                        beginAtZero: true,
+                                                    },
+                                                },
+                                            }}
+                                            ref={this._chartRef}
+                                        />
+                                    </CCardBody>
+                                </CCard>
+                            </div>
+                        })
+                    }
                 </div>
             </div>
         );

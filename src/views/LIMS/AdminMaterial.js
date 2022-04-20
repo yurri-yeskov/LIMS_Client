@@ -75,6 +75,7 @@ export default class AdminMaterial extends Component {
         { key: 'client', label: props.language_data.filter(item => item.label === 'clients')[0][props.selected_language] },
         { key: 'combination', label: props.language_data.filter(item => item.label === 'analysistype_objectives')[0][props.selected_language] },
         { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        { key: '_id', label: "Id" },
       ],
     };
   }
@@ -102,6 +103,7 @@ export default class AdminMaterial extends Component {
           { key: 'client', label: nextProps.language_data.filter(item => item.label === 'clients')[0][nextProps.selected_language] },
           { key: 'combination', label: nextProps.language_data.filter(item => item.label === 'analysistype_objectives')[0][nextProps.selected_language] },
           { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          { key: '_id', label: "Id" },
         ],
       })
     }
@@ -121,13 +123,12 @@ export default class AdminMaterial extends Component {
     })
     axios.post(Config.ServerUri + '/upload_material_csv', {
       data: result
-    })
-      .then((res) => {
-        this.setState({
-          materialsData: res.data.materials,
-        });
-        toast.success('Material CSV file successfully imported');
+    }).then((res) => {
+      this.setState({
+        materialsData: res.data.materials,
       });
+      toast.success('Material CSV file successfully imported');
+    }).catch(err => toast.error(err.response.data.message));
   }
 
   handleInputChange(e) {
@@ -146,7 +147,12 @@ export default class AdminMaterial extends Component {
 
       if (found === true) {
         this.setState({ material_error: "Value already exists" });
-      } else this.setState({ material_error: "" });
+      } else {
+        value = value.replace(/ /g, '_')
+        value = value.replace(/-/g, '_')
+        value = value.replace(/,/g, '')
+        this.setState({ material_error: "" });
+      }
     }
 
     this.setState({
@@ -215,14 +221,20 @@ export default class AdminMaterial extends Component {
       }
     });
 
+    this.state.objectiveValues
+      .filter(item => item.client === client)
+      .filter(item => e.map(data => data.value).indexOf(item.id + "-" + item.unit) > -1)
+      .map(item => objectiveValues.push(item))
+
     e.map((item) => {
-      var ids = item.value.split("-");
       objectives.push({ label: item.label, value: item.value, client: client });
-      objectiveValues.push(this.getObjectiveValue(ids[0], ids[1], client));
       return true;
     });
 
     this.setState({ objectives: objectives, objectiveValues: objectiveValues });
+
+    const filteredATypes = this.state.analysisTypes.filter(item => objectiveValues.map(data => data.id + "-" + data.unit).indexOf(item.obj) > -1)
+    this.setState({ analysisTypes: filteredATypes })
   }
 
   handleMultiSelectChange_A_Types(e, obj, client) {
@@ -251,16 +263,27 @@ export default class AdminMaterial extends Component {
       objectiveValues.push(
         this.getObjectiveValue(ids[0], ids[1], client, item.value)
       );
-      analysisTypes.push({
-        label: item.label,
-        value: item.value,
-        obj: obj,
-        client: client,
-        min: 0,
-        max: 0,
-      });
       return true;
     });
+
+    const filteredATypes = this.state.analysisTypes
+      .filter(item => item.obj === obj && item.client === client)
+      .filter(item => e.map(data => data.value).indexOf(item.value) > -1)
+
+    filteredATypes.map(data => analysisTypes.push(data))
+
+    e.map(item => {
+      if (analysisTypes.filter(data => data.client === client && data.obj === obj && data.value === item.value).length === 0) {
+        analysisTypes.push({
+          client: client,
+          value: item.value,
+          obj: obj,
+          min: 0,
+          max: 0,
+          label: item.label
+        })
+      }
+    })
 
     this.setState({
       analysisTypes: analysisTypes,
@@ -280,7 +303,6 @@ export default class AdminMaterial extends Component {
   getAllMaterials() {
     axios.get(Config.ServerUri + "/get_all_materials")
       .then((res) => {
-        console.log(res.data)
         const data = res.data.clients.filter(c => c.name !== 'Default')
           .sort((a, b) => { return a.clientId - b.clientId })
           .map(client => {
@@ -291,7 +313,9 @@ export default class AdminMaterial extends Component {
           })
 
         this.setState({
-          materialsData: res.data.materials,
+          materialsData: res.data.materials.sort((a, b) => {
+            return a.material_id > b.material_id ? 1 : -1;
+          }),
           objectivesData: res.data.objectives,
           unitsData: res.data.units,
           clientsData: res.data.clients,
@@ -310,20 +334,39 @@ export default class AdminMaterial extends Component {
             client_list += client.name + '\n';
             combination_list += this.getTooltip(material, client._id) + '\n';
           });
-          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
+          material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark, '_id': material._id })
         });
         this.setState({
-          export_all_data: material_list
+          export_all_data: material_list.sort((a, b) => {
+            return a.material_id > b.material_id ? 1 : -1;
+          })
         });
       })
       .catch((error) => { });
   }
 
   on_create_clicked() {
+    let id = 1;
+    if (this.state.materialsData.length > 0) {
+      const max_id = Math.max.apply(Math, this.state.materialsData.map(data => data.material_id));
+      if (max_id === this.state.materialsData.length) {
+        id = max_id + 1
+      } else {
+        var a = this.state.materialsData.map(data => Number(data.material_id));
+        var missing = new Array();
+
+        for (var i = 1; i <= max_id; i++) {
+          if (a.indexOf(i) == -1) {
+            missing.push(i);
+          }
+        }
+        id = Math.min.apply(Math, missing)
+      }
+    }
     this.setState({
       current_id: '',
       material: '',
-      material_id: this.state.materialsData.length + 1,
+      material_id: id,
       remark: '',
       objectives: [],
       objectiveValues: [],
@@ -341,7 +384,7 @@ export default class AdminMaterial extends Component {
   }
 
   on_update_clicked(item) {
-    var clients = [];
+    var clients = [this.state.defaultClient._id];
     var _clients = [];
 
     item.clients.map(temp => {
@@ -357,7 +400,6 @@ export default class AdminMaterial extends Component {
     var objectives = [];
     var objectiveValues = [];
     var analysisTypes = [];
-
     item.objectiveValues.map((temp) => {
       var label = this.state.objectivesData.filter(obj => obj._id === temp.id)[0].objective;// this.getObjectiveName(temp.id);
       var unit = this.state.unitsData.filter(d => d._id === temp.unit)[0].unit;
@@ -415,28 +457,50 @@ export default class AdminMaterial extends Component {
       })
       .then((res) => {
         toast.success("Material successfully deleted");
+        const data = res.data.clients.filter(c => c.name !== 'Default')
+          .sort((a, b) => { return a.clientId - b.clientId })
+          .map(client => {
+            return {
+              label: client.name,
+              value: client._id
+            }
+          })
+
         this.setState({
-          materialsData: res.data.materials,
+          materialsData: res.data.materials.sort((a, b) => {
+            return a.material_id > b.material_id ? 1 : -1;
+          }),
           objectivesData: res.data.objectives,
           unitsData: res.data.units,
           clientsData: res.data.clients,
+          analysisData: res.data.analysisTypes,
+          objOptions: res.data.obj_units,
+          clientOptions: data,
+          defaultClient: res.data.clients.filter(c => c.name === 'Default')[0]
         });
+
         var material_list = [];
-        res.data.materials.map((material) => {
+        Object.keys(res.data.materials).length > 0 && res.data.materials.map((material) => {
           var client_list = 'Default\n';
           var combination_list = '';
-          combination_list += this.getTooltip(material, this.state.defaultClient._id) + '\n';
-          material.clients.map((client_id) => {
-            client_list += this.state.clientsData.filter(d => d._id === client_id)[0].name + '\n';
-            combination_list += this.getTooltip(material, client_id) + '\n';
+          combination_list += this.getTooltip(material, res.data.clients.filter(c => c.name === 'Default')[0]._id) + '\n';
+          material.clients.map((client) => {
+            client_list += client.name + '\n';
+            combination_list += this.getTooltip(material, client._id) + '\n';
           });
           material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
         });
         this.setState({
-          export_all_data: material_list
+          export_all_data: material_list.sort((a, b) => {
+            return a.material_id > b.material_id ? 1 : -1;
+          })
         });
       })
-      .catch((error) => { });
+      .catch((err) => {
+        if (err.response.status === 400) {
+          toast.error(err.response.data.message)
+        }
+      });
   }
 
   checkMinMax() {
@@ -481,6 +545,10 @@ export default class AdminMaterial extends Component {
 
     if (this.checkMinMax() === false) return;
     if (this.state.material_error !== "") return;
+    if (this.state.materialsData.filter(data => data.material_id === this.state.material_id).length > 0) {
+      this.setState({ material_error: "Value already exists" });
+      return;
+    }
     this.setState({
       modal_create: false,
     });
@@ -489,14 +557,16 @@ export default class AdminMaterial extends Component {
       material_id: this.state.material_id,
       material: this.state.material,
       objectiveValues: objectiveValues,
-      clients: this.state.clients,
+      clients: this.state.clients.filter(c => c !== this.state.defaultClient._id),
       remark: this.state.remark,
       aTypesValues: analysisTypes,
     }
+    // console.log(">>>>>>>>>>>>>>>>>", data);
+    // return;
     axios.post(Config.ServerUri + "/create_material", data)
       .then((res) => {
         toast.success("Material successfully created");
-        const data = res.data.clients.filter(c => c.name !== 'Default')
+        const data1 = res.data.clients.filter(c => c.name !== 'Default')
           .sort((a, b) => { return a.clientId - b.clientId })
           .map(client => {
             return {
@@ -505,13 +575,15 @@ export default class AdminMaterial extends Component {
             }
           })
         this.setState({
-          materialsData: res.data.materials,
+          materialsData: res.data.materials.sort((a, b) => {
+            return a.material_id > b.material_id ? 1 : -1;
+          }),
           objectivesData: res.data.objectives,
           unitsData: res.data.units,
           clientsData: res.data.clients,
           analysisTypes: res.data.analysisTypes,
           objOptions: res.data.obj_units,
-          clientOptions: data
+          clientOptions: data1
         });
 
         var material_list = [];
@@ -526,7 +598,9 @@ export default class AdminMaterial extends Component {
           material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
         });
         this.setState({
-          export_all_data: material_list
+          export_all_data: material_list.sort((a, b) => {
+            return a.material_id > b.material_id ? 1 : -1;
+          })
         });
       })
       .catch((error) => { });
@@ -563,10 +637,12 @@ export default class AdminMaterial extends Component {
       material_id: this.state.material_id,
       material: this.state.material,
       objectiveValues: this.state.objectiveValues,
-      clients: this.state.clients,
+      clients: this.state.clients.filter(c => c !== this.state.defaultClient._id),
       remark: this.state.remark,
       aTypesValues: analysisTypes,
     }
+    // console.log(data)
+    // return;
     axios.post(Config.ServerUri + "/update_material", data)
       .then((res) => {
         toast.success("Material successfully updated");
@@ -578,7 +654,9 @@ export default class AdminMaterial extends Component {
             }
           })
         this.setState({
-          materialsData: res.data.materials,
+          materialsData: res.data.materials.sort((a, b) => {
+            return a.material_id > b.material_id ? 1 : -1;
+          }),
           objectivesData: res.data.objectives,
           unitsData: res.data.units,
           clientsData: res.data.clients,
@@ -598,7 +676,9 @@ export default class AdminMaterial extends Component {
           material_list.push({ 'material_id': material.material_id, "material": material.material, "client": client_list, "combination": combination_list, "remark": material.remark })
         });
         this.setState({
-          export_all_data: material_list
+          export_all_data: material_list.sort((a, b) => {
+            return a.material_id > b.material_id ? 1 : -1;
+          })
         });
       })
       .catch((error) => { });
@@ -637,8 +717,8 @@ export default class AdminMaterial extends Component {
               <CLabel style={{ fontWeight: '500' }}>Material ID</CLabel>
               <CInput name="material_id" value={this.state.material_id} onChange={this.handleInputChange} required />
               {
-                error === undefined || error === '' ? <div></div> :
-                  <div style={{ width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353' }}>{error}</div>
+                this.state.current_id === '' && this.state.materialsData.filter(material => material.material_id === this.state.material_id).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>Material id already exist</div>
               }
             </CFormGroup>
             <CFormGroup>
@@ -649,20 +729,10 @@ export default class AdminMaterial extends Component {
                 onChange={this.handleInputChange}
                 required
               />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+              {
+                this.state.current_id === '' && this.state.materialsData.filter(material => material.material === this.state.material).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>Material name already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>Clients</CLabel>
@@ -745,6 +815,7 @@ export default class AdminMaterial extends Component {
   }
 
   renderObjectives(client, objs, options, clientIndex) {
+    // console.log(objs)
     var analysisOptions = [];
     this.state?.analysisData.map((item) => {
       objs.map((temp) => {
@@ -973,7 +1044,7 @@ export default class AdminMaterial extends Component {
       if (item0.client !== client) return false;
       var name = objData.filter(obj => obj._id === item0.id)[0].objective; //this.getObjectiveName(item0.id);
       var unit = this.state.unitsData.filter(d => d._id === item0.unit)[0].unit;
-      var analysis = analyData.filter(d => d._id === item0.analysis)[0].analysisType;
+      var analysis = analyData.filter(d => String(d._id) === String(item0.analysis)).length > 0 ? analyData.filter(d => d._id === item0.analysis)[0].analysisType : '';
       if (name !== "" && unit !== "") {
         ret =
           ret +

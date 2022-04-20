@@ -165,3 +165,55 @@ label {
   line-height: 5px !important;
   font-size: 12px;
 }
+
+ul.admin_settings {
+  list-style-type: none;
+  padding-left: 0;
+  background-color: #ebedef;
+  border-radius: 5px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+ul.admin_settings > li {
+  width: 100%;
+  padding: 10px 15px;
+  cursor: pointer;
+}
+ul.admin_settings > li.active {
+  font-weight: bold;
+}
+ul.admin_settings > li:hover {
+  background-color: #dfdfdf;
+}
+div.setting_content {
+  background-color: #ebedef;
+  border-radius: 5px;
+  min-height: 500px;
+}
+
+.format-item {
+  border: 1px solid #d3d3d3;
+  border-radius: 5px;
+  padding: 15px 20px;
+}
+
+.format-item .custom_checkbox {
+  width: 25px;
+  height: 25px;
+  border: 1px solid rgb(190, 36, 36);
+  border-radius: 3px;
+  cursor: pointer;
+  background-color: rgb(190, 36, 36);
+}
+
+.format-item .custom_checkbox.active {
+  border: 1px solid green !important;
+  background-color: green !important;
+}
+
+.format-item .format_text {
+  width: 100%;
+  padding-left: 20px;
+  padding-right: 20px;
+  font-size: 20px;
+}

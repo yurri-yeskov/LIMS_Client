@@ -19,6 +19,7 @@ import {
   CLabel,
   CInput,
   CTextarea,
+  CSwitch
 } from "@coreui/react";
 import { toast } from "react-hot-toast";
 import { CSVLink } from "react-csv";
@@ -41,6 +42,20 @@ class AdminCertificate extends Component {
       certificatetitle: "",
       company: "",
       place: "",
+      header_left: 0,
+      header_top: 0,
+      header_width: 0,
+      header_height: 0,
+      header_keep_distance: false,
+      header_old_width: 0,
+      header_old_height: 0,
+      footer_left: 0,
+      footer_bottom: 0,
+      footer_width: 0,
+      footer_height: 0,
+      footer_keep_distance: false,
+      footer_old_width: 0,
+      footer_old_height: 0,
       previewVisible: false,
       previewImage: "",
       rowid: "",
@@ -372,10 +387,10 @@ class AdminCertificate extends Component {
               productTitle: data.productdata.productTitle,
               productdata: data.productdata.productData
                 .filter(pData => pData.name !== '')
-                .map(pData => pData.name + " " + pData.pagename + " " + pData.fieldname + "\n").toString().replace(/\,/g, ""),
+                .map(pData => pData.name + "@@@" + pData.pagename + "@@@" + pData.fieldname + "\n").toString().replace(/\,/g, ""),
               tablecolumns: data.tablecol
                 .filter(col => col.name !== "")
-                .map(col => col.name + " " + col.fieldname + "\n").toString().replace(/\,/g, ""),
+                .map(col => col.name + "@@@" + col.fieldname + "\n").toString().replace(/\,/g, ""),
               freetext: data.freetext,
               footer: data.footer_filename,
               logoUid: data.logoUid,
@@ -408,17 +423,31 @@ class AdminCertificate extends Component {
       fileList_Footer: [],
       rowid: "",
       date_format: "DD.MM.YYYY",
+      header_left: 0,
+      header_top: 0,
+      header_width: 0,
+      header_height: 0,
+      header_keep_distance: false,
+      header_old_width: 0,
+      header_old_height: 0,
+      footer_left: 0,
+      footer_bottom: 0,
+      footer_width: 0,
+      footer_height: 0,
+      footer_keep_distance: false,
+      footer_old_width: 0,
+      footer_old_height: 0,
     });
   };
 
   on_update_clicked = (e) => {
     var logodata = {
       originFileObj: { uid: e.logoUid },
-      url: `/uploads/certificates/${e.logo_filename}`,
+      url: `${process.env.REACT_APP_SERVER_URL}uploads/certificates/${e.logo_filename}`,
     };
     var footerdata = {
       originFileObj: { uid: e.footerUid },
-      url: `/uploads/certificates/${e.footer_filename}`,
+      url: `${process.env.REACT_APP_SERVER_URL}uploads/certificates/${e.footer_filename}`,
     };
     this.setState({
       name: e.name,
@@ -430,6 +459,20 @@ class AdminCertificate extends Component {
       fileList: [logodata],
       openCreateModal: true,
       date_format: e.date_format,
+      header_left: e.header_styles.left,
+      header_top: e.header_styles.top,
+      header_width: e.header_styles.width,
+      header_height: e.header_styles.height,
+      header_old_width: e.header_styles.width,
+      header_old_height: e.header_styles.height,
+      header_keep_distance: e.header_styles.keep_distance,
+      footer_left: e.footer_styles.left,
+      footer_bottom: e.footer_styles.bottom,
+      footer_width: e.footer_styles.width,
+      footer_height: e.footer_styles.height,
+      footer_old_width: e.footer_styles.width,
+      footer_old_height: e.footer_styles.height,
+      footer_keep_distance: e.footer_styles.keep_distance
     });
   };
 
@@ -456,6 +499,16 @@ class AdminCertificate extends Component {
       rowid,
       samenameerror,
       date_format,
+      header_left,
+      header_top,
+      header_width,
+      header_height,
+      header_keep_distance,
+      footer_left,
+      footer_bottom,
+      footer_width,
+      footer_height,
+      footer_keep_distance
     } = this.state;
     let formData = new FormData();
     var arr = [];
@@ -478,6 +531,18 @@ class AdminCertificate extends Component {
     formData.append("rowid", rowid);
     formData.append("certificatetitle", certificatetitle);
     formData.append("date_format", date_format);
+    formData.append("header_left", header_left);
+    formData.append("header_top", header_top);
+    formData.append("header_width", header_width);
+    formData.append("header_height", header_height);
+    formData.append("header_keep_distance", header_keep_distance);
+    formData.append("footer_left", footer_left);
+    formData.append("footer_bottom", footer_bottom);
+    formData.append("footer_width", footer_width);
+    formData.append("footer_height", footer_height);
+    formData.append("footer_keep_distance", footer_keep_distance);
+    // console.log(formData);
+    // return;
 
     axios.post(process.env.REACT_APP_API_URL + "certificates", formData)
       .then((res) => {
@@ -644,6 +709,14 @@ class AdminCertificate extends Component {
       });
   }
 
+  handleChangeKeepRelation = (pType) => {
+    if (pType === 1) {
+      this.setState({ header_keep_distance: !this.state.header_keep_distance })
+    } else {
+      this.setState({ footer_keep_distance: !this.state.footer_keep_distance })
+    }
+  }
+
   render() {
     const {
       previewVisible,
@@ -757,14 +830,32 @@ class AdminCertificate extends Component {
               logo: (item) => {
                 return (
                   <td>
-                    <img src={`/uploads/certificates/${item.logo_filename}`} width="50px" height="50px" />
+                    <img
+                      src={`${process.env.REACT_APP_SERVER_URL}uploads/certificates/${item.logo_filename}`}
+                      onError={({ currentTarget }) => {
+                        currentTarget.onerror = null; // prevents looping
+                        currentTarget.src = "image-not-found.png";
+                      }}
+                      width="50px"
+                      height="50px"
+                      alt=""
+                    />
                   </td>
                 );
               },
               footer: (item) => {
                 return (
                   <td>
-                    <img src={`/uploads/certificates/${item.footer_filename}`} width="50px" height="50px" />
+                    <img
+                      src={`${process.env.REACT_APP_SERVER_URL}uploads/certificates/${item.footer_filename}`}
+                      onError={({ currentTarget }) => {
+                        currentTarget.onerror = null; // prevents looping
+                        currentTarget.src = "image-not-found.png";
+                      }}
+                      width="50px"
+                      height="50px"
+                      alt=""
+                    />
                   </td>
                 );
               },
@@ -796,7 +887,7 @@ class AdminCertificate extends Component {
               },
               tablecolumns: (item) => {
                 var filterdata = 0;
-                if (item.tablecol.length == 0) filterdata = 0;
+                if (item.tablecol.length === 0) filterdata = 0;
                 else {
                   filterdata = item.tablecol.filter(
                     (v) => v.name || v.fieldname
@@ -809,7 +900,7 @@ class AdminCertificate extends Component {
                       style={{ width: "100px", fontSize: "20px" }}
                       onClick={() => this.showTableCol(item)}
                     >
-                      <i className={filterdata != 0 ? "fa fa-check-circle" : "fa fa-ban"} />
+                      <i className={filterdata !== 0 ? "fa fa-check-circle" : "fa fa-ban"} />
                     </CButton>
                   </td>
                 );
@@ -866,46 +957,102 @@ class AdminCertificate extends Component {
                       onChange={this.onChangeInput}
                     />
                   </CFormGroup>
-                  <div style={{ display: "flex" }}>
-                    <div
-                      style={{
-                        width: "50%",
-                        display: "flex",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <CFormGroup>
-                        <CLabel style={{ fontWeight: "500" }}>Logo</CLabel>
-                        <Upload
-                          listType="picture-card"
-                          fileList={fileList}
-                          onPreview={this.handlePreview}
-                          onChange={this.handleUpload}
-                          beforeUpload={() => false}
-                        >
-                          {fileList.length > 0 ? "" : uploadButton}
-                        </Upload>
-                        <Modal
-                          visible={previewVisible}
-                          footer={null}
-                          onCancel={() => this.setState({ previewVisible: false })}
-                        >
-                          <img
-                            alt="example"
-                            style={{ width: "100%" }}
-                            src={previewImage}
-                          />
-                        </Modal>
+                  <div className="d-flex">
+                    <div className="px-1 d-flex flex-direction-column jusitfy-content-center" style={{ width: "50%" }}>
+                      <CFormGroup className="d-block margin-auto mb-1">
+                        <div>
+                          <CLabel style={{ fontWeight: "500" }}>Logo</CLabel>
+                          <Upload
+                            listType="picture-card"
+                            fileList={fileList}
+                            onPreview={this.handlePreview}
+                            onChange={this.handleUpload}
+                            beforeUpload={() => false}
+                          >
+                            {fileList.length > 0 ? "" : uploadButton}
+                          </Upload>
+                          <Modal
+                            visible={previewVisible}
+                            footer={null}
+                            onCancel={() => this.setState({ previewVisible: false })}
+                          >
+                            <img
+                              alt="example"
+                              style={{ width: "100%" }}
+                              src={previewImage}
+                            />
+                          </Modal>
+                        </div>
+                      </CFormGroup>
+                      <CFormGroup className="mb-1">
+                        <CLabel style={{ fontWeight: "500" }}>Distance vom left side[cm]</CLabel>
+                        <CInput
+                          type="number"
+                          value={this.state.header_left}
+                          onChange={this.onChangeInput}
+                          className="px-2"
+                          name="header_left"
+                        />
+                      </CFormGroup>
+                      <CFormGroup className="mb-1">
+                        <CLabel style={{ fontWeight: "500" }}>Distance from top[cm]</CLabel>
+                        <CInput
+                          type="number"
+                          value={this.state.header_top}
+                          onChange={this.onChangeInput}
+                          className="px-2"
+                          name="header_top"
+                        />
+                      </CFormGroup>
+                      <CFormGroup className="mb-1">
+                        <CLabel style={{ fontWeight: "500" }}>Width[cm]</CLabel>
+                        <CInput
+                          type="number"
+                          value={this.state.header_width}
+                          onChange={(e) => {
+                            if (this.state.header_old_width !== 0 && this.state.header_old_height !== 0 && this.state.header_keep_distance === true) {
+                              this.setState({
+                                header_height: Number((e.target.value * this.state.header_old_height) / this.state.header_old_width).toFixed(2)
+                              })
+                            }
+                            this.onChangeInput(e)
+                          }}
+                          className="px-2"
+                          name="header_width"
+                        />
+                      </CFormGroup>
+                      <CFormGroup className="mb-1">
+                        <CLabel style={{ fontWeight: "500" }}>Height[cm]</CLabel>
+                        <CInput
+                          type="number"
+                          value={this.state.header_height}
+                          onChange={(e) => {
+                            if (this.state.header_old_width !== 0 && this.state.header_old_height !== 0 && this.state.header_keep_distance === true) {
+                              this.setState({
+                                header_width: Number((e.target.value * this.state.header_old_width) / this.state.header_old_height).toFixed(2)
+                              })
+                            }
+                            this.onChangeInput(e)
+                          }}
+                          className="px-2"
+                          name="header_height"
+                        />
+                      </CFormGroup>
+                      <CFormGroup className="d-flex justify-content-between mb-1">
+                        <CLabel style={{ fontWeight: "500" }}>Keep Relation</CLabel>
+                        <CSwitch
+                          name="header_keep_distance"
+                          shape={"pill"}
+                          color={"info"}
+                          labelOn={"\u2713"}
+                          labelOff={"\u2715"}
+                          checked={this.state.header_keep_distance}
+                          onChange={this.handleChangeKeepRelation.bind(this, 1)}
+                        />
                       </CFormGroup>
                     </div>
-                    <div
-                      style={{
-                        width: "50%",
-                        display: "flex",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <CFormGroup>
+                    <div className="px-1 d-flex flex-direction-column jusitfy-content-center" style={{ width: "50%" }}>
+                      <CFormGroup className="d-block margin-auto mb-1">
                         <CLabel style={{ fontWeight: "500" }}>Footer</CLabel>
                         <Upload
                           listType="picture-card"
@@ -934,6 +1081,72 @@ class AdminCertificate extends Component {
                             src={previewImage_Footer}
                           />
                         </Modal>
+                      </CFormGroup>
+                      <CFormGroup className="mb-1">
+                        <CLabel style={{ fontWeight: "500" }}>Distance vom left side[cm]</CLabel>
+                        <CInput
+                          type="number"
+                          value={this.state.footer_left}
+                          onChange={this.onChangeInput}
+                          className="px-2"
+                          name="footer_left"
+                        />
+                      </CFormGroup>
+                      <CFormGroup className="mb-1">
+                        <CLabel style={{ fontWeight: "500" }}>Distance from bottom[cm]</CLabel>
+                        <CInput
+                          type="number"
+                          value={this.state.footer_bottom}
+                          onChange={this.onChangeInput}
+                          className="px-2"
+                          name="footer_bottom"
+                        />
+                      </CFormGroup>
+                      <CFormGroup className="mb-1">
+                        <CLabel style={{ fontWeight: "500" }}>Width[cm]</CLabel>
+                        <CInput
+                          type="number"
+                          value={this.state.footer_width}
+                          onChange={(e) => {
+                            if (this.state.footer_old_width !== 0 && this.state.footer_old_height !== 0 && this.state.footer_keep_distance === true) {
+                              this.setState({
+                                footer_height: Number((e.target.value * this.state.footer_old_height) / this.state.footer_old_width).toFixed(2)
+                              })
+                            }
+                            this.onChangeInput(e)
+                          }}
+                          className="px-2"
+                          name="footer_width"
+                        />
+                      </CFormGroup>
+                      <CFormGroup className="mb-1">
+                        <CLabel style={{ fontWeight: "500" }}>Height[cm]</CLabel>
+                        <CInput
+                          type="number"
+                          value={this.state.footer_height}
+                          onChange={(e) => {
+                            if (this.state.footer_old_width !== 0 && this.state.footer_old_height !== 0 && this.state.footer_keep_distance === true) {
+                              this.setState({
+                                footer_height: Number((e.target.value * this.state.footer_old_width) / this.state.footer_old_height).toFixed(2)
+                              })
+                            }
+                            this.onChangeInput(e)
+                          }}
+                          className="px-2"
+                          name="footer_height"
+                        />
+                      </CFormGroup>
+                      <CFormGroup className="d-flex justify-content-between mb-1">
+                        <CLabel style={{ fontWeight: "500" }}>Keep Relation</CLabel>
+                        <CSwitch
+                          name="footer_keep_distance"
+                          shape={"pill"}
+                          color={"info"}
+                          labelOn={"\u2713"}
+                          labelOff={"\u2715"}
+                          checked={this.state.footer_keep_distance}
+                          onChange={this.handleChangeKeepRelation.bind(this, 2)}
+                        />
                       </CFormGroup>
                     </div>
                   </div>

@@ -53,10 +53,10 @@ const TheHeader = () => {
       .then((res) => {
         setLangugeData(res.data);
         dispatch(setLanguageData(res.data));
-        setSettingLabel(res.data.filter(language => language.label === 'setting')[0]['English'])
-        setAdministrationLabel(res.data.filter(language => language.label === 'administration')[0]['English'])
-        setLoginLabel(res.data.filter(language => language.label === 'login')[0]['English'])
-        setHelpLabel(res.data.filter(language => language.label === 'help')[0]['English'])
+        setSettingLabel(res.data.filter(language => language.label === 'setting').length > 0 ? res.data.filter(language => language.label === 'setting')[0]['English'] : 'Settings')
+        setAdministrationLabel(res.data.filter(language => language.label === 'administration').length > 0 ? res.data.filter(language => language.label === 'administration')[0]['English'] : 'Administration')
+        setLoginLabel(res.data.filter(language => language.label === 'login').length > 0 ? res.data.filter(language => language.label === 'login')[0]['English'] : 'Login')
+        setHelpLabel(res.data.filter(language => language.label === 'help').length > 0 ? res.data.filter(language => language.label === 'help')[0]['English'] : 'Help')
       })
       .catch((error) => {
 

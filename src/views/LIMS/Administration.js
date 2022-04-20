@@ -28,6 +28,7 @@ import {
 } from "@coreui/react";
 
 import "./style.css";
+import AdminSettings from "./AdminSettings";
 
 export default class Administration extends Component {
   constructor(props) {
@@ -48,6 +49,7 @@ export default class Administration extends Component {
       clients_label: '',
       reason_label: '',
       certificate_template_label: '',
+      directories: ''
     };
   }
   componentDidMount() {
@@ -65,6 +67,7 @@ export default class Administration extends Component {
       clients_label: this.props.language_data.filter(item => item.label === 'clients')[0][this.props.selected_language],
       reason_label: this.props.language_data.filter(item => item.label === 'reason')[0][this.props.selected_language],
       certificate_template_label: this.props.language_data.filter(item => item.label === 'certificate_template')[0][this.props.selected_language],
+      setting: this.props.language_data.filter(item => item.label === 'setting')[0][this.props.selected_language],
     })
   }
   componentWillReceiveProps(nextProps) {
@@ -83,6 +86,7 @@ export default class Administration extends Component {
         clients_label: nextProps.language_data.filter(item => item.label === 'clients')[0][nextProps.selected_language],
         reason_label: nextProps.language_data.filter(item => item.label === 'reason')[0][nextProps.selected_language],
         certificate_template_label: nextProps.language_data.filter(item => item.label === 'certificate_template')[0][nextProps.selected_language],
+        setting: nextProps.language_data.filter(item => item.label === 'setting')[0][nextProps.selected_language],
       })
     }
   }
@@ -161,6 +165,11 @@ export default class Administration extends Component {
                       {this.state.reason_label}
                     </CNavLink>
                   </CNavItem>
+                  <CNavItem>
+                    <CNavLink onClick={(e) => this.on_tab_clicked(e, 12)}>
+                      {this.state.setting}
+                    </CNavLink>
+                  </CNavItem>
                 </CNav>
                 <CTabContent>
                   <CTabPane>
@@ -218,6 +227,9 @@ export default class Administration extends Component {
                   </CTabPane>
                   <CTabPane>
                     {this.state.current_tab !== 11 ? <div /> : <AdminReason selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
+                  </CTabPane>
+                  <CTabPane>
+                    {this.state.current_tab !== 12 ? <div /> : <AdminSettings selected_language={this.state.selected_language === '' ? this.props.selected_language : this.state.selected_language} language_data={this.props.language_data} />}
                   </CTabPane>
                 </CTabContent>
               </CTabs>

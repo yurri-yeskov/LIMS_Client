@@ -5,6 +5,7 @@ import './polyfill'
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux'
+import axios from 'axios';
 import App from './App';
 import { icons } from './assets/icons'
 import * as serviceWorker from './serviceWorker';
@@ -14,6 +15,16 @@ import './index.css';
 import store from './store/index'
 
 React.icons = icons
+
+// Add a response interceptor
+axios.interceptors.response.use(function (response) {
+  return response;
+}, function (error) {
+  if (error.response.status === 401) {
+    window.location.href = "/#/login";
+  }
+  return Promise.reject(error);
+});
 
 ReactDOM.render(
   <Provider store={store}>

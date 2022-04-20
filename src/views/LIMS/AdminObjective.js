@@ -16,7 +16,7 @@ import {
 } from "@coreui/react";
 
 import Select from "react-select";
-import {toast} from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { CSVLink } from "react-csv";
 import ReactFileReader from 'react-file-reader';
 
@@ -37,7 +37,7 @@ export default class AdminObjective extends Component {
     this.state = {
       objectivesData: [],
       unitsData: [],
-      export_all_data:[],
+      export_all_data: [],
       modal_delete: false,
       modal_create: false,
       current_id: null,
@@ -52,17 +52,18 @@ export default class AdminObjective extends Component {
       export_label: props.language_data.filter(item => item.label === 'export')[0][props.selected_language],
       create_new_label: props.language_data.filter(item => item.label === 'create_new')[0][props.selected_language],
       fields: [
-        {key: 'objective_id', label:props.language_data.filter(item => item.label === 'objective_id')[0][props.selected_language]},
-        {key: 'objective', label:props.language_data.filter(item => item.label === 'objective')[0][props.selected_language]},
-        {key: 'units', sorter: false , label:props.language_data.filter(item => item.label === 'units')[0][props.selected_language]},
-        {key: 'remark', sorter: false, label:props.language_data.filter(item => item.label === 'remark')[0][props.selected_language]},
-        {key: 'buttonGroups', label: '', _style: { width: '84px'}}
+        { key: 'objective_id', label: props.language_data.filter(item => item.label === 'objective_id')[0][props.selected_language] },
+        { key: 'objective', label: props.language_data.filter(item => item.label === 'objective')[0][props.selected_language] },
+        { key: 'units', sorter: false, label: props.language_data.filter(item => item.label === 'units')[0][props.selected_language] },
+        { key: 'remark', sorter: false, label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        { key: 'buttonGroups', label: '', _style: { width: '84px' } }
       ],
       header: [
-        {key: 'objective_id',label:props.language_data.filter(item => item.label === 'objective_id')[0][props.selected_language]},
-        {key: 'objective', label:props.language_data.filter(item => item.label === 'objective')[0][props.selected_language]},
-        {key: 'units', label:props.language_data.filter(item => item.label === 'units')[0][props.selected_language]},
-        {key: 'remark', label:props.language_data.filter(item => item.label === 'remark')[0][props.selected_language]},
+        { key: 'objective_id', label: props.language_data.filter(item => item.label === 'objective_id')[0][props.selected_language] },
+        { key: 'objective', label: props.language_data.filter(item => item.label === 'objective')[0][props.selected_language] },
+        { key: 'units', label: props.language_data.filter(item => item.label === 'units')[0][props.selected_language] },
+        { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        { key: '_id', label: 'Id' },
       ]
     };
   }
@@ -78,17 +79,18 @@ export default class AdminObjective extends Component {
         export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
         create_new_label: nextProps.language_data.filter(item => item.label === 'create_new')[0][nextProps.selected_language],
         fields: [
-          {key: 'objective_id', label:nextProps.language_data.filter(item => item.label === 'objective_id')[0][nextProps.selected_language]},
-          {key: 'objective', label:nextProps.language_data.filter(item => item.label === 'objective')[0][nextProps.selected_language]},
-          {key: 'units', sorter: false , label:nextProps.language_data.filter(item => item.label === 'units')[0][nextProps.selected_language]},
-          {key: 'remark', sorter: false, label:nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language]},
-          {key: 'buttonGroups', label: '', _style: { width: '84px'}}
+          { key: 'objective_id', label: nextProps.language_data.filter(item => item.label === 'objective_id')[0][nextProps.selected_language] },
+          { key: 'objective', label: nextProps.language_data.filter(item => item.label === 'objective')[0][nextProps.selected_language] },
+          { key: 'units', sorter: false, label: nextProps.language_data.filter(item => item.label === 'units')[0][nextProps.selected_language] },
+          { key: 'remark', sorter: false, label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          { key: 'buttonGroups', label: '', _style: { width: '84px' } }
         ],
         header: [
-          {key: 'objective_id',label:nextProps.language_data.filter(item => item.label === 'objective_id')[0][nextProps.selected_language]},
-          {key: 'objective', label:nextProps.language_data.filter(item => item.label === 'objective')[0][nextProps.selected_language]},
-          {key: 'units', label:nextProps.language_data.filter(item => item.label === 'units')[0][nextProps.selected_language]},
-          {key: 'remark', label:nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language]},
+          { key: 'objective_id', label: nextProps.language_data.filter(item => item.label === 'objective_id')[0][nextProps.selected_language] },
+          { key: 'objective', label: nextProps.language_data.filter(item => item.label === 'objective')[0][nextProps.selected_language] },
+          { key: 'units', label: nextProps.language_data.filter(item => item.label === 'units')[0][nextProps.selected_language] },
+          { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          { key: '_id', label: 'Id' },
         ]
       })
     }
@@ -101,7 +103,7 @@ export default class AdminObjective extends Component {
     return "";
   }
 
-  async on_export_clicked () {
+  async on_export_clicked() {
     await this.csvLink.link.click();
   }
 
@@ -109,17 +111,17 @@ export default class AdminObjective extends Component {
     var reader = new FileReader();
     reader.readAsText(files[0]);
     const result = await new Promise((resolve, reject) => {
-      reader.onload = function(e) {
+      reader.onload = function (e) {
         resolve(reader.result);
       }
     })
     axios.post(Config.ServerUri + '/upload_objective_csv', {
       data: result
     })
-    .then((res) => {
-      this.setState({objectivesData: res.data.objectives});
-      toast.success('Objective CSV file successfully imported');
-    });
+      .then((res) => {
+        this.setState({ objectivesData: res.data.objectives });
+        toast.success('Objective CSV file successfully imported');
+      });
   }
 
   handleMultiSelectChange(e) {
@@ -165,7 +167,12 @@ export default class AdminObjective extends Component {
 
       if (found === true) {
         this.setState({ objective_error: "Value already exists" });
-      } else this.setState({ objective_error: "" });
+      } else {
+        value = value.replace(/ /g, '_')
+        value = value.replace(/-/g, '_')
+        value = value.replace(/,/g, '')
+        this.setState({ objective_error: "" });
+      }
     }
 
     this.setState({
@@ -194,11 +201,11 @@ export default class AdminObjective extends Component {
             }
           >
             <CFormGroup>
-              <CLabel style={{fontWeight: '500'}}>Objective ID</CLabel>
+              <CLabel style={{ fontWeight: '500' }}>Objective ID</CLabel>
               <CInput name="objective_id" value={this.state.objective_id} onChange={this.handleInputChange} required />
               {
-                error === undefined || error === '' ? <div></div> : 
-                  <div style={{width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353'}}>{error}</div>
+                this.state.current_id === '' && this.state.objectivesData.filter(obj => obj.objective_id === this.state.objective_id).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>Objective id already exist.</div>
               }
             </CFormGroup>
             <CFormGroup>
@@ -209,20 +216,10 @@ export default class AdminObjective extends Component {
                 onChange={this.handleInputChange}
                 required
               />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+              {
+                this.state.current_id === '' && this.state.objectivesData.filter(obj => obj.objective === this.state.objective).length > 0 &&
+                <div className="mt-1" style={{ fontSize: "80%", color: "#e55353" }}>Objective name already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>Units</CLabel>
@@ -261,7 +258,9 @@ export default class AdminObjective extends Component {
               <span style={{ padding: "4px" }} />
               <CButton
                 color="secondary"
-                onClick={() => this.setModal_Create(false)}
+                onClick={() => this.setState({
+                  modal_create: false,
+                })}
               >
                 Cancel
               </CButton>
@@ -281,31 +280,31 @@ export default class AdminObjective extends Component {
             className="float-right"
             style={{ margin: "0px 0px 0px 16px" }}
             //style={{margin: '16px'}}
-            onClick={()=>{ this.on_create_clicked() }}
-          ><i className="fa fa-plus"/><span style={{padding: '4px'}}/>{this.state.create_new_label}</CButton>
-           <CButton
-          color="info"
-          className="float-right"
-          style={{ margin: "0px 0px 0px 16px" }}
-          onClick={()=>this.on_export_clicked()}
+            onClick={() => { this.on_create_clicked() }}
+          ><i className="fa fa-plus" /><span style={{ padding: '4px' }} />{this.state.create_new_label}</CButton>
+          <CButton
+            color="info"
+            className="float-right"
+            style={{ margin: "0px 0px 0px 16px" }}
+            onClick={() => this.on_export_clicked()}
           >
-          <i className="fa fa-download"></i>
-          <span style={{ padding: "4px" }} />
-          {this.state.export_label}
+            <i className="fa fa-download"></i>
+            <span style={{ padding: "4px" }} />
+            {this.state.export_label}
           </CButton>
           <CSVLink
-          headers={this.state.header}
-          filename="Export-Objective.csv"
-          data={this.state.export_all_data}
-          ref={(r) => (this.csvLink = r)}
+            headers={this.state.header}
+            filename="Export-Objective.csv"
+            data={this.state.export_all_data}
+            ref={(r) => (this.csvLink = r)}
           ></CSVLink>
           <ReactFileReader handleFiles={this.handleFiles} fileTypes={'.csv'}>
             <CButton
               color="info"
               className="float-right"
-              style={{margin: '0px 0px 0px 16px'}}
-              //style={{margin: '16px'}}
-            ><i className="fa fa-upload"/><span style={{padding: '4px'}}/>{this.state.import_label}</CButton>
+              style={{ margin: '0px 0px 0px 16px' }}
+            //style={{margin: '16px'}}
+            ><i className="fa fa-upload" /><span style={{ padding: '4px' }} />{this.state.import_label}</CButton>
           </ReactFileReader>
         </div>
         <div id="tableUserTypes">
@@ -323,7 +322,7 @@ export default class AdminObjective extends Component {
               units: (item, index) => (
                 <td style={{ whiteSpace: "pre-line" }} key={index}>
                   {
-                    item.units.length > 0 && item.units.map(unit => <p className="mb-0">{unit.unit}</p>)
+                    item.units.length > 0 && item.units.map((unit, index) => <p key={index} className="mb-0">{unit.unit}</p>)
                   }
                 </td>
               ),
@@ -385,7 +384,9 @@ export default class AdminObjective extends Component {
         <CModal
           style={{ width: "40vw" }}
           show={this.state.modal_create}
-          onClose={() => this.setModal_Create(false)}
+          onClose={() => this.setState({
+            modal_create: false,
+          })}
           closeOnBackdrop={false}
           centered
           size="lg"
@@ -407,30 +408,34 @@ export default class AdminObjective extends Component {
     let str = ''
     items.map(item => str += item.unit)
     str.replace(/,/g, '<br/>')
-    console.log(str)
     return str;
   }
 
   getAllObjectives() {
     axios.get(Config.ServerUri + '/get_all_objectives')
-    .then((res) => {
-      this.setState({
-        objectivesData: res.data.objectives,
-        unitsData: res.data.units
-      });
-      const excelData = res.data.objectives.map(obj => {
-        return {
-          objective: obj.objective,
-          objective_id: obj.objective_id,
-          remark: obj.remark,
-          units: obj.units.map(unit => unit.unit).toString().replace(/,/g, "\n")
-        }
+      .then((res) => {
+        this.setState({
+          objectivesData: res.data.objectives.sort((a, b) => {
+            return a.objective_id > b.objective_id ? 1 : -1;
+          }),
+          unitsData: res.data.units
+        });
+        const excelData = res.data.objectives.map(obj => {
+          return {
+            objective: obj.objective,
+            objective_id: obj.objective_id,
+            remark: obj.remark,
+            units: obj.units.map(unit => unit.unit).toString().replace(/,/g, "\n"),
+            _id: obj._id
+          }
+        })
+        this.setState({
+          export_all_data: excelData.sort((a, b) => {
+            return a.objective_id > b.objective_id ? 1 : -1;
+          }),
+        });
       })
-      this.setState({
-        export_all_data: excelData,
-      });
-    })
-    .catch((error) => {})
+      .catch((error) => { })
   }
 
   on_delete_clicked(id) {
@@ -440,18 +445,34 @@ export default class AdminObjective extends Component {
   }
 
   on_create_clicked() {
+    let id = 1;
+    if (this.state.objectivesData.length > 0) {
+      const max_id = Math.max.apply(Math, this.state.objectivesData.map(data => data.objective_id));
+      if (max_id === this.state.objectivesData.length) {
+        id = max_id + 1
+      } else {
+        var a = this.state.objectivesData.map(data => Number(data.objective_id));
+        var missing = new Array();
+
+        for (var i = 1; i <= max_id; i++) {
+          if (a.indexOf(i) == -1) {
+            missing.push(i);
+          }
+        }
+        id = Math.min.apply(Math, missing)
+      }
+    }
     this.setState({
       current_id: '',
       objective: '',
-      objective_id: this.state.objectivesData.length + 1,
+      objective_id: id,
       units: [],
       _units: [],
       remark: "",
       _create: true,
       objective_error: "",
+      modal_create: true
     });
-
-    this.setModal_Create(true);
   }
 
   on_update_clicked(item) {
@@ -467,49 +488,61 @@ export default class AdminObjective extends Component {
     this.setState({
       current_id: item._id,
       objective: item.objective,
-      objective_id:item.objective_id,
+      objective_id: item.objective_id,
       units: units,
       _units: _units,
       remark: item.remark,
       _create: false,
       objective_error: "",
+      modal_create: true
     });
-
-    this.setModal_Create(true);
   }
 
-  deleteObjective() {
+  deleteObjective = async () => {
     this.setModal_Delete(false);
-    axios.post(Config.ServerUri + '/delete_objective', {
-      id: this.state.current_id
-    })
-    .then((res) => {
-      toast.success("Objective successfully deleted.")
-      this.setState({
-        objectivesData: res.data.objectives,
-        unitsData: res.data.units
-      });
-      var objective_list = [];
-      res.data.objectives.map((objective)=>{
-        var unit_data_list = this.getUnits(objective.units);
-        objective_list.push({"objective_id":objective.objective_id, 'objective':objective.objective,'units':unit_data_list,'remark':objective.remark})
-      });
-      console.log(objective_list);
-      this.setState({
-        export_all_data:objective_list,
-      });
-    })
-    .catch((error) => {
-      
-    })
+
+    const result = await axios.post(Config.ServerUri + '/check_objective', { id: this.state.current_id })
+    try {
+      if (result.data.status === 0) {
+        const res = await axios.post(Config.ServerUri + '/delete_objective', { id: this.state.current_id })
+        toast.success("Objective successfully deleted.")
+        this.setState({
+          objectivesData: res.data.objectives.sort((a, b) => {
+            return a.objective_id > b.objective_id ? 1 : -1;
+          }),
+          unitsData: res.data.units
+        });
+        var objective_list = [];
+        res.data.objectives.map((objective) => {
+          var unit_data_list = this.getUnits(objective.units);
+          objective_list.push({ "objective_id": objective.objective_id, 'objective': objective.objective, 'units': unit_data_list, 'remark': objective.remark })
+        });
+        this.setState({
+          export_all_data: objective_list.sort((a, b) => {
+            return a.objective_id > b.objective_id ? 1 : -1;
+          }),
+        });
+      } else {
+        toast.error("Current objective is using in analysis type. You can't delete this.")
+      }
+    } catch (err) {
+      toast.error("Server Error!")
+    }
   }
 
   createObjective(event) {
     event.preventDefault();
-
+    const error = {}
     if (this.state.objective_error !== "") return;
-    
-    this.setModal_Create(false);
+    if (this.state.objectivesData.filter(data => data.objective_id === this.state.objective_id).length > 0) {
+      error.objective_id = "Objective id already exists";
+    }
+    if (this.state.objectivesData.filter(data => data.objective === this.state.objective).length > 0) {
+      error.objective = "Objective name already exists";
+    }
+    if (Object.keys(error).length > 0) return;
+
+    this.setState({ modal_create: false })
 
     const data = {
       objective: this.state.objective,
@@ -518,30 +551,34 @@ export default class AdminObjective extends Component {
       remark: this.state.remark
     }
     axios.post(Config.ServerUri + '/create_objective', data)
-    .then((res) => {
-      if (res.data.status === 0) {
-        toast.error("Objective already exists.")
-      }
-      else {
-        toast.success("Objective successfully created.")
-        this.setState({
-          objectivesData: res.data.objectives,
-          unitsData: res.data.units
-        });
-        const excelData = res.data.objectives.map(obj => {
-          return {
-            objective: obj.objective,
-            objective_id: obj.objective_id,
-            remark: obj.remark,
-            units: obj.units.map(unit => unit.unit).toString().replace(/,/g, "\n")
-          }
-        })
-        this.setState({
-          export_all_data: excelData,
-        });
-      }
-    })
-    .catch((error) => {})
+      .then((res) => {
+        if (res.data.status === 0) {
+          toast.error("Objective already exists.")
+        }
+        else {
+          toast.success("Objective successfully created.")
+          this.setState({
+            objectivesData: res.data.objectives.sort((a, b) => {
+              return a.objective_id > b.objective_id ? 1 : -1;
+            }),
+            unitsData: res.data.units
+          });
+          const excelData = res.data.objectives.map(obj => {
+            return {
+              objective: obj.objective,
+              objective_id: obj.objective_id,
+              remark: obj.remark,
+              units: obj.units.map(unit => unit.unit).toString().replace(/,/g, "\n")
+            }
+          })
+          this.setState({
+            export_all_data: excelData.sort((a, b) => {
+              return a.objective_id > b.objective_id ? 1 : -1;
+            }),
+          });
+        }
+      })
+      .catch((error) => { })
   }
 
   updateObjective(event) {
@@ -549,7 +586,7 @@ export default class AdminObjective extends Component {
 
     if (this.state.objective_error !== "") return;
 
-    this.setModal_Create(false);
+    this.setState({ modal_create: false })
 
     const data = {
       id: this.state.current_id,
@@ -559,43 +596,41 @@ export default class AdminObjective extends Component {
       remark: this.state.remark
     }
     axios.post(Config.ServerUri + '/update_objective', data)
-    .then((res) => {
-      if (res.data.status === 0) {
-        toast.error("Objective already exists.")
-      }
-      else {
-        toast.success("Objective successfully updated.")
-        this.setState({
-          objectivesData: res.data.objectives,
-          unitsData: res.data.units
-        });
-        const excelData = res.data.objectives.map(obj => {
-          return {
-            objective: obj.objective,
-            objective_id: obj.objective_id,
-            remark: obj.remark,
-            units: obj.units.map(unit => unit.unit).toString().replace(/,/g, "\n")
-          }
-        })
-        this.setState({
-          export_all_data: excelData,
-        });
-      }
-    })
-    .catch((error) => {
-      
-    })
+      .then((res) => {
+        if (res.data.status === 0) {
+          toast.error("Objective already exists.")
+        }
+        else {
+          toast.success("Objective successfully updated.")
+          this.setState({
+            objectivesData: res.data.objectives.sort((a, b) => {
+              return a.objective_id > b.objective_id ? 1 : -1;
+            }),
+            unitsData: res.data.units
+          });
+          const excelData = res.data.objectives.map(obj => {
+            return {
+              objective: obj.objective,
+              objective_id: obj.objective_id,
+              remark: obj.remark,
+              units: obj.units.map(unit => unit.unit).toString().replace(/,/g, "\n")
+            }
+          })
+          this.setState({
+            export_all_data: excelData.sort((a, b) => {
+              return a.objective_id > b.objective_id ? 1 : -1;
+            }),
+          });
+        }
+      })
+      .catch((error) => {
+        console.log(error.response.data)
+      })
   }
 
   setModal_Delete(modal) {
     this.setState({
       modal_delete: modal,
-    });
-  }
-
-  setModal_Create(modal) {
-    this.setState({
-      modal_create: modal,
     });
   }
 }

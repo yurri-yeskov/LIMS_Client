@@ -23,17 +23,6 @@ import { toast } from "react-hot-toast";
 const axios = require("axios");
 const Config = require("../../Config.js");
 
-const fields = [
-  { key: 'unit_id' },
-  { key: 'unit', _style: { width: '25%' } },
-  { key: 'remark', sorter: false },
-  { key: 'buttonGroups', label: '', _style: { width: '84px' } }
-]
-const header = [
-  { key: 'unit_id', label: 'Unit ID' },
-  { key: 'unit', label: 'Unit' },
-  { key: 'remark', label: 'Remark' },
-]
 export default class AdminUnit extends Component {
   constructor(props) {
     super(props);
@@ -68,6 +57,7 @@ export default class AdminUnit extends Component {
         { key: 'unit_id', label: props.language_data.filter(item => item.label === 'unit_id')[0][props.selected_language] },
         { key: 'unit', label: props.language_data.filter(item => item.label === 'unit')[0][props.selected_language] },
         { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        { key: '_id', label: "Id" },
       ],
     };
   }
@@ -77,7 +67,7 @@ export default class AdminUnit extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
         export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
@@ -92,6 +82,7 @@ export default class AdminUnit extends Component {
           { key: 'unit_id', label: nextProps.language_data.filter(item => item.label === 'unit_id')[0][nextProps.selected_language] },
           { key: 'unit', label: nextProps.language_data.filter(item => item.label === 'unit')[0][nextProps.selected_language] },
           { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          { key: '_id', label: "Id" },
         ],
       })
     }
@@ -134,7 +125,12 @@ export default class AdminUnit extends Component {
 
       if (found === true) {
         this.setState({ double_error: "Value already exists" });
-      } else this.setState({ double_error: "" });
+      } else {
+        value = value.replace(/ /g, '_')
+        value = value.replace(/-/g, '_')
+        value = value.replace(/,/g, '')
+        this.setState({ double_error: "" });
+      }
     }
 
     this.setState({
@@ -158,8 +154,8 @@ export default class AdminUnit extends Component {
               <CLabel style={{ fontWeight: '500' }}>Unit ID</CLabel>
               <CInput name="unit_id" value={this.state.unit_id} onChange={this.handleInputChange} required />
               {
-                error === undefined || error === '' ? <div></div> :
-                  <div style={{ width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353' }}>{error}</div>
+                this.state.current_id === '' && this.state.unitsData.filter(unit => unit.unit_id === this.state.unit_id).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>Unit id already exist</div>
               }
             </CFormGroup>
             <CFormGroup>
@@ -170,20 +166,10 @@ export default class AdminUnit extends Component {
                 onChange={this.handleInputChange}
                 required
               />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+              {
+                this.state.current_id === '' && this.state.unitsData.filter(unit => unit.unit === this.state.unit).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>Unit name already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>Remark</CLabel>
@@ -336,11 +322,15 @@ export default class AdminUnit extends Component {
       .then((res) => {
         var unit_list = [];
         res.data.map((unit) => {
-          unit_list.push({ 'unit_id': unit.unit_id, 'unit': unit.unit, 'remark': unit.remark })
+          unit_list.push({ 'unit_id': unit.unit_id, 'unit': unit.unit, 'remark': unit.remark, '_id': unit._id })
         })
         this.setState({
-          export_all_data: unit_list,
-          unitsData: res.data
+          export_all_data: unit_list.sort((a, b) => {
+            return a.unit_id > b.unit_id ? 1 : -1;
+          }),
+          unitsData: res.data.sort((a, b) => {
+            return a.unit_id > b.unit_id ? 1 : -1;
+          })
         });
       })
       .catch((error) => {
@@ -355,10 +345,27 @@ export default class AdminUnit extends Component {
   }
 
   on_create_clicked() {
+    let id = 1;
+    if (this.state.unitsData.length > 0) {
+      const max_id = Math.max.apply(Math, this.state.unitsData.map(data => data.unit_id));
+      if (max_id === this.state.unitsData.length) {
+        id = max_id + 1
+      } else {
+        var a = this.state.unitsData.map(data => Number(data.unit_id));
+        var missing = new Array();
+
+        for (var i = 1; i <= max_id; i++) {
+          if (a.indexOf(i) == -1) {
+            missing.push(i);
+          }
+        }
+        id = Math.min.apply(Math, missing)
+      }
+    }
     this.setState({
       current_id: '',
       unit: '',
-      unit_id: this.state.unitsData.length + 1,
+      unit_id: id,
       remark: '',
       _create: true,
       double_error: "",
@@ -392,12 +399,16 @@ export default class AdminUnit extends Component {
           unit_list.push({ 'unit_id': unit.unit_id, 'unit': unit.unit, 'remark': unit.remark })
         })
         this.setState({
-          export_all_data: unit_list,
-          unitsData: res.data
+          export_all_data: unit_list.sort((a, b) => {
+            return a.unit_id > b.unit_id ? 1 : -1;
+          }),
+          unitsData: res.data.sort((a, b) => {
+            return a.unit_id > b.unit_id ? 1 : -1;
+          })
         });
       })
-      .catch((error) => {
-
+      .catch((err) => {
+        toast.error(err.response.data.message)
       })
   }
 
@@ -405,6 +416,10 @@ export default class AdminUnit extends Component {
     event.preventDefault();
 
     if (this.state.double_error !== "") return;
+    if (this.state.unitsData.filter(data => data.unit_id === this.state.unit_id).length > 0) {
+      this.setState({ double_error: "Value already exists" });
+      return;
+    }
 
     this.setModal_Create(false);
     axios.post(Config.ServerUri + '/create_unit', {
@@ -419,8 +434,12 @@ export default class AdminUnit extends Component {
           unit_list.push({ 'unit_id': unit.unit_id, 'unit': unit.unit, 'remark': unit.remark })
         })
         this.setState({
-          export_all_data: unit_list,
-          unitsData: res.data
+          export_all_data: unit_list.sort((a, b) => {
+            return a.unit_id > b.unit_id ? 1 : -1;
+          }),
+          unitsData: res.data.sort((a, b) => {
+            return a.unit_id > b.unit_id ? 1 : -1;
+          })
         });
       })
       .catch((error) => {
@@ -448,8 +467,12 @@ export default class AdminUnit extends Component {
           unit_list.push({ 'unit_id': unit.unit_id, 'unit': unit.unit, 'remark': unit.remark })
         })
         this.setState({
-          export_all_data: unit_list,
-          unitsData: res.data
+          export_all_data: unit_list.sort((a, b) => {
+            return a.unit_id > b.unit_id ? 1 : -1;
+          }),
+          unitsData: res.data.sort((a, b) => {
+            return a.unit_id > b.unit_id ? 1 : -1;
+          })
         });
       })
       .catch((error) => {

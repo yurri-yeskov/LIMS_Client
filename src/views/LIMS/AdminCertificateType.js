@@ -41,6 +41,7 @@ export default class AdminCertificateType extends Component {
     this.state = {
       defaultClient: {},
       materialsData: [],
+      clientList: [],
       clientsData: [],
       certificateTypesData: [],
       packingsdata: [],
@@ -55,7 +56,6 @@ export default class AdminCertificateType extends Component {
       client: '',
       certificateType_id: '',
       certificateType: '',
-      packing: '',
       analysises: [],
       _analysises: [],
       remark: "",
@@ -70,7 +70,7 @@ export default class AdminCertificateType extends Component {
         { key: 'certificateType_id', label: props.language_data.filter(item => item.label === 'certificate_type_id')[0][props.selected_language] },
         { key: 'material', sorter: false, label: props.language_data.filter(item => item.label === 'material')[0][props.selected_language] },
         { key: 'certificateType', label: props.language_data.filter(item => item.label === 'certificate_type')[0][props.selected_language] },
-        { key: 'packing', label: props.language_data.filter(item => item.label === 'packing_type')[0][props.selected_language] },
+        // { key: 'packing', label: props.language_data.filter(item => item.label === 'packing_type')[0][props.selected_language] },
         { key: 'analysises', sorter: false, label: props.language_data.filter(item => item.label === 'analysistype_objectives')[0][props.selected_language] },
         { key: 'remark', sorter: false, label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
         { key: 'buttonGroups', label: '', _style: { width: '84px' } },
@@ -79,9 +79,10 @@ export default class AdminCertificateType extends Component {
         { key: 'certificateType_id', label: props.language_data.filter(item => item.label === 'certificate_type_id')[0][props.selected_language] },
         { key: 'material', label: props.language_data.filter(item => item.label === 'material')[0][props.selected_language] },
         { key: 'certificateType', label: props.language_data.filter(item => item.label === 'certificate_type')[0][props.selected_language] },
-        { key: 'packing', label: props.language_data.filter(item => item.label === 'packing_type')[0][props.selected_language] },
+        // { key: 'packing', label: props.language_data.filter(item => item.label === 'packing_type')[0][props.selected_language] },
         { key: 'analysises', label: props.language_data.filter(item => item.label === 'analysistype_objectives')[0][props.selected_language] },
         { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        { key: '_id', label: "Id" },
       ],
     };
   }
@@ -91,7 +92,7 @@ export default class AdminCertificateType extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.selected_language != this.props.selected_language) {
+    if (nextProps.selected_language !== this.props.selected_language) {
       this.setState({
         import_label: nextProps.language_data.filter(item => item.label === 'import')[0][nextProps.selected_language],
         export_label: nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language],
@@ -109,9 +110,10 @@ export default class AdminCertificateType extends Component {
           { key: 'certificateType_id', label: nextProps.language_data.filter(item => item.label === 'certificate_type_id')[0][nextProps.selected_language] },
           { key: 'material', label: nextProps.language_data.filter(item => item.label === 'material')[0][nextProps.selected_language] },
           { key: 'certificateType', label: nextProps.language_data.filter(item => item.label === 'certificate_type')[0][nextProps.selected_language] },
-          { key: 'packing', label: nextProps.language_data.filter(item => item.label === 'packing_type')[0][nextProps.selected_language] },
+          // { key: 'packing', label: nextProps.language_data.filter(item => item.label === 'packing_type')[0][nextProps.selected_language] },
           { key: 'analysises', label: nextProps.language_data.filter(item => item.label === 'analysistype_objectives')[0][nextProps.selected_language] },
           { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          { key: '_id', label: "Id" },
         ],
       })
     }
@@ -129,12 +131,51 @@ export default class AdminCertificateType extends Component {
         resolve(reader.result);
       }
     })
-    axios.post(Config.ServerUri + '/upload_certificatetype_csv', {
-      data: result
-    })
+    axios.post(Config.ServerUri + '/upload_certificatetype_csv', { data: result })
       .then((res) => {
-        this.setState({ certificateTypesData: res.data });
         toast.success('Certificate Type CSV file successfully imported');
+        this.setState({
+          materialsData: res.data.materials,
+          clientList: res.data.all_clients,
+          clientsData: res.data.clients,
+          certificateTypesData: res.data.certificateTypes,
+          objectivesData: res.data.objectives,
+          analysisTypesData: res.data.analysises,
+          unitsData: res.data.units,
+          packingsData: res.data.packings,
+          defaultClient: res.data.defaultClient,
+          client: res.data.defaultClient._id
+        });
+        var certificate_list = [];
+        res.data.certificateTypes.map((certificate) => {
+          var client_name = '';
+          var material_name = '';
+          var packing_name = '';
+          var analysis = '';
+          if (certificate.client === '' || certificate.client === res.data.defaultClient._id) {
+            client_name = 'Default';
+          }
+          res.data.clients.map((client) => {
+            if (client._id === certificate.client) {
+              client_name = client.name;
+            }
+          });
+          res.data.materials.map((material) => {
+            if (material._id === certificate.material) {
+              material_name = material.material;
+            }
+          });
+          res.data.packings.map((packing) => {
+            if (packing._id === certificate.packing) {
+              packing_name = packing.packingType;
+            }
+          });
+          var analysis_data = this.getAnalysises(certificate.analysises, certificate.material, certificate.client)
+          certificate_list.push({ 'certificateType_id': certificate.certificateType_id, 'material': material_name + '-' + client_name, 'certificateType': certificate.certificateType, 'packing': packing_name, 'analysises': analysis_data.trim(), 'remark': certificate.remark });
+        });
+        this.setState({
+          export_all_data: certificate_list
+        })
       });
   }
 
@@ -163,14 +204,10 @@ export default class AdminCertificateType extends Component {
     return this.getMaterialName(material) + " - " + this.getClientName(client);
   }
 
-  getPacking(packing) {
-    return this.getPackingName(packing);
-  }
-
   handleMaterialInputChange = (e) => {
     var option = [];
     this.state.materialsData.map((item) => {
-      if (item._id == e.target.value) {
+      if (item._id === e.target.value) {
         this.setState({ analysisOption: item.aTypesValues });
         if (this.state.client === this.state.defaultClient._id) {
           item.aTypesValues.map((temp) => {
@@ -200,6 +237,12 @@ export default class AdminCertificateType extends Component {
   handleInputChange(e) {
     var name = e.target.name;
     var value = e.target.value;
+
+    if (name === 'certificateType') {
+      value = value.replace(/ /g, '_')
+      value = value.replace(/-/g, '_')
+      value = value.replace(/,/g, '')
+    }
 
     /*if (name === 'certificateType') {
       var found = false;
@@ -298,14 +341,6 @@ export default class AdminCertificateType extends Component {
     return "";
   }
 
-  getPackingName(id) {
-    var packings = this.state.packingsData;
-    for (var i = 0; i < packings.length; i++) {
-      if (packings[i]._id === id) return packings[i].packingType;
-    }
-    return "";
-  }
-
   getUnitName(id) {
     var units = this.state.unitsData;
     for (var i = 0; i < units.length; i++) {
@@ -334,11 +369,16 @@ export default class AdminCertificateType extends Component {
     if (material !== null) {
       material.clients.map((item) => {
         var name = this.getClientName(item);
-        if (name !== "") clients.push({ id: item, name: name });
+        if (name !== "") {
+          clients.push({
+            id: item,
+            name: name,
+            clientId: this.state.clientsData.filter(c => c._id === item)[0].clientId
+          });
+        }
         return true;
       });
     }
-
     return clients;
   }
 
@@ -405,12 +445,6 @@ export default class AdminCertificateType extends Component {
   renderModalCreate() {
     if (this.state.modal_create === false) return <div></div>;
 
-    // var options = [];
-    // this.state.analysisTypesData.map((item) => {
-    //   options.push({label: item.analysisType, value: item._id});
-    //   return true;
-    // })
-
     var clientOptions = this.getMaterialClients();
     var validObjs = this.getValidMaterialObjs();
     var data = this.state.analysisOpt;
@@ -432,10 +466,10 @@ export default class AdminCertificateType extends Component {
             <CFormGroup>
               <CLabel style={{ fontWeight: '500' }}>CertificateType ID</CLabel>
               <CInput name="certificateType_id" value={this.state.certificateType_id} onChange={this.handleInputChange} required />
-              <CInvalidFeedback className="help-block">
-                Please provide a valid information
-              </CInvalidFeedback>
-              <CValidFeedback className="help-block">Input provided</CValidFeedback>
+              {
+                this.state.current_id === '' && this.state.certificateTypesData.filter(cType => cType.certificateType_id === this.state.certificateType_id).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>CertificateType id already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: '500' }}>Materials</CLabel>
@@ -444,7 +478,7 @@ export default class AdminCertificateType extends Component {
                 {this.state.materialsData.map((item, i) => {
                   return (
                     <option key={i} value={item._id}>
-                      {item.material}
+                      {item.material}-{item.material_id}
                     </option>
                   );
                 })}
@@ -464,30 +498,11 @@ export default class AdminCertificateType extends Component {
                 value={this.state.client}
                 onChange={this.handleClientInputChange}
               >
-                <option value={this.state.defaultClient._id}>Default</option>
+                <option value={this.state.defaultClient._id}>Default-0</option>
                 {clientOptions.map((item, i) => {
                   return (
                     <option key={i} value={item.id}>
-                      {item.name}
-                    </option>
-                  );
-                })}
-              </CSelect>
-            </CFormGroup>
-            <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Packing Type</CLabel>
-              <CSelect
-                custom
-                name="packing"
-                value={this.state.packing}
-                onChange={this.handleInputChange}
-                required
-              >
-                <option value="" disabled></option>
-                {this.state.packingsData.map((item, i) => {
-                  return (
-                    <option key={i} value={item._id}>
-                      {item.packingType}
+                      {item.name}-{this.state.clientList.filter(c => c._id === item.id).length > 0 ? this.state.clientList.filter(c => c._id === item.id)[0].clientId : ''}
                     </option>
                   );
                 })}
@@ -501,12 +516,10 @@ export default class AdminCertificateType extends Component {
                 onChange={this.handleInputChange}
                 required
               />
-              <CInvalidFeedback className="help-block">
-                Please provide a valid information
-              </CInvalidFeedback>
-              <CValidFeedback className="help-block">
-                Input provided
-              </CValidFeedback>
+              {
+                this.state.current_id === '' && this.state.certificateTypesData.filter(cType => cType.certificateType === this.state.certificateType).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>CertificateType already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CRow>
@@ -701,9 +714,6 @@ export default class AdminCertificateType extends Component {
               material: (item, index) => {
                 return <td>{this.getMaterial(item.material, item.client)}</td>;
               },
-              packing: (item, index) => {
-                return <td>{this.getPacking(item.packing)}</td>;
-              },
               analysises: (item, index) => {
                 return (
                   <td style={{ whiteSpace: "pre-line" }}>
@@ -796,10 +806,14 @@ export default class AdminCertificateType extends Component {
   getAllCertificateTypes() {
     axios.get(Config.ServerUri + '/get_all_certificateTypes')
       .then((res) => {
+        // console.log(res.data)
         this.setState({
           materialsData: res.data.materials,
+          clientList: res.data.all_clients,
           clientsData: res.data.clients,
-          certificateTypesData: res.data.certificateTypes,
+          certificateTypesData: res.data.certificateTypes.sort((a, b) => {
+            return a.certificateType_id > b.certificateType_id ? 1 : -1;
+          }),
           objectivesData: res.data.objectives,
           analysisTypesData: res.data.analysises,
           unitsData: res.data.units,
@@ -811,8 +825,6 @@ export default class AdminCertificateType extends Component {
         res.data.certificateTypes.map((certificate) => {
           var client_name = '';
           var material_name = '';
-          var packing_name = '';
-          var analysis = '';
           if (certificate.client === '' || certificate.client === res.data.defaultClient._id) {
             client_name = 'Default';
           }
@@ -826,16 +838,13 @@ export default class AdminCertificateType extends Component {
               material_name = material.material;
             }
           });
-          res.data.packings.map((packing) => {
-            if (packing._id === certificate.packing) {
-              packing_name = packing.packingType;
-            }
-          });
           var analysis_data = this.getAnalysises(certificate.analysises, certificate.material, certificate.client)
-          certificate_list.push({ 'certificateType_id': certificate.certificateType_id, 'material': material_name + '-' + client_name, 'certificateType': certificate.certificateType, 'packing': packing_name, 'analysises': analysis_data.trim(), 'remark': certificate.remark });
+          certificate_list.push({ 'certificateType_id': certificate.certificateType_id, 'material': material_name + '-' + client_name, 'certificateType': certificate.certificateType, 'analysises': analysis_data.trim(), 'remark': certificate.remark, '_id': certificate._id });
         });
         this.setState({
-          export_all_data: certificate_list
+          export_all_data: certificate_list.sort((a, b) => {
+            return a.certificateType_id > b.certificateType_id ? 1 : -1;
+          })
         })
 
       })
@@ -851,16 +860,32 @@ export default class AdminCertificateType extends Component {
   }
 
   on_create_clicked() {
+    let id = 1;
+    if (this.state.certificateTypesData.length > 0) {
+      const max_id = Math.max.apply(Math, this.state.certificateTypesData.map(data => data.certificateType_id));
+      if (max_id === this.state.certificateTypesData.length) {
+        id = max_id + 1
+      } else {
+        var a = this.state.certificateTypesData.map(data => Number(data.certificateType_id));
+        var missing = new Array();
+
+        for (var i = 1; i <= max_id; i++) {
+          if (a.indexOf(i) == -1) {
+            missing.push(i);
+          }
+        }
+        id = Math.min.apply(Math, missing)
+      }
+    }
     this.setState({
       current_id: '',
       certificateType: '',
-      certificateType_id: this.state.certificateTypesData.length + 1,
+      certificateType_id: id,
       remark: '',
       analysises: [],
       _analysises: [],
       material: "",
       client: this.state.defaultClient._id,
-      packing: "",
       _create: true,
       double_error: "",
     });
@@ -884,9 +909,6 @@ export default class AdminCertificateType extends Component {
     var material = item.material;
     if (this.getMaterialName(material) === "") material = "";
 
-    var packing = item.packing;
-    if (this.getPackingName(packing) === "") packing = "";
-
     var client = item.client;
     if (this.getClientName(client) === "") client = "";
 
@@ -899,7 +921,6 @@ export default class AdminCertificateType extends Component {
       _analysises: _analysises,
       material: material,
       client: client,
-      packing: packing,
       _create: false,
       double_error: "",
     });
@@ -917,7 +938,9 @@ export default class AdminCertificateType extends Component {
         this.setState({
           materialsData: res.data.materials,
           clientsData: res.data.clients,
-          certificateTypesData: res.data.certificateTypes,
+          certificateTypesData: res.data.certificateTypes.sort((a, b) => {
+            return a.certificateType_id > b.certificateType_id ? 1 : -1;
+          }),
           objectivesData: res.data.objectives,
           analysisTypesData: res.data.analysises,
           unitsData: res.data.units,
@@ -927,8 +950,6 @@ export default class AdminCertificateType extends Component {
         res.data.certificateTypes.map((certificate) => {
           var client_name = '';
           var material_name = '';
-          var packing_name = '';
-          var analysis = '';
           res.data.clients.map((client) => {
             if (client._id === certificate.client) {
               client_name = client.name;
@@ -939,16 +960,13 @@ export default class AdminCertificateType extends Component {
               material_name = material.material;
             }
           });
-          res.data.packings.map((packing) => {
-            if (packing._id === certificate.packing) {
-              packing_name = packing.packingType;
-            }
-          });
           var analysis_data = this.getAnalysises(certificate.analysises, certificate.material, certificate.client)
-          certificate_list.push({ 'certificateType_id': certificate.certificateType_id, 'material': material_name + '-' + client_name, 'certificateType': certificate.certificateType, 'packing': packing_name, 'analysises': analysis_data.trim(), 'remark': certificate.remark });
+          certificate_list.push({ 'certificateType_id': certificate.certificateType_id, 'material': material_name + '-' + client_name, 'certificateType': certificate.certificateType, 'analysises': analysis_data.trim(), 'remark': certificate.remark });
         });
         this.setState({
-          export_all_data: certificate_list
+          export_all_data: certificate_list.sort((a, b) => {
+            return a.certificateType_id > b.certificateType_id ? 1 : -1;
+          })
         })
       })
       .catch((error) => {
@@ -960,6 +978,11 @@ export default class AdminCertificateType extends Component {
     event.preventDefault();
 
     if (this.state.double_error !== "") return;
+    if (this.state.certificateTypesData.filter(data => data.certificateType_id === this.state.certificateType_id).length > 0) {
+      this.setState({ double_error: "Value already exists" });
+      return;
+    }
+
     const data = {
       material: this.state.material,
       client: this.state.client,
@@ -967,7 +990,6 @@ export default class AdminCertificateType extends Component {
       certificateType: this.state.certificateType,
       analysises: this.state.analysises,
       remark: this.state.remark,
-      packing: this.state.packing,
     }
     this.setModal_Create(false);
     axios.post(Config.ServerUri + '/create_certificateType', data)
@@ -976,7 +998,9 @@ export default class AdminCertificateType extends Component {
         this.setState({
           materialsData: res.data.materials,
           clientsData: res.data.clients,
-          certificateTypesData: res.data.certificateTypes,
+          certificateTypesData: res.data.certificateTypes.sort((a, b) => {
+            return a.certificateType_id > b.certificateType_id ? 1 : -1;
+          }),
           objectivesData: res.data.objectives,
           analysisTypesData: res.data.analysises,
           unitsData: res.data.units,
@@ -1007,7 +1031,9 @@ export default class AdminCertificateType extends Component {
           certificate_list.push({ 'certificateType_id': certificate.certificateType_id, 'material': material_name + '-' + client_name, 'certificateType': certificate.certificateType, 'packing': packing_name, 'analysises': analysis_data.trim(), 'remark': certificate.remark });
         });
         this.setState({
-          export_all_data: certificate_list
+          export_all_data: certificate_list.sort((a, b) => {
+            return a.certificateType_id > b.certificateType_id ? 1 : -1;
+          })
         });
       })
       .catch((error) => {
@@ -1028,14 +1054,15 @@ export default class AdminCertificateType extends Component {
       certificateType: this.state.certificateType,
       analysises: this.state.analysises,
       remark: this.state.remark,
-      packing: this.state.packing,
     })
       .then((res) => {
         toast.success('CertificateType successfully updated');
         this.setState({
           materialsData: res.data.materials,
           clientsData: res.data.clients,
-          certificateTypesData: res.data.certificateTypes,
+          certificateTypesData: res.data.certificateTypes.sort((a, b) => {
+            return a.certificateType_id > b.certificateType_id ? 1 : -1;
+          }),
           objectivesData: res.data.objectives,
           analysisTypesData: res.data.analysises,
           unitsData: res.data.units,
@@ -1066,7 +1093,9 @@ export default class AdminCertificateType extends Component {
           certificate_list.push({ 'certificateType_id': certificate.certificateType_id, 'material': material_name + '-' + client_name, 'certificateType': certificate.certificateType, 'packing': packing_name, 'analysises': analysis_data.trim(), 'remark': certificate.remark });
         });
         this.setState({
-          export_all_data: certificate_list
+          export_all_data: certificate_list.sort((a, b) => {
+            return a.certificateType_id > b.certificateType_id ? 1 : -1;
+          })
         });
       })
       .catch((error) => {

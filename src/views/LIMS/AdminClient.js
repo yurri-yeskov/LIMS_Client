@@ -41,16 +41,13 @@ export default class AdminClient extends Component {
       name: "",
       clientId: "",
       other: "",
-      countryL: "",
-      zipCodeL: "",
-      cityL: "",
-      addressL: "",
-      address2L: "",
       countryB: "",
       zipCodeB: "",
       cityB: "",
       addressB: "",
       address2B: "",
+      address3B: "",
+      address_street: "",
       email: "",
       email2: "",
       email3: "",
@@ -65,16 +62,13 @@ export default class AdminClient extends Component {
         { key: "name", label: props.language_data.filter(item => item.label === 'name')[0][props.selected_language] },
         { key: "clientId", label: props.language_data.filter(item => item.label === 'client_id')[0][props.selected_language] },
         { key: "other", sorter: false, label: props.language_data.filter(item => item.label === 'other')[0][props.selected_language] },
-        { key: "countryL", sorter: false, label: props.language_data.filter(item => item.label === 'country')[0][props.selected_language] + ' L' },
-        { key: "zipCodeL", sorter: false, label: props.language_data.filter(item => item.label === 'zip_code')[0][props.selected_language] + ' L' },
-        { key: "cityL", sorter: false, label: props.language_data.filter(item => item.label === 'city')[0][props.selected_language] + ' L' },
-        { key: "addressL", sorter: false, label: props.language_data.filter(item => item.label === 'address')[0][props.selected_language] + ' L' },
-        { key: "address2L", sorter: false, label: props.language_data.filter(item => item.label === 'address')[0][props.selected_language] + '2 L' },
         { key: "countryB", sorter: false, label: props.language_data.filter(item => item.label === 'country')[0][props.selected_language] + ' B' },
         { key: "zipCodeB", sorter: false, label: props.language_data.filter(item => item.label === 'zip_code')[0][props.selected_language] + ' B' },
         { key: "cityB", sorter: false, label: props.language_data.filter(item => item.label === 'city')[0][props.selected_language] + ' B' },
         { key: "addressB", sorter: false, label: props.language_data.filter(item => item.label === 'address')[0][props.selected_language] + ' B' },
         { key: "address2B", sorter: false, label: props.language_data.filter(item => item.label === 'address')[0][props.selected_language] + '2 B' },
+        { key: "address3B", sorter: false, label: props.language_data.filter(item => item.label === 'address')[0][props.selected_language] + '3 B' },
+        { key: "address_street", sorter: false, label: props.language_data.filter(item => item.label === 'address_street')[0][props.selected_language] },
         { key: "email", sorter: false, label: props.language_data.filter(item => item.label === 'email')[0][props.selected_language] },
         { key: "email2", sorter: false, label: props.language_data.filter(item => item.label === 'email')[0][props.selected_language] + '2' },
         { key: "email3", sorter: false, label: props.language_data.filter(item => item.label === 'email')[0][props.selected_language] + '3' },
@@ -86,21 +80,19 @@ export default class AdminClient extends Component {
         { key: 'name', label: props.language_data.filter(item => item.label === 'name')[0][props.selected_language] },
         { key: 'clientId', label: props.language_data.filter(item => item.label === 'client_id')[0][props.selected_language] },
         { key: 'other', label: props.language_data.filter(item => item.label === 'other')[0][props.selected_language] },
-        { key: 'countryL', label: props.language_data.filter(item => item.label === 'country')[0][props.selected_language] + ' L' },
-        { key: 'zipCodeL', label: props.language_data.filter(item => item.label === 'zip_code')[0][props.selected_language] + ' L' },
-        { key: 'cityL', label: props.language_data.filter(item => item.label === 'city')[0][props.selected_language] + ' L' },
-        { key: 'addressL', label: props.language_data.filter(item => item.label === 'address')[0][props.selected_language] + ' L' },
-        { key: 'address2L', label: props.language_data.filter(item => item.label === 'address')[0][props.selected_language] + '2 L' },
         { key: 'countryB', label: props.language_data.filter(item => item.label === 'country')[0][props.selected_language] + ' B' },
         { key: 'zipCodeB', label: props.language_data.filter(item => item.label === 'zip_code')[0][props.selected_language] + ' B' },
         { key: 'cityB', label: props.language_data.filter(item => item.label === 'city')[0][props.selected_language] + ' B' },
         { key: 'addressB', label: props.language_data.filter(item => item.label === 'address')[0][props.selected_language] + ' B' },
         { key: 'address2B', label: props.language_data.filter(item => item.label === 'address')[0][props.selected_language] + '2 B' },
+        { key: 'address3B', label: props.language_data.filter(item => item.label === 'address')[0][props.selected_language] + '3 B' },
+        { key: 'address_street', label: props.language_data.filter(item => item.label === 'address_street')[0][props.selected_language] },
         { key: 'email', label: props.language_data.filter(item => item.label === 'email')[0][props.selected_language] },
         { key: 'email2', label: props.language_data.filter(item => item.label === 'email')[0][props.selected_language] + '2' },
         { key: 'email3', label: props.language_data.filter(item => item.label === 'email')[0][props.selected_language] + '3' },
         { key: 'remark1', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] + '1' },
         { key: 'remark2', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] + '2' },
+        { key: '_id', label: 'Id' },
       ],
     };
   }
@@ -119,16 +111,13 @@ export default class AdminClient extends Component {
           { key: "name", label: nextProps.language_data.filter(item => item.label === 'name')[0][nextProps.selected_language] },
           { key: "clientId", label: nextProps.language_data.filter(item => item.label === 'client_id')[0][nextProps.selected_language] },
           { key: "other", sorter: false, label: nextProps.language_data.filter(item => item.label === 'other')[0][nextProps.selected_language] },
-          { key: "countryL", sorter: false, label: nextProps.language_data.filter(item => item.label === 'country')[0][nextProps.selected_language] + ' L' },
-          { key: "zipCodeL", sorter: false, label: nextProps.language_data.filter(item => item.label === 'zip_code')[0][nextProps.selected_language] + ' L' },
-          { key: "cityL", sorter: false, label: nextProps.language_data.filter(item => item.label === 'city')[0][nextProps.selected_language] + ' L' },
-          { key: "addressL", sorter: false, label: nextProps.language_data.filter(item => item.label === 'address')[0][nextProps.selected_language] + ' L' },
-          { key: "address2L", sorter: false, label: nextProps.language_data.filter(item => item.label === 'address')[0][nextProps.selected_language] + '2 L' },
           { key: "countryB", sorter: false, label: nextProps.language_data.filter(item => item.label === 'country')[0][nextProps.selected_language] + ' B' },
           { key: "zipCodeB", sorter: false, label: nextProps.language_data.filter(item => item.label === 'zip_code')[0][nextProps.selected_language] + ' B' },
           { key: "cityB", sorter: false, label: nextProps.language_data.filter(item => item.label === 'city')[0][nextProps.selected_language] + ' B' },
           { key: "addressB", sorter: false, label: nextProps.language_data.filter(item => item.label === 'address')[0][nextProps.selected_language] + ' B' },
           { key: "address2B", sorter: false, label: nextProps.language_data.filter(item => item.label === 'address')[0][nextProps.selected_language] + '2 B' },
+          { key: "address3B", sorter: false, label: nextProps.language_data.filter(item => item.label === 'address')[0][nextProps.selected_language] + '3 B' },
+          { key: "address_street", sorter: false, label: nextProps.language_data.filter(item => item.label === 'address_street')[0][nextProps.selected_language] },
           { key: "email", sorter: false, label: nextProps.language_data.filter(item => item.label === 'email')[0][nextProps.selected_language] },
           { key: "email2", sorter: false, label: nextProps.language_data.filter(item => item.label === 'email')[0][nextProps.selected_language] + '2' },
           { key: "email3", sorter: false, label: nextProps.language_data.filter(item => item.label === 'email')[0][nextProps.selected_language] + '3' },
@@ -140,21 +129,19 @@ export default class AdminClient extends Component {
           { key: 'name', label: nextProps.language_data.filter(item => item.label === 'name')[0][nextProps.selected_language] },
           { key: 'clientId', label: nextProps.language_data.filter(item => item.label === 'client_id')[0][nextProps.selected_language] },
           { key: 'other', label: nextProps.language_data.filter(item => item.label === 'other')[0][nextProps.selected_language] },
-          { key: 'countryL', label: nextProps.language_data.filter(item => item.label === 'country')[0][nextProps.selected_language] + ' L' },
-          { key: 'zipCodeL', label: nextProps.language_data.filter(item => item.label === 'zip_code')[0][nextProps.selected_language] + ' L' },
-          { key: 'cityL', label: nextProps.language_data.filter(item => item.label === 'city')[0][nextProps.selected_language] + ' L' },
-          { key: 'addressL', label: nextProps.language_data.filter(item => item.label === 'address')[0][nextProps.selected_language] + ' L' },
-          { key: 'address2L', label: nextProps.language_data.filter(item => item.label === 'address')[0][nextProps.selected_language] + '2 L' },
           { key: 'countryB', label: nextProps.language_data.filter(item => item.label === 'country')[0][nextProps.selected_language] + ' B' },
           { key: 'zipCodeB', label: nextProps.language_data.filter(item => item.label === 'zip_code')[0][nextProps.selected_language] + ' B' },
           { key: 'cityB', label: nextProps.language_data.filter(item => item.label === 'city')[0][nextProps.selected_language] + ' B' },
           { key: 'addressB', label: nextProps.language_data.filter(item => item.label === 'address')[0][nextProps.selected_language] + ' B' },
           { key: 'address2B', label: nextProps.language_data.filter(item => item.label === 'address')[0][nextProps.selected_language] + '2 B' },
+          { key: 'address3B', label: nextProps.language_data.filter(item => item.label === 'address')[0][nextProps.selected_language] + '3 B' },
+          { key: 'address_street', label: nextProps.language_data.filter(item => item.label === 'address_street')[0][nextProps.selected_language] },
           { key: 'email', label: nextProps.language_data.filter(item => item.label === 'email')[0][nextProps.selected_language] },
           { key: 'email2', label: nextProps.language_data.filter(item => item.label === 'email')[0][nextProps.selected_language] + '2' },
           { key: 'email3', label: nextProps.language_data.filter(item => item.label === 'email')[0][nextProps.selected_language] + '3' },
           { key: 'remark1', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] + '1' },
           { key: 'remark2', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] + '2' },
+          { key: '_id', label: 'Id' },
         ],
       })
     }
@@ -180,7 +167,12 @@ export default class AdminClient extends Component {
 
       if (found === true) {
         this.setState({ double_error: "Value already exists" });
-      } else this.setState({ double_error: "" });
+      } else {
+        value = value.replace(/ /g, '_')
+        value = value.replace(/-/g, '_')
+        value = value.replace(/,/g, '')
+        this.setState({ double_error: "" });
+      }
     }
 
     this.setState({
@@ -209,6 +201,10 @@ export default class AdminClient extends Component {
                 value={this.state.name}
                 onChange={this.handleInputChange}
               />
+              {
+                this.state.current_id === '' && this.state.clientsData.filter(client => client.name === this.state.name).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>Client name already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>ClientID</CLabel>
@@ -218,66 +214,16 @@ export default class AdminClient extends Component {
                 onChange={this.handleInputChange}
                 required
               />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+              {
+                this.state.current_id === '' && this.state.clientsData.filter(client => client.clientId === this.state.clientId).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>Client id already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>Other</CLabel>
               <CInput
                 name="other"
                 value={this.state.other}
-                onChange={this.handleInputChange}
-              />
-            </CFormGroup>
-            <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Country L</CLabel>
-              <CInput
-                name="countryL"
-                value={this.state.countryL}
-                onChange={this.handleInputChange}
-              />
-            </CFormGroup>
-            <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Zip Code L</CLabel>
-              <CInput
-                name="zipCodeL"
-                value={this.state.zipCodeL}
-                onChange={this.handleInputChange}
-              />
-            </CFormGroup>
-            <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>City L</CLabel>
-              <CInput
-                name="cityL"
-                value={this.state.cityL}
-                onChange={this.handleInputChange}
-              />
-            </CFormGroup>
-            <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Address L</CLabel>
-              <CInput
-                name="addressL"
-                value={this.state.addressL}
-                onChange={this.handleInputChange}
-              />
-            </CFormGroup>
-            <CFormGroup>
-              <CLabel style={{ fontWeight: "500" }}>Address2 L</CLabel>
-              <CInput
-                name="address2L"
-                value={this.state.address2L}
                 onChange={this.handleInputChange}
               />
             </CFormGroup>
@@ -318,6 +264,22 @@ export default class AdminClient extends Component {
               <CInput
                 name="address2B"
                 value={this.state.address2B}
+                onChange={this.handleInputChange}
+              />
+            </CFormGroup>
+            <CFormGroup>
+              <CLabel style={{ fontWeight: "500" }}>Address3 B</CLabel>
+              <CInput
+                name="address3B"
+                value={this.state.address3B}
+                onChange={this.handleInputChange}
+              />
+            </CFormGroup>
+            <CFormGroup>
+              <CLabel style={{ fontWeight: "500" }}>Address Street</CLabel>
+              <CInput
+                name="address_street"
+                value={this.state.address_street}
                 onChange={this.handleInputChange}
               />
             </CFormGroup>
@@ -534,8 +496,12 @@ export default class AdminClient extends Component {
     axios.get(Config.ServerUri + '/get_all_clients')
       .then((res) => {
         this.setState({
-          export_all_data: res.data,
-          clientsData: res.data
+          export_all_data: res.data.sort((a, b) => {
+            return a.clientId > b.clientId ? 1 : -1;
+          }),
+          clientsData: res.data.sort((a, b) => {
+            return a.clientId > b.clientId ? 1 : -1;
+          })
         });
       })
       .catch((error) => { })
@@ -548,21 +514,35 @@ export default class AdminClient extends Component {
   }
 
   on_create_clicked() {
+    let id = 1;
+    if (this.state.clientsData.filter(c => c.name !== 'Default').length > 0) {
+      const max_id = Math.max.apply(Math, this.state.clientsData.filter(c => c.name !== 'Default').map(data => data.clientId));
+      if (max_id === this.state.clientsData.filter(c => c.name !== 'Default').length) {
+        id = max_id + 1
+      } else {
+        var a = this.state.clientsData.filter(c => c.name !== 'Default').map(data => Number(data.clientId));
+        var missing = new Array();
+
+        for (var i = 1; i <= max_id; i++) {
+          if (a.indexOf(i) == -1) {
+            missing.push(i);
+          }
+        }
+        id = Math.min.apply(Math, missing)
+      }
+    }
     this.setState({
       current_id: "",
       name: "",
-      clientId: this.state.clientsData.filter(c => c.name !== 'Default').length + 1,
+      clientId: id,
       other: "",
-      countryL: "",
-      zipCodeL: "",
-      cityL: "",
-      addressL: "",
-      address2L: "",
       countryB: "",
       zipCodeB: "",
       cityB: "",
       addressB: "",
       address2B: "",
+      address3B: "",
+      address_street: "",
       email: "",
       email2: "",
       email3: "",
@@ -581,16 +561,13 @@ export default class AdminClient extends Component {
       name: item.name,
       clientId: item.clientId,
       other: item.other,
-      countryL: item.countryL,
-      zipCodeL: item.zipCodeL,
-      cityL: item.cityL,
-      addressL: item.addressL,
-      address2L: item.address2L,
       countryB: item.countryB,
       zipCodeB: item.zipCodeB,
       cityB: item.cityB,
       addressB: item.addressB,
       address2B: item.address2B,
+      address3B: item.address3B,
+      address_street: item.address_street,
       email: item.email,
       email2: item.email2,
       email3: item.email3,
@@ -625,27 +602,37 @@ export default class AdminClient extends Component {
       .catch((error) => { });
   }
 
-  deleteClient() {
-    this.setModal_Delete(false);
-    axios.post(Config.ServerUri + '/delete_client', {
-      id: this.state.current_id
-    })
-      .then((res) => {
-        toast.success('Client successfully deleted');
-        this.setState({
-          export_all_data: res.data,
-          clientsData: res.data
-        });
+  async deleteClient() {
+    try {
+      this.setModal_Delete(false);
+      const res = await axios.post(Config.ServerUri + '/delete_client', {
+        id: this.state.current_id
       })
-      .catch((error) => {
-
-      })
+      this.setState({
+        export_all_data: res.data.sort((a, b) => {
+          return a.clientId > b.clientId ? 1 : -1;
+        }),
+        clientsData: res.data.sort((a, b) => {
+          return a.clientId > b.clientId ? 1 : -1;
+        })
+      });
+      toast.success('Client successfully deleted');
+    } catch (err) {
+      if (err.response.status === 400) {
+        toast.error(err.response.data.message)
+      }
+      // console.log(err)
+    }
   }
 
   createClient(event) {
     event.preventDefault();
 
     if (this.state.double_error !== "") return;
+    if (this.state.clientsData.filter(data => data.clientId === this.state.clientId).length > 0) {
+      this.setState({ double_error: "Value already exists" });
+      return;
+    }
 
     this.setModal_Create(false);
 
@@ -653,16 +640,13 @@ export default class AdminClient extends Component {
       name: this.state.name,
       clientId: this.state.clientId,
       other: this.state.other,
-      countryL: this.state.countryL,
-      zipCodeL: this.state.zipCodeL,
-      cityL: this.state.cityL,
-      addressL: this.state.addressL,
-      address2L: this.state.address2L,
       countryB: this.state.countryB,
       zipCodeB: this.state.zipCodeB,
       cityB: this.state.cityB,
       addressB: this.state.addressB,
       address2B: this.state.address2B,
+      address3B: this.state.address3B,
+      address_street: this.state.address_street,
       email: this.state.email,
       email2: this.state.email2,
       email3: this.state.email3,
@@ -674,8 +658,12 @@ export default class AdminClient extends Component {
       .then((res) => {
         toast.success('Client successfully created');
         this.setState({
-          export_all_data: res.data,
-          clientsData: res.data
+          export_all_data: res.data.sort((a, b) => {
+            return a.clientId > b.clientId ? 1 : -1;
+          }),
+          clientsData: res.data.sort((a, b) => {
+            return a.clientId > b.clientId ? 1 : -1;
+          })
         });
       })
       .catch((error) => {
@@ -694,16 +682,13 @@ export default class AdminClient extends Component {
       name: this.state.name,
       clientId: this.state.clientId,
       other: this.state.other,
-      countryL: this.state.countryL,
-      zipCodeL: this.state.zipCodeL,
-      cityL: this.state.cityL,
-      addressL: this.state.addressL,
-      address2L: this.state.address2L,
       countryB: this.state.countryB,
       zipCodeB: this.state.zipCodeB,
       cityB: this.state.cityB,
       addressB: this.state.addressB,
       address2B: this.state.address2B,
+      address3B: this.state.address3B,
+      address_street: this.state.address_street,
       email: this.state.email,
       email2: this.state.email2,
       email3: this.state.email3,
@@ -714,8 +699,12 @@ export default class AdminClient extends Component {
       .then((res) => {
         toast.success('Client successfully updated');
         this.setState({
-          export_all_data: res.data,
-          clientsData: res.data
+          export_all_data: res.data.sort((a, b) => {
+            return a.clientId > b.clientId ? 1 : -1;
+          }),
+          clientsData: res.data.sort((a, b) => {
+            return a.clientId > b.clientId ? 1 : -1;
+          })
         });
       })
       .catch((error) => {

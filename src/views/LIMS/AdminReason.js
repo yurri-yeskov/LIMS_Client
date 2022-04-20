@@ -55,6 +55,7 @@ export default class AdminReason extends Component {
         { key: 'reason_id', label: props.language_data.filter(item => item.label === 'reason_id')[0][props.selected_language] },
         { key: 'reason', label: props.language_data.filter(item => item.label === 'reason')[0][props.selected_language] },
         { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        { key: '_id', label: "Id" },
       ],
     };
   }
@@ -79,6 +80,7 @@ export default class AdminReason extends Component {
           { key: 'reason_id', label: nextProps.language_data.filter(item => item.label === 'reason_id')[0][nextProps.selected_language] },
           { key: 'reason', label: nextProps.language_data.filter(item => item.label === 'reason')[0][nextProps.selected_language] },
           { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          { key: '_id', label: "Id" },
         ]
       })
     }
@@ -151,20 +153,10 @@ export default class AdminReason extends Component {
                 onChange={this.handleInputChange}
                 required
               />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+              {
+                this.state.current_id === '' && this.state.reasonData.filter(reason => reason.reason_id === this.state.reason_id).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>Reason id already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>Reason</CLabel>
@@ -174,20 +166,10 @@ export default class AdminReason extends Component {
                 onChange={this.handleInputChange}
                 required
               />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+              {
+                this.state.current_id === '' && this.state.reasonData.filter(reason => reason.reason === this.state.reason).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>Reason already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>Remark</CLabel>
@@ -347,8 +329,12 @@ export default class AdminReason extends Component {
     axios.get(Config.ServerUri + "/get_all_reason")
       .then((res) => {
         this.setState({
-          export_all_data: res.data,
-          reasonData: res.data,
+          export_all_data: res.data.sort((a, b) => {
+            return a.reason_id > b.reason_id ? 1 : -1;
+          }),
+          reasonData: res.data.sort((a, b) => {
+            return a.reason_id > b.reason_id ? 1 : -1;
+          }),
         });
       })
       .catch((error) => { });
@@ -361,9 +347,26 @@ export default class AdminReason extends Component {
   }
 
   on_create_clicked() {
+    let id = 1;
+    if (this.state.reasonData.filter(c => c.name !== 'Default').length > 0) {
+      const max_id = Math.max.apply(Math, this.state.reasonData.filter(c => c.name !== 'Default').map(data => data.reason_id));
+      if (max_id === this.state.reasonData.filter(c => c.name !== 'Default').length) {
+        id = max_id + 1
+      } else {
+        var a = this.state.reasonData.filter(c => c.name !== 'Default').map(data => Number(data.reason_id));
+        var missing = new Array();
+
+        for (var i = 1; i <= max_id; i++) {
+          if (a.indexOf(i) == -1) {
+            missing.push(i);
+          }
+        }
+        id = Math.min.apply(Math, missing)
+      }
+    }
     this.setState({
       current_id: "",
-      reason_id: this.state.reasonData.length + 1,
+      reason_id: id,
       reason: "",
       remark: "",
       _create: true,
@@ -396,17 +399,25 @@ export default class AdminReason extends Component {
       .then((res) => {
         toast.success("Reason successfully deleted");
         this.setState({
-          export_all_data: res.data,
-          reasonData: res.data,
+          export_all_data: res.data.sort((a, b) => {
+            return a.reason_id > b.reason_id ? 1 : -1;
+          }),
+          reasonData: res.data.sort((a, b) => {
+            return a.reason_id > b.reason_id ? 1 : -1;
+          }),
         });
       })
-      .catch((error) => { });
+      .catch((error) => toast.error(error.response.data.message));
   }
 
   createReason(event) {
     event.preventDefault();
 
     if (this.state.double_error !== "") return;
+    if (this.state.reasonData.filter(data => data.reason_id === this.state.reason_id).length > 0) {
+      this.setState({ double_error: "Value already exists" });
+      return;
+    }
 
     this.setModal_Create(false);
 
@@ -419,8 +430,12 @@ export default class AdminReason extends Component {
       .then((res) => {
         toast.success("Reason successfully created");
         this.setState({
-          export_all_data: res.data,
-          reasonData: res.data,
+          export_all_data: res.data.sort((a, b) => {
+            return a.reason_id > b.reason_id ? 1 : -1;
+          }),
+          reasonData: res.data.sort((a, b) => {
+            return a.reason_id > b.reason_id ? 1 : -1;
+          }),
         });
       })
       .catch((error) => { });
@@ -443,8 +458,12 @@ export default class AdminReason extends Component {
       .then((res) => {
         toast.success("Reason successfully updated");
         this.setState({
-          export_all_data: res.data,
-          reasonData: res.data,
+          export_all_data: res.data.sort((a, b) => {
+            return a.reason_id > b.reason_id ? 1 : -1;
+          }),
+          reasonData: res.data.sort((a, b) => {
+            return a.reason_id > b.reason_id ? 1 : -1;
+          }),
         });
       })
       .catch((error) => { });

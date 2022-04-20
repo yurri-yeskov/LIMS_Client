@@ -66,6 +66,7 @@ export default class AdminAnalysisType extends Component {
         { key: 'norm', label: props.language_data.filter(item => item.label === 'norm')[0][props.selected_language] },
         { key: 'objectives', label: props.language_data.filter(item => item.label === 'objectives')[0][props.selected_language] },
         { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        { key: '_id', label: 'Id' },
       ]
     };
   }
@@ -94,6 +95,7 @@ export default class AdminAnalysisType extends Component {
           { key: 'norm', label: nextProps.language_data.filter(item => item.label === 'norm')[0][nextProps.selected_language] },
           { key: 'objectives', label: nextProps.language_data.filter(item => item.label === 'objectives')[0][nextProps.selected_language] },
           { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          { key: '_id', label: 'Id' },
         ]
       })
     }
@@ -136,8 +138,16 @@ export default class AdminAnalysisType extends Component {
     return "";
   }
 
-  handleMultiSelectChange(e) {
+  async handleMultiSelectChange(e) {
     var objectives = [];
+    if (e.length < this.state._objectives.length) {
+      const removed = this.state._objectives.filter(item => e.indexOf(item) === -1)
+      const result = await axios.post(Config.ServerUri + '/check_remove_objective', { data: removed, id: this.state.current_id })
+      if (!result.data.removable) {
+        toast.error('This Objective-Unit has been already used in Material');
+        return;
+      }
+    }
     e.map((item) => {
       var ids = item.value.split("-");
       objectives.push({ id: ids[0], unit: ids[1] });
@@ -179,7 +189,12 @@ export default class AdminAnalysisType extends Component {
 
       if (found === true) {
         this.setState({ double_error: "Value already exists" });
-      } else this.setState({ double_error: "" });
+      } else {
+        value = value.replace(/ /g, '_')
+        value = value.replace(/-/g, '_')
+        value = value.replace(/,/g, '')
+        this.setState({ double_error: "" });
+      }
     }
 
     this.setState({
@@ -219,8 +234,8 @@ export default class AdminAnalysisType extends Component {
               <CLabel style={{ fontWeight: '500' }}>Analysis Type ID</CLabel>
               <CInput name="analysisType_id" value={this.state.analysisType_id} onChange={this.handleInputChange} required />
               {
-                error === undefined || error === '' ? <div></div> :
-                  <div style={{ width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353' }}>{error}</div>
+                this.state.current_id === '' && this.state.analysisTypesData.filter(aType => aType.analysisType_id === this.state.analysisType_id).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>AnalysisType id already exist</div>
               }
             </CFormGroup>
             <CFormGroup>
@@ -231,20 +246,10 @@ export default class AdminAnalysisType extends Component {
                 onChange={this.handleInputChange}
                 required
               />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+              {
+                this.state.current_id === '' && this.state.analysisTypesData.filter(aType => aType.analysisType === this.state.analysisType).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>AnalysisType already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>Norm</CLabel>
@@ -441,17 +446,21 @@ export default class AdminAnalysisType extends Component {
     axios.get(Config.ServerUri + '/get_all_analysisTypes')
       .then((res) => {
         this.setState({
-          analysisTypesData: res.data.analysisTypes,
+          analysisTypesData: res.data.analysisTypes.sort((a, b) => {
+            return a.analysisType_id > b.analysisType_id ? 1 : -1;
+          }),
           objectivesData: res.data.objectives,
           unitsData: res.data.units,
         });
         var analysis_list = []
         res.data.analysisTypes.map((analysistype) => {
           var objectiveHistory_data = this.getObjectives(analysistype.objectives);
-          analysis_list.push({ "analysisType_id": analysistype.analysisType_id, "analysisType": analysistype.analysisType, "norm": analysistype.norm, "objectives": objectiveHistory_data, "remark": analysistype.remark })
+          analysis_list.push({ "analysisType_id": analysistype.analysisType_id, "analysisType": analysistype.analysisType, "norm": analysistype.norm, "objectives": objectiveHistory_data, "remark": analysistype.remark, '_id': analysistype._id })
         });
         this.setState({
-          export_all_data: analysis_list,
+          export_all_data: analysis_list.sort((a, b) => {
+            return a.analysisType_id > b.analysisType_id ? 1 : -1;
+          }),
         });
       })
       .catch((error) => {
@@ -461,14 +470,40 @@ export default class AdminAnalysisType extends Component {
 
   on_delete_clicked(id) {
     this.setState({ current_id: id });
-
     this.setModal_Delete(true);
+    // axios.get(process.env.REACT_APP_API_URL + 'analysis/check_deleteId')
+    // .then(res => {
+    //   console.log(res.data)
+    //   if(res.data.result) {
+    //     this.setModal_Delete(true);
+    //   } else {
+    //     window.confirm("The selected analysis type is using in material table. Are you sure to delete this ")
+    //   }
+    // })
+    // .catch(err => console.log(err.response.data))
   }
 
   on_create_clicked() {
+    let id = 1;
+    if (this.state.analysisTypesData.length > 0) {
+      const max_id = Math.max.apply(Math, this.state.analysisTypesData.map(data => data.analysisType_id));
+      if (max_id === this.state.analysisTypesData.length) {
+        id = max_id + 1
+      } else {
+        var a = this.state.analysisTypesData.map(data => Number(data.analysisType_id));
+        var missing = new Array();
+
+        for (var i = 1; i <= max_id; i++) {
+          if (a.indexOf(i) == -1) {
+            missing.push(i);
+          }
+        }
+        id = Math.min.apply(Math, missing)
+      }
+    }
     this.setState({
       current_id: '',
-      analysisType_id: this.state.analysisTypesData.length + 1,
+      analysisType_id: id,
       analysisType: '',
       norm: '',
       objectives: [],
@@ -521,7 +556,9 @@ export default class AdminAnalysisType extends Component {
       .then((res) => {
         toast.success('AnalysisType successfully deleted');
         this.setState({
-          analysisTypesData: res.data.analysisTypes,
+          analysisTypesData: res.data.analysisTypes.sort((a, b) => {
+            return a.analysisType_id > b.analysisType_id ? 1 : -1;
+          }),
           objectivesData: res.data.objectives,
           unitsData: res.data.units,
         });
@@ -531,11 +568,15 @@ export default class AdminAnalysisType extends Component {
           analysis_list.push({ "analysisType_id": analysistype.analysisType_id, "analysisType": analysistype.analysisType, "norm": analysistype.norm, "objectives": objectiveHistory_data, "remark": analysistype.remark })
         });
         this.setState({
-          export_all_data: analysis_list,
+          export_all_data: analysis_list.sort((a, b) => {
+            return a.analysisType_id > b.analysisType_id ? 1 : -1;
+          }),
         });
       })
-      .catch((error) => {
-
+      .catch((err) => {
+        if (err.response.status === 400) {
+          toast.error(err.response.data.message)
+        }
       })
   }
 
@@ -543,6 +584,10 @@ export default class AdminAnalysisType extends Component {
     event.preventDefault();
 
     if (this.state.double_error !== "") return;
+    if (this.state.analysisTypesData.filter(data => data.analysisType_id === this.state.analysisType_id).length > 0) {
+      this.setState({ double_error: "Value already exists" });
+      return;
+    }
 
     this.setModal_Create(false);
 
@@ -558,7 +603,9 @@ export default class AdminAnalysisType extends Component {
       .then((res) => {
         toast.success('AnalysisType successfully created');
         this.setState({
-          analysisTypesData: res.data.analysisTypes,
+          analysisTypesData: res.data.analysisTypes.sort((a, b) => {
+            return a.analysisType_id > b.analysisType_id ? 1 : -1;
+          }),
           objectivesData: res.data.objectives,
           unitsData: res.data.units,
         });
@@ -568,7 +615,9 @@ export default class AdminAnalysisType extends Component {
           analysis_list.push({ "analysisType_id": analysistype.analysisType_id, "analysisType": analysistype.analysisType, "norm": analysistype.norm, "objectives": objectiveHistory_data, "remark": analysistype.remark })
         });
         this.setState({
-          export_all_data: analysis_list,
+          export_all_data: analysis_list.sort((a, b) => {
+            return a.analysisType_id > b.analysisType_id ? 1 : -1;
+          }),
         });
       })
       .catch((error) => {
@@ -592,7 +641,9 @@ export default class AdminAnalysisType extends Component {
       .then((res) => {
         toast.success('AnalysisType successfully updated');
         this.setState({
-          analysisTypesData: res.data.analysisTypes,
+          analysisTypesData: res.data.analysisTypes.sort((a, b) => {
+            return a.analysisType_id > b.analysisType_id ? 1 : -1;
+          }),
           objectivesData: res.data.objectives,
           unitsData: res.data.units,
         });
@@ -602,7 +653,9 @@ export default class AdminAnalysisType extends Component {
           analysis_list.push({ "analysisType_id": analysistype.analysisType_id, "analysisType": analysistype.analysisType, "norm": analysistype.norm, "objectives": objectiveHistory_data, "remark": analysistype.remark })
         });
         this.setState({
-          export_all_data: analysis_list,
+          export_all_data: analysis_list.sort((a, b) => {
+            return a.analysisType_id > b.analysisType_id ? 1 : -1;
+          }),
         });
       })
       .catch((error) => {

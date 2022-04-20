@@ -17,7 +17,7 @@ import CIcon from '@coreui/icons-react'
 
 
 class Register extends Component {
-  
+
   constructor() {
     super();
     this.state = {
@@ -26,7 +26,7 @@ class Register extends Component {
       password: '',
       password2: ''
     }
-    this.onChange = this.onChange.bind(this);    
+    this.onChange = this.onChange.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
   }
   onChange = (e) => {
@@ -36,12 +36,12 @@ class Register extends Component {
   }
 
   onSubmit = () => {
-    const newUser = {
-      username: this.state.newUser,
-      email: this.state.email,
-      password: this.state.password,
-      password2: this.state.password2
-    }
+    // const newUser = {
+    //   username: this.state.newUser,
+    //   email: this.state.email,
+    //   password: this.state.password,
+    //   password2: this.state.password2
+    // }
   }
   render() {
     return (
@@ -60,13 +60,13 @@ class Register extends Component {
                           <CIcon name="cil-user" />
                         </CInputGroupText>
                       </CInputGroupPrepend>
-                      <CInput type="text" placeholder="Username" autoComplete="username" name="username" onChange={this.onChange} value={this.state.username}/>
+                      <CInput type="text" placeholder="Username" autoComplete="username" name="username" onChange={this.onChange} value={this.state.username} />
                     </CInputGroup>
                     <CInputGroup className="mb-3">
                       <CInputGroupPrepend>
                         <CInputGroupText>@</CInputGroupText>
                       </CInputGroupPrepend>
-                      <CInput type="text" placeholder="Email" autoComplete="email" name="email" onChange={this.onChange} value={this.state.email}/>
+                      <CInput type="text" placeholder="Email" autoComplete="email" name="email" onChange={this.onChange} value={this.state.email} />
                     </CInputGroup>
                     <CInputGroup className="mb-3">
                       <CInputGroupPrepend>
@@ -74,7 +74,7 @@ class Register extends Component {
                           <CIcon name="cil-lock-locked" />
                         </CInputGroupText>
                       </CInputGroupPrepend>
-                      <CInput type="password" placeholder="Password" autoComplete="new-password" name="password" onChange={this.onChange} value={this.state.password}/>
+                      <CInput type="password" placeholder="Password" autoComplete="new-password" name="password" onChange={this.onChange} value={this.state.password} />
                     </CInputGroup>
                     <CInputGroup className="mb-4">
                       <CInputGroupPrepend>
@@ -82,7 +82,7 @@ class Register extends Component {
                           <CIcon name="cil-lock-locked" />
                         </CInputGroupText>
                       </CInputGroupPrepend>
-                      <CInput type="password" placeholder="Repeat password" autoComplete="new-password" name="password2" onChange={this.onChange} value={this.state.password2}/>
+                      <CInput type="password" placeholder="Repeat password" autoComplete="new-password" name="password2" onChange={this.onChange} value={this.state.password2} />
                     </CInputGroup>
                     <CButton color="success" type="submit" block>Create Account</CButton>
                   </CForm>
@@ -103,7 +103,7 @@ class Register extends Component {
         </CContainer>
       </div>
     )
-  }  
+  }
 }
 
 export default Register

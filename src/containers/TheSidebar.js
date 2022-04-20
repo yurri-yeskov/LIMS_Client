@@ -16,6 +16,7 @@ import { getCurrentLanugage, getCurrentSidebarShow, getLanguageData } from 'src/
 // sidebar nav config
 import jwt_decode from 'jwt-decode'
 import { setSidebarShow } from 'src/store/action'
+import { Link } from 'react-router-dom'
 
 const TheSidebar = () => {
 
@@ -168,43 +169,40 @@ const TheSidebar = () => {
       show={show}
       onShowChange={(val) => dispatch(setSidebarShow(val))}
     >
-      <CSidebarBrand className="d-md-down-none" to="/">
-        {/*<CIcon
-          className="c-sidebar-brand-full"
-          name="logo-negative"
-          height={35}
-        />
-        <CIcon
-          className="c-sidebar-brand-minimized"
-          name="sygnet"
-          height={35}
-        />*/}
-        <div
-          className="c-sidebar-brand-full"
-          height={35}
-        >
-          <img src="logo-full.png" height={24} alt="LOGO" />
-        </div>
-        <div
-          className="c-sidebar-brand-minimized"
-          height={35}
-        >
-          <img src="logo.png" height={24} alt="LOGO" />
-        </div>
-      </CSidebarBrand>
-      <CSidebarNav>
+      <div className='position-relative' style={{ height: '100%' }}>
+        <div className='d-flex flex-direction-column'>
+          <Link to="/">
+            <div
+              className="c-sidebar-brand-full"
+            >
+              <img src="Sachtleben_Technology_Logo.svg" className='d-block m-auto svg-white' width="90%" alt='' />
+            </div>
+            {/* <div
+              className="c-sidebar-brand-minimized"
+            >
+              <img src="logo.png" height={24} alt="LOGO" />
+            </div> */}
+          </Link>
+          <CSidebarNav>
 
-        <CCreateElement
-          items={navigation}
-          components={{
-            CSidebarNavDivider,
-            CSidebarNavDropdown,
-            CSidebarNavItem,
-            CSidebarNavTitle
-          }}
-        />
-      </CSidebarNav>
-      {/*<CSidebarMinimizer className="c-d-md-down-none"/>*/}
+            <CCreateElement
+              items={navigation}
+              components={{
+                CSidebarNavDivider,
+                CSidebarNavDropdown,
+                CSidebarNavItem,
+                CSidebarNavTitle
+              }}
+            />
+          </CSidebarNav>
+        </div>
+        <div className='px-2 position-absolute d-flex align-items-center justify-content-between' style={{ bottom: 0 }}>
+          <img src="footer_left_logo.png" width="45%" height={68} alt="LOGO" />
+          <img src="divider.png" alt="LOGO" height={68} />
+          <img src="footer_right_logo.png" width="45%" height={68} alt="LOGO" />
+        </div>
+        {/*<CSidebarMinimizer className="c-d-md-down-none"/>*/}
+      </div>
     </CSidebar>
   )
 }

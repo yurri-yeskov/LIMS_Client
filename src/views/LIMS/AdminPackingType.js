@@ -57,6 +57,7 @@ export default class AdminPackingType extends Component {
         { key: 'packingType_id', label: props.language_data.filter(item => item.label === 'packing_type_id')[0][props.selected_language] },
         { key: 'packingType', label: props.language_data.filter(item => item.label === 'packing_type')[0][props.selected_language] },
         { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        { key: '_id', label: 'Id' },
       ],
     };
   }
@@ -81,6 +82,7 @@ export default class AdminPackingType extends Component {
           { key: 'packingType_id', label: nextProps.language_data.filter(item => item.label === 'packing_type_id')[0][nextProps.selected_language] },
           { key: 'packingType', label: nextProps.language_data.filter(item => item.label === 'packing_type')[0][nextProps.selected_language] },
           { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          { key: '_id', label: 'Id' },
         ],
       })
     }
@@ -122,7 +124,12 @@ export default class AdminPackingType extends Component {
 
       if (found === true) {
         this.setState({ double_error: "Value already exists" });
-      } else this.setState({ double_error: "" });
+      } else {
+        value = value.replace(/ /g, '_')
+        value = value.replace(/-/g, '_')
+        value = value.replace(/,/g, '')
+        this.setState({ double_error: "" });
+      }
     }
 
     this.setState({
@@ -148,8 +155,8 @@ export default class AdminPackingType extends Component {
               <CLabel style={{ fontWeight: '500' }}>PackingType ID</CLabel>
               <CInput name="packingType_id" value={this.state.packingType_id} onChange={this.handleInputChange} required />
               {
-                error === undefined || error === '' ? <div></div> :
-                  <div style={{ width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353' }}>{error}</div>
+                this.state.current_id === '' && this.state.packingTypesData.filter(pType => pType.packingType_id === this.state.packingType_id).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>PackingType id already exist</div>
               }
             </CFormGroup>
             <CFormGroup>
@@ -160,20 +167,10 @@ export default class AdminPackingType extends Component {
                 onChange={this.handleInputChange}
                 required
               />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+              {
+                this.state.current_id === '' && this.state.packingTypesData.filter(pType => pType.packingType === this.state.packingType).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>PackingType already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>Remark</CLabel>
@@ -330,11 +327,15 @@ export default class AdminPackingType extends Component {
       .then((res) => {
         var packingtype_list = [];
         res.data.map((packingType) => {
-          packingtype_list.push({ 'packingType_id': packingType.packingType_id, 'packingType': packingType.packingType, 'remark': packingType.remark })
+          packingtype_list.push({ 'packingType_id': packingType.packingType_id, 'packingType': packingType.packingType, 'remark': packingType.remark, '_id': packingType._id })
         })
         this.setState({
-          export_all_data: packingtype_list,
-          packingTypesData: res.data
+          export_all_data: packingtype_list.sort((a, b) => {
+            return a.packingType_id > b.packingType_id ? 1 : -1;
+          }),
+          packingTypesData: res.data.sort((a, b) => {
+            return a.packingType_id > b.packingType_id ? 1 : -1;
+          })
         });
       })
       .catch((error) => {
@@ -349,10 +350,27 @@ export default class AdminPackingType extends Component {
   }
 
   on_create_clicked() {
+    let id = 1;
+    if (this.state.packingTypesData.length > 0) {
+      const max_id = Math.max.apply(Math, this.state.packingTypesData.map(data => data.packingType_id));
+      if (max_id === this.state.packingTypesData.length) {
+        id = max_id + 1
+      } else {
+        var a = this.state.packingTypesData.map(data => Number(data.packingType_id));
+        var missing = new Array();
+
+        for (var i = 1; i <= max_id; i++) {
+          if (a.indexOf(i) == -1) {
+            missing.push(i);
+          }
+        }
+        id = Math.min.apply(Math, missing)
+      }
+    }
     this.setState({
       current_id: '',
       packingType: '',
-      packingType_id: this.state.packingTypesData.length + 1,
+      packingType_id: id,
       remark: '',
       _create: true,
       double_error: "",
@@ -387,8 +405,12 @@ export default class AdminPackingType extends Component {
           packingtype_list.push({ 'packingType_id': packingType.packingType_id, 'packingType': packingType.packingType, 'remark': packingType.remark })
         })
         this.setState({
-          export_all_data: packingtype_list,
-          packingTypesData: res.data
+          export_all_data: packingtype_list.sort((a, b) => {
+            return a.packingType_id > b.packingType_id ? 1 : -1;
+          }),
+          packingTypesData: res.data.sort((a, b) => {
+            return a.packingType_id > b.packingType_id ? 1 : -1;
+          })
         });
       })
       .catch((error) => {
@@ -400,6 +422,10 @@ export default class AdminPackingType extends Component {
     event.preventDefault();
 
     if (this.state.double_error !== "") return;
+    if (this.state.packingTypesData.filter(data => data.packingType_id === this.state.packingType_id).length > 0) {
+      this.setState({ double_error: "Value already exists" });
+      return;
+    }
 
     this.setModal_Create(false);
 
@@ -415,8 +441,12 @@ export default class AdminPackingType extends Component {
           packingtype_list.push({ 'packingType_id': packingType.packingType_id, 'packingType': packingType.packingType, 'remark': packingType.remark })
         })
         this.setState({
-          export_all_data: packingtype_list,
-          packingTypesData: res.data
+          export_all_data: packingtype_list.sort((a, b) => {
+            return a.packingType_id > b.packingType_id ? 1 : -1;
+          }),
+          packingTypesData: res.data.sort((a, b) => {
+            return a.packingType_id > b.packingType_id ? 1 : -1;
+          })
         });
       })
       .catch((error) => {
@@ -443,8 +473,12 @@ export default class AdminPackingType extends Component {
           packingtype_list.push({ 'packingType_id': packingType.packingType_id, 'packingType': packingType.packingType, 'remark': packingType.remark })
         })
         this.setState({
-          export_all_data: packingtype_list,
-          packingTypesData: res.data
+          export_all_data: packingtype_list.sort((a, b) => {
+            return a.packingType_id > b.packingType_id ? 1 : -1;
+          }),
+          packingTypesData: res.data.sort((a, b) => {
+            return a.packingType_id > b.packingType_id ? 1 : -1;
+          })
         });
       })
       .catch((error) => {

@@ -1,0 +1,9 @@
+<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2 68" width="2" height="68">
+	<title>divider</title>
+	<defs>
+		<image  width="2" height="68" id="img1" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAABEAQMAAACReXYWAAAAAXNSR0IB2cksfwAAAAZQTFRF////////VXz1bAAAAAJ0Uk5T29CSjAM4AAAADUlEQVR4nGNwYBgUEACExBEBR5NGJQAAAABJRU5ErkJggg=="/>
+	</defs>
+	<style>
+	</style>
+	<use id="Background" href="#img1" x="0" y="0"/>
+</svg>

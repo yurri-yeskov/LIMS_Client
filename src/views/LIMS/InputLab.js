@@ -29,8 +29,10 @@ import "react-multi-email/style.css";
 import { DatePicker as AtndDatePicker, notification, Input, Drawer, Card, List } from "antd";
 import moment from "moment";
 import GPDF from "../../utils/GeneratePDF";
-import { header, weight_fields, charge_fields, object_fields } from "src/utils/LaboratoryTableFields";
+import { excel_header, weight_fields, charge_fields, object_fields, laboratory_columns, import_column_list } from "src/utils/LaboratoryTableFields";
 import "./style.css";
+import { processData } from '../../utils/readFile';
+import * as XLSX from 'xlsx';
 
 class InputLab extends Component {
 
@@ -50,12 +52,18 @@ class InputLab extends Component {
         // this.handleGetAnalysisHistory = this.handleGetAnalysisHistory.bind(this)
         this.handleClickCertificate = this.handleClickCertificate.bind(this)
         this.handleClickClient = this.handleClickClient.bind(this)
+        this.onImportCSV = this.onImportCSV.bind(this)
+        this.handleImportCSV = this.handleImportCSV.bind(this);
+        this.importCSV = this.importCSV.bind(this);
+
+        this.csvRef = React.createRef();
 
         this.state = {
             fields: [
                 { key: "due_date", label: props.language_data.filter((item) => item.label === "due_date")[0][props.selected_language] },
                 { key: "sample_type", label: props.language_data.filter((item) => item.label === "sample_type")[0][props.selected_language], sorter: false },
                 { key: "material", label: props.language_data.filter((item) => item.label === "material")[0][props.selected_language], sorter: false },
+                { key: "material_category", label: props.language_data.filter((item) => item.label === "material_category")[0][props.selected_language], sorter: false },
                 { key: "client", label: props.language_data.filter((item) => item.label === "client")[0][props.selected_language], sorter: false },
                 { key: "packing_type", label: props.language_data.filter((item) => item.label === "packing_type")[0][props.selected_language], sorter: false },
                 { key: "a_types", label: props.language_data.filter((item) => item.label === "analysis_type")[0][props.selected_language], sorter: false },
@@ -69,7 +77,8 @@ class InputLab extends Component {
                 { key: "remark", label: props.language_data.filter((item) => item.label === "remark")[0][props.selected_language], sorter: false },
                 { key: "buttonGroups", label: "", _style: { width: "84px" } },
             ],
-            pdfData: {},
+            date_format: 'DD.MM.YYYY',
+            pdfData: [],
             pdfColumns: [],
             user: {},
             errors: {},
@@ -83,6 +92,7 @@ class InputLab extends Component {
             sampleTypes: [],
             packingTypes: [],
             analysisTypes: [],
+            allClients: [],
             clients: [],
             certificateTypes: [],
             header: [],
@@ -125,19 +135,22 @@ class InputLab extends Component {
                 address_name3: '',
                 address_title: '',
                 address_country: '',
+                address_place: '',
                 address_street: '',
                 address_zip: '',
                 customer_product_code: '',
                 email_address: [],
                 fetch_date: new Date(),
                 order_id: '',
+                customer_order_id: '',
                 pos_id: '',
                 w_target: '',
             },
             modalData: {
                 sample_type: '',
-                material: '',
                 client: '',
+                material: '',
+                material_category: '',
                 packing_type: '',
                 due_date: new Date(),
                 sample_date: new Date(),
@@ -145,7 +158,7 @@ class InputLab extends Component {
                 aType: [],
                 cType: [],
                 distributor: '',
-                geo_locaion: '',
+                geo_location: '',
                 remark: ''
             },
             stockModalData: [{
@@ -155,7 +168,11 @@ class InputLab extends Component {
             analysisTypeModalData: {
                 comment: ''
             },
-            origAnalysisModalData: {}
+            origAnalysisModalData: {},
+            parsedCSVHeader: [],
+            parsedCSVRows: [],
+            openCSVModal: false,
+            importedFile: null
         };
     }
 
@@ -188,6 +205,11 @@ class InputLab extends Component {
                     {
                         key: "material",
                         label: nextProps.language_data.filter((item) => item.label === "material")[0][nextProps.selected_language],
+                        sorter: false,
+                    },
+                    {
+                        key: "material_category",
+                        label: nextProps.language_data.filter((item) => item.label === "material_category")[0][nextProps.selected_language],
                         sorter: false,
                     },
                     {
@@ -254,6 +276,7 @@ class InputLab extends Component {
                 sample_type: '',
                 material: '',
                 client: this.state.defaultClient._id,
+                material_category: this.state.defaultClient._id,
                 packing_type: '',
                 due_date: new Date(),
                 sample_date: new Date(),
@@ -285,72 +308,87 @@ class InputLab extends Component {
     }
 
     getInputLabData = async () => {
-        const res = await axios.get(process.env.REACT_APP_API_URL + "inputLabs")
-        console.log(res.data)
-        const excellData = res.data.inputLabs.map(data => {
-            return {
-                _id: data._id,
-                due_date: moment(data.due_date).format("YYYY-MM-DD HH:mm:ss"),
-                sample_type: data.sample_type.sampleType,
-                material: data.material.material,
-                client: data.client.name,
-                packing_type: data.packing_type.length > 0 ? data.packing_type[0].packing_type : '',
-                a_types: data.a_types.map(aType => { return aType.analysisType + ' ' }),
-                c_types: data.c_types.map(cType => { return cType.certificateType }),
-                sending_date: moment(data.sending_date).format("YYYY-MM-DD HH:mm:ss"),
-                sample_date: moment(data.sample_date).format("YYYY-MM-DD HH:mm:ss"),
-                distributor: data.distributor,
-                geo_locaion: data.geo_locaion,
-                remark: data.remark,
-                weight: data.weight,
-                material_left: data.material_left,
-                lot_number: data.charge.map(ch => moment(ch.date).format("YYYY-MM-DD HH:mm:ss")),
-                stock_sample: data.charge.length > 0 ? (data.sample_type.stockSample === false ? res.data.inputLabs.filter(d => d.sample_type.stockSample === true)
-                    .filter(data1 =>
-                        data1.material._id === data.material._id &&
-                        // data1.material_left > 0 && data1.charge.length > 0 &&
-                        data1.charge.length > 0 && data.charge.filter(i => i.date === data1.charge[0].date).length > 0
-                    ).map(i => i.sample_type.sampleType + " " + i.material.material + " " + i.client.name + " " + moment(i.charge[0].date).format('YYYY-MM-DD HH:mm:ss')) : ''
-                ) : '',
-                delivering_address_name1: data.delivery.name1,
-                delivering_address_name2: data.delivery.name2,
-                delivering_address_name3: data.delivery.name3,
-                delivering_address_title: data.delivery.title,
-                delivering_address_country: data.delivery.country,
-                delivering_address_street: data.delivery.street,
-                delivering_address_zip: data.delivery.zipcode,
-                delivering_customer_product_code: data.delivery.productCode,
-                delivering_email_address: data.delivery.email,
-                delivering_fetch_date: moment(data.delivery.fetch_date).format("YYYY-MM-DD HH:mm:ss"),
-                delivering_order_id: data.delivery.orderId,
-                delivering_pos_id: data.delivery.posId,
-                delivering_w_target: data.delivery.w_target
-            }
-        })
-        this.setState({
-            allData: res.data.inputLabs,
-            filteredTableData: res.data.inputLabs,
-            excellData: excellData,
-            materials: res.data.materials,
-            sampleTypes: res.data.sampleTypes,
-            packingTypes: res.data.packingTypes,
-            analysisTypes: res.data.analysisTypes,
-            certificateTypes: res.data.certificateTypes,
-            defaultClient: res.data.defaultClient
-        })
+        try {
+            const res = await axios.get(process.env.REACT_APP_API_URL + "inputLabs")
+            console.log(res.data)
+            const excellData = res.data.inputLabs.map(data => {
+                return {
+                    _id: data._id,
+                    due_date: moment(data.due_date).format(`${res.data.settings.date_format} HH:mm:ss`),
+                    sample_type: data.sample_type.sampleType,
+                    material: data.material.material,
+                    material_category: data.material_category.name,
+                    client: data.client.name,
+                    packing_type: data.packing_type.length > 0 ? data.packing_type[0].packingType : '',
+                    a_types: data.a_types.map(aType => aType.analysisType).join('\n'),
+                    c_types: data.c_types.map(cType => cType.certificateType).join('\n'),
+                    sending_date: moment(data.sending_date).format(`${res.data.settings.date_format} HH:mm:ss`),
+                    sample_date: moment(data.sample_date).format(`${res.data.settings.date_format} HH:mm:ss`),
+                    distributor: data.distributor,
+                    geo_locaion: data.geo_locaion,
+                    remark: data.remark,
+                    weight: data.weight,
+                    weight_comment: data.weight_comment,
+                    material_left: data.material_left,
+                    lot_number: data.charge.map(ch => moment(ch.date).format(`${res.data.settings.date_format} HH:mm:ss`) + ',' + ch.comment).join('\n'),
+                    stock_sample: data.charge.length > 0 ? (data.sample_type.stockSample === false ? res.data.inputLabs.filter(d => d.sample_type.stockSample === true)
+                        .filter(data1 =>
+                            data1.material._id === data.material._id &&
+                            // data1.material_left > 0 && data1.charge.length > 0 &&
+                            data1.charge.length > 0 && data.charge.filter(i => i.date === data1.charge[0].date).length > 0
+                        ).map(i => i.sample_type.sampleType + " " + i.material.material + " " + i.material_category.name + " " + moment(i.charge[0].date).format(`${res.data.settings.date_format} HH:mm:ss`)).join('\n') : ''
+                    ) : '',
+                    aT_validate: data.aT_validate.map(aT => aT.isValid + "," + aT.aType).join('\n'),
+                    stock_specValues: data.stock_specValues.map(val => val.histId + "," + val.value + "," + val.obj + "," + val.stock + "," + val.client + "," + val.aType + "," + val.isValid).join('\n'),
+                    stock_weights: data.stock_weights.map(w => w.weight + "," + w.stock).join('\n'),
+                    delivering_address_name1: data.delivery.name1,
+                    delivering_address_name2: data.delivery.name2,
+                    delivering_address_name3: data.delivery.name3,
+                    delivering_address_title: data.delivery.title,
+                    delivering_address_country: data.delivery.country,
+                    delivering_address_street: data.delivery.street,
+                    delivering_address_place: data.delivery.place,
+                    delivering_address_zip: data.delivery.zipcode,
+                    delivering_customer_product_code: data.delivery.productCode,
+                    delivering_email_address: data.delivery.email,
+                    delivering_fetch_date: moment(data.delivery.fetch_date).format(`${res.data.settings.date_format} HH:mm:ss`),
+                    delivering_order_id: data.delivery.orderId,
+                    delivering_customer_order_id: data.delivery.customer_orderId,
+                    delivering_pos_id: data.delivery.posId,
+                    delivering_w_target: data.delivery.w_target,
+                    deliveryId: data.delivery._id,
+                }
+            })
+            this.setState({
+                allData: res.data.inputLabs,
+                filteredTableData: res.data.inputLabs,
+                excellData: excellData,
+                materials: res.data.materials,
+                sampleTypes: res.data.sampleTypes,
+                packingTypes: res.data.packingTypes,
+                analysisTypes: res.data.analysisTypes,
+                certificateTypes: res.data.certificateTypes,
+                defaultClient: res.data.defaultClient,
+                date_format: Object(res.data.settings).hasOwnProperty('date_format') ? res.data.settings.date_format : 'DD.MM.YYYY',
+                allClients: res.data.clients
+            })
+        } catch (err) {
+            console.log(err)
+        }
     }
 
-    handleChangeMaterial(e) {
-        axios.get(process.env.REACT_APP_API_URL + `materials/clients/${e.target.value}`)
-            .then(res => {
-                const aTypes = res.data.material.aTypesValues.filter(aType => aType.client === this.state.modalData.client)
-                this.setState({
-                    clients: res.data.material.clients,
-                    filtered_aTypes: aTypes,
-                    filtered_cTypes: res.data.certTypes
-                })
+    handleChangeMaterial = async (e) => {
+        try {
+            const res = await axios.get(process.env.REACT_APP_API_URL + `materials/clients/${e.target.value}`)
+            const aTypes = res.data.material.aTypesValues.filter(aType => aType.client === this.state.modalData.material_category)
+            this.setState({
+                clients: res.data.material.clients,
+                filtered_aTypes: aTypes,
+                filtered_cTypes: res.data.certTypes
             })
-            .catch(err => console.log(err.response.data))
+        } catch (err) {
+            console.log(err)
+        }
     }
 
     clearDeliveryData = () => {
@@ -373,25 +411,45 @@ class InputLab extends Component {
         })
     }
 
-    handleChangeClient(e) {
-        this.setState({
-            modalData: {
-                ...this.state.modalData,
-                client: e.target.value,
-                aType: [],
-                cType: []
-            }
-        })
-        this.clearDeliveryData()
-        if (e.target.value !== '') {
-            axios.get(process.env.REACT_APP_API_URL + `materials/clients/${this.state.modalData.material}`)
-                .then(res => {
-                    const aTypes = res.data.material.aTypesValues.filter(aType => aType.client === e.target.value)
-                    this.setState({
-                        filtered_aTypes: aTypes,
-                    })
+    handleChangeClient = async (e) => {
+        try {
+            this.setState({
+                modalData: {
+                    ...this.state.modalData,
+                    material_category: e.target.value,
+                    aType: [],
+                    cType: []
+                }
+            })
+            this.clearDeliveryData()
+            if (e.target.value !== '') {
+                const res = await axios.get(process.env.REACT_APP_API_URL + `materials/clients/${this.state.modalData.material}`)
+                console.log(">>>>>>>>>>>", res.data)
+                const aTypes = res.data.material.aTypesValues.filter(aType => aType.client === e.target.value)
+                let filtered_aTypes = []
+                aTypes.map(aType => {
+                    if (filtered_aTypes.filter(item => item.value === aType.value).length === 0) {
+                        filtered_aTypes.push(aType)
+                    }
+                });
+
+                this.setState({
+                    filtered_aTypes: filtered_aTypes.sort((a, b) => {
+                        return a.label - b.label
+                    }),
+                    filtered_cTypes: res.data.certTypes.filter(cT => cT.client === e.target.value || cT.client === this.state.defaultClient._id)
+                        .reduce((acc, current) => {
+                            const x = acc.find(item => item._id === current._id);
+                            if (!x) {
+                                return acc.concat([current]);
+                            } else {
+                                return acc;
+                            }
+                        }, [])
                 })
-                .catch(err => console.log(err.response.data))
+            }
+        } catch (err) {
+            console.log(err)
         }
     }
 
@@ -400,23 +458,24 @@ class InputLab extends Component {
     }
 
     handleFiles = async (files) => {
-        // var reader = new FileReader();
-        // reader.readAsText(files[0]);
-        // const result = await new Promise((resolve, reject) => {
-        //     reader.onload = function (e) {
-        //         resolve(reader.result);
-        //     };
-        // });
+        var reader = new FileReader();
+        reader.readAsText(files[0]);
+        const result = await new Promise((resolve, reject) => {
+            reader.onload = function (e) {
+                resolve(reader.result);
+            };
+        });
 
-        // axios.post(Config.ServerUri + "/upload_laboratory_csv", {
-        //     data: result,
-        // }).then((res) => {
-        //     toast.success("Laboratory successfully uploaded");
-        //     this.setState({
-        //         allData: res.data,
-        //         filteredData: res.data,
-        //     });
-        // }).catch((error) => { });
+        axios.post(process.env.REACT_APP_API_URL + "inputLabs/upload_laboratory_csv", {
+            data: result,
+        }).then(res => {
+            toast.success("Laboratory successfully uploaded");
+            this.getInputLabData();
+            // this.setState({
+            //     allData: res.data,
+            //     filteredData: res.data,
+            // });
+        }).catch((error) => console.log(error.response.data));
     }
 
     handleSubmit() {
@@ -435,7 +494,6 @@ class InputLab extends Component {
                 })
             })
             .catch(err => {
-                // console.log(err.response.data)
                 this.setState({ errors: err.response.data })
             })
     }
@@ -467,7 +525,7 @@ class InputLab extends Component {
 
         let data = []
         const obj_count = this.state.materials.filter(m => m._id === this.state.allData.filter(d => d._id === this.state.selectedId)[0].material._id)[0]
-            .aTypesValues.filter(aT => aT.client === this.state.allData.filter(d => d._id === this.state.selectedId)[0].client._id)
+            .aTypesValues.filter(aT => aT.client === this.state.allData.filter(d => d._id === this.state.selectedId)[0].material_category._id)
             .filter(d => d.value === this.state.selected_aType._id).length;
         for (let i = 0; i < obj_count; i++) {
             if (_flags[i]) {
@@ -500,6 +558,10 @@ class InputLab extends Component {
             analysisId: inputData.analysisId,
             validate: _flag ? 1 : 2
         }
+        if (requestData.data.filter(row => row.reason === "").length > 0) {
+            alert("Please select reason field");
+            return;
+        }
         axios.post(process.env.REACT_APP_API_URL + "inputLabs/saveAnalysisTypes", requestData)
             .then(res => {
                 this.setState({
@@ -512,86 +574,91 @@ class InputLab extends Component {
             .catch(err => console.log(err.response.data))
     }
 
-    handleClickWeight(id) {
-        this.setState({
-            openWeightModal: true,
-            selectedId: id,
-            weight_actual: this.state.allData.filter(d => d._id === id)[0].weight,
-            weight_comment: this.state.allData.filter(d => d._id === id)[0].weight_comment,
-            weight_table_flag: false
-        })
-        axios.get(process.env.REACT_APP_API_URL + `weights/${id}`)
-            .then(res => {
-                this.setState({ weightHistories: res.data })
+    handleClickWeight = async (id) => {
+        try {
+            this.setState({
+                openWeightModal: true,
+                selectedId: id,
+                weight_actual: this.state.allData.filter(d => d._id === id)[0].weight,
+                weight_comment: this.state.allData.filter(d => d._id === id)[0].weight_comment,
+                weight_table_flag: false
             })
-            .catch(err => console.log(err.response.data))
-    }
-
-    handleSaveWeight() {
-        const data = {
-            id: this.state.selectedId,
-            weight: this.state.weight_actual,
-            comment: this.state.weight_comment
+            const res = await axios.get(process.env.REACT_APP_API_URL + `weights/${id}`)
+            this.setState({ weightHistories: res.data })
+        } catch (err) {
+            console.log(err)
         }
-        axios.post(process.env.REACT_APP_API_URL + "inputLabs/saveWeight", data)
-            .then(res => {
-                this.setState({ openWeightModal: false })
-                toast.success('Weight data successfully saved')
-                const updatedData = this.state.allData.map(d => d._id === res.data._id ? res.data : d)
-                this.setState({
-                    allData: updatedData,
-                    filteredTableData: updatedData
-                })
-            })
-            .catch(err => console.log(err.response.data))
     }
 
-    handleClickCharge(data) {
-        this.setState({
-            openChargeModal: true,
-            selectedId: data._id,
-            charge_date: data.charge.length > 0 ? data.charge[data.charge.length - 1].date : new Date(),
-            charge_comment: data.charge.length > 0 ? data.charge[data.charge.length - 1].comment : '',
-            charge_table_flag: false
-        })
-        axios.get(process.env.REACT_APP_API_URL + `charges/${data._id}`)
-            .then(res => {
-                this.setState({ chargeHistories: res.data })
+    handleSaveWeight = async () => {
+        try {
+            const data = {
+                id: this.state.selectedId,
+                weight: this.state.weight_actual,
+                comment: this.state.weight_comment
+            }
+            const res = await axios.post(process.env.REACT_APP_API_URL + "inputLabs/saveWeight", data)
+            this.setState({ openWeightModal: false })
+            toast.success('Weight data successfully saved')
+            const updatedData = this.state.allData.map(d => d._id === res.data._id ? res.data : d)
+            this.setState({
+                allData: updatedData,
+                filteredTableData: updatedData
             })
-            .catch(err => console.log(err.response.data))
-    }
-
-    handleSaveCharge() {
-        const data = {
-            is_stock: this.state.sampleTypes.filter(i => i._id === this.state.allData.filter(d => d._id === this.state.selectedId)[0].sample_type._id).length > 0 ?
-                this.state.sampleTypes.filter(i => i._id === this.state.allData.filter(d => d._id === this.state.selectedId)[0].sample_type._id)[0].stockSample : false,
-            id: this.state.selectedId,
-            charge_date: this.state.charge_date,
-            comment: this.state.charge_comment
+        } catch (err) {
+            console.log(err)
         }
-        axios.post(process.env.REACT_APP_API_URL + "inputLabs/saveCharge", data)
-            .then(res => {
-                this.setState({ openChargeModal: false })
-                toast.success('Lot number successfully saved')
-                const updatedData = this.state.allData.map(d => d._id === res.data._id ? res.data : d)
-                this.setState({
-                    allData: updatedData,
-                    filteredTableData: updatedData
-                })
-            })
-            .catch(err => console.log(err.response.data))
     }
 
-    deleteInputLaboratory() {
-        axios.delete(process.env.REACT_APP_API_URL + `inputLabs/${this.state.selectedId}`)
-            .then(res => {
-                this.setState({
-                    allData: res.data,
-                    filteredTableData: res.data,
-                    openDeleteModal: false
-                })
+    handleClickCharge = async (data) => {
+        try {
+            this.setState({
+                openChargeModal: true,
+                selectedId: data._id,
+                charge_date: data.charge.length > 0 ? data.charge[data.charge.length - 1].date : new Date(),
+                charge_comment: data.charge.length > 0 ? data.charge[data.charge.length - 1].comment : '',
+                charge_table_flag: false
             })
-            .catch(err => console.log(err.response.data.message))
+            const res = await axios.get(process.env.REACT_APP_API_URL + `charges/${data._id}`)
+            this.setState({ chargeHistories: res.data })
+        } catch (err) {
+            console.log(err)
+        }
+    }
+
+    handleSaveCharge = async () => {
+        try {
+            const data = {
+                is_stock: this.state.sampleTypes.filter(i => i._id === this.state.allData.filter(d => d._id === this.state.selectedId)[0].sample_type._id).length > 0 ?
+                    this.state.sampleTypes.filter(i => i._id === this.state.allData.filter(d => d._id === this.state.selectedId)[0].sample_type._id)[0].stockSample : false,
+                id: this.state.selectedId,
+                charge_date: this.state.charge_date,
+                comment: this.state.charge_comment
+            }
+            const res = await axios.post(process.env.REACT_APP_API_URL + "inputLabs/saveCharge", data)
+            this.setState({ openChargeModal: false })
+            toast.success('Lot number successfully saved')
+            const updatedData = this.state.allData.map(d => d._id === res.data._id ? res.data : d)
+            this.setState({
+                allData: updatedData,
+                filteredTableData: updatedData
+            })
+        } catch (err) {
+            console.log(err)
+        }
+    }
+
+    deleteInputLaboratory = async () => {
+        try {
+            const res = await axios.delete(process.env.REACT_APP_API_URL + `inputLabs/${this.state.selectedId}`)
+            this.setState({
+                allData: res.data,
+                filteredTableData: res.data,
+                openDeleteModal: false
+            })
+        } catch (err) {
+            console.log(err)
+        }
     }
 
     handleClickAnalysisTypeColumn(id, aType, rowId) {
@@ -609,7 +676,7 @@ class InputLab extends Component {
 
         axios.post(process.env.REACT_APP_API_URL + "inputLabs/analysisTypes", { labStockId: id, labRowId: rowId, analysisId: aType._id })
             .then(async res => {
-                await this.setState({
+                this.setState({
                     reasons: res.data.reasons,
                     objectives: res.data.objectives,
                     units: res.data.units,
@@ -619,7 +686,7 @@ class InputLab extends Component {
                 let modalData = []
                 if (id === rowId) {
                     modalData = await this.state.materials.filter(m => m._id === this.state.allData.filter(d => d._id === this.state.selectedId)[0].material._id)[0]
-                        .aTypesValues.filter(aT => aT.client === this.state.allData.filter(d => d._id === this.state.selectedId)[0].client._id)
+                        .aTypesValues.filter(aT => aT.client === this.state.allData.filter(d => d._id === this.state.selectedId)[0].material_category._id)
                         .filter(d => d.value === this.state.selected_aType._id)
                         .map((data, index) => {
                             latestHistory = res.data.histories.map(hist => hist[0])
@@ -645,7 +712,7 @@ class InputLab extends Component {
                             })
                         })
                     })
-                    await this.setState({
+                    this.setState({
                         analysisTypeModalData: {
                             ...this.state.analysisTypeModalData,
                             comment: latestHistory.length > 0 ? latestHistory[0].comment : '',
@@ -685,7 +752,7 @@ class InputLab extends Component {
                             })
                         })
                     })
-                    await this.setState({
+                    this.setState({
                         analysisTypeModalData: {
                             ...this.state.analysisTypeModalData,
                             comment: hist.length > 0 ? hist[0].comment : '',
@@ -712,13 +779,13 @@ class InputLab extends Component {
             if (item.material_left === 0 && item.charge.length === 0) {
                 const data = {
                     value: item._id,
-                    label: item.material.material + " " + item.client.name + " " + "N/A" + " " + item.material_left
+                    label: item.material.material + " " + item.material_category.name + " " + "N/A" + " " + item.material_left
                 }
                 this.setState({ stock_data: [data] })
             } else {
                 const data = {
                     value: item._id,
-                    label: item.material.material + " " + item.client.name + " " + moment(item.charge[0].date).format("YYYY-MM-DD HH:mm:ss") + " " + item.material_left
+                    label: item.material.material + " " + item.material_category.name + " " + moment(item.charge[0].date).format(`${this.state.date_format} HH:mm:ss`) + " " + item.material_left
                 }
                 this.setState({ stock_data: [data] })
             }
@@ -738,7 +805,7 @@ class InputLab extends Component {
             filtered_stocks.map(s => {
                 data.push({
                     value: s._id,
-                    label: s.material.material + " " + s.client.name + " " + moment(s.charge[0].date).format("YYYY-MM-DD HH:mm:ss") + " " + s.material_left,
+                    label: s.material.material + " " + s.material_category.name + " " + moment(s.charge[0].date).format(`${this.state.date_format} HH:mm:ss`) + " " + s.material_left,
                     material: s.material_left,
                     inputed_material: 0
                 })
@@ -870,268 +937,93 @@ class InputLab extends Component {
         }
     }
 
-    handleClickCertificate = (data, cType) => {
-        this.setState({
-            openCertificateModal: true,
-            selectedId: data._id,
-            selectedCertificate: cType,
-            pdfData: {}
-        });
-        axios.get(process.env.REACT_APP_API_URL + "inputLabs/certTemplates")
-            .then(res => {
-                this.setState({
-                    certificateTemplates: res.data.certTemplates,
-                    units: res.data.units,
-                    objectives: res.data.objectives
-                })
-            })
-            .catch(err => console.log(err.response.data))
-    };
-
-    getCertificateData = async (row) => {
-        const selectedRow = this.state.allData.filter(d => d._id === this.state.selectedId)[0]
-        const pdfData = {}
-        const clientData = await axios.get(process.env.REACT_APP_API_URL + `clients/${selectedRow.client._id}`)
-
-        pdfData.filename = this.state.selectedCertificate.certificateType
-        pdfData.c_title = row.certificatetitle
-        pdfData.footer = row.footer_filename
-        pdfData.logo = row.logo_filename
-        pdfData.place = row.place
-        pdfData.date = moment(selectedRow.sample_date).format(row.date_format)
-        pdfData.productName = row.productdata.productTitle
-        pdfData.freetext = row.freetext
-        pdfData.address = {
-            name: selectedRow.client.name,
-            addressB: clientData.data.addressB,
-            zipcodeB: clientData.data.zipCodeB,
-            cityB: clientData.data.cityB,
-            address2B: clientData.data.address2B,
-            country: clientData.data.countryB
-        }
-        pdfData.productData = row.productdata.productData.filter(pD => pD.name !== '')
-            .map(d => {
-                let fieldValue = ''
-                if (d.pagename === 0) {
-                    switch (d.fieldname) {
-                        case 'due_date':
-                            fieldValue = moment(selectedRow.due_date).format(row.date_format)
-                            break;
-                        case 'sample_type':
-                            fieldValue = selectedRow.sample_type.sampleType
-                            break;
-                        case 'material':
-                            fieldValue = selectedRow.material.material
-                            break;
-                        case 'client':
-                            fieldValue = selectedRow.client.name
-                            break;
-                        case 'packing_type':
-                            fieldValue = selectedRow.packing_type.map(pType => pType.packingType + ', ')
-                            break;
-                        case 'a_types':
-                            fieldValue = selectedRow.a_types.map(aType => aType.analysisType + ', ')
-                            break;
-                        case 'c_types':
-                            fieldValue = selectedRow.c_types.map(cType => cType.certificateType + ', ')
-                            break;
-                        case 'sending_date':
-                            fieldValue = moment(selectedRow.sending_date).format(row.date_format)
-                            break;
-                        case 'sample_date':
-                            fieldValue = moment(selectedRow.sample_date).format(row.date_format)
-                            break;
-                        case 'distributor':
-                            fieldValue = selectedRow.distributor
-                            break;
-                        case 'geo_location':
-                            fieldValue = selectedRow.geo_locaion
-                            break;
-                        case 'remark':
-                            fieldValue = selectedRow.remark
-                            break;
-                        case 'weight':
-                            fieldValue = selectedRow.weight
-                            break;
-                        case 'lot_number':
-                            fieldValue = selectedRow.charge.map(c => moment(c.date).format(row.date_format)).toString()
-                            break;
-                        case 'delivering_address_name1':
-                            fieldValue = selectedRow.delivery.name1
-                            break;
-                        case 'delivering_address_name2':
-                            fieldValue = selectedRow.delivery.name2
-                            break;
-                        case 'delivering_address_name3':
-                            fieldValue = selectedRow.delivery.name3
-                            break;
-                        case 'delivering_address_title':
-                            fieldValue = selectedRow.delivery.title
-                            break;
-                        case 'delivering_address_country':
-                            fieldValue = selectedRow.delivery.country
-                            break;
-                        case 'delivering_address_street':
-                            fieldValue = selectedRow.delivery.street
-                            break;
-                        case 'delivering_address_zip':
-                            fieldValue = selectedRow.delivery.zipCode
-                            break;
-                        case 'delivering_customer_product_code':
-                            fieldValue = selectedRow.delivery.productCode
-                            break;
-                        case 'delivering_email_address':
-                            fieldValue = selectedRow.delivery.email
-                            break;
-                        case 'delivering_fetch_date':
-                            fieldValue = selectedRow.delivery.fetchDate
-                            break;
-                        case 'delivering_order_id':
-                            fieldValue = selectedRow.delivery.orderId
-                            break;
-                        case 'delivering_pos_id':
-                            fieldValue = selectedRow.delivery.posId
-                            break;
-                        case 'delivering_w_target':
-                            fieldValue = selectedRow.delivery.w_target
-                            break;
-                        case 'productCode':
-                            fieldValue = selectedRow.delivery.productCode
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                return {
-                    name: d.name,
-                    value: d.pagename === 0 ? (
-                        fieldValue
-                    ) : (
-                        d.pagename === 1 ? (
-                            d.fieldname === 'objectives'
-                                ? this.state.selectedCertificate.analysises.map(aT => aT.objectives.map(obj => this.state.objectives.filter(o => o._id === obj.id)[0].objective + "-" + this.state.units.filter(u => u._id === obj.unit)[0].unit + ", "))
-                                : this.state.selectedCertificate.analysises.map(aT => this.state.analysisTypes.filter(aType => aType._id === aT.id)[0][d.fieldname] + ', ')
-                        ) : (
-                            selectedRow.client[d.fieldname]
-                        )
-
-                    )
-                }
-            })
-
-        let cert_array = []
-        const certificate = this.state.selectedCertificate.analysises;
-        certificate.map(c => c.objectives.map(obj => cert_array.push(obj)))
-        const analysisIds = selectedRow.a_types.map(aT => aT._id)
-        const rowObjectives = this.state.materials.filter(m => m._id === selectedRow.material._id)[0]
-            .objectiveValues.filter(obj => obj.client === selectedRow.client._id && analysisIds.indexOf(obj.analysis) > -1)
-
-        const filtered_certs = rowObjectives.filter(rObj => cert_array.filter(c => c.id === rObj.id && c.unit === rObj.unit).length > 0)
-
+    handleClickCertificate = async (data, cType) => {
         try {
-            const data = {
-                labId: this.state.selectedId,
-                analysisIds: filtered_certs.map(d => d.analysis)
-            }
-            const res = await axios.post(process.env.REACT_APP_API_URL + "inputLabs/analysisInputValue", data)
-
-            let tableValues = res.data.map(data => {
-                return {
-                    analysis: this.state.analysisTypes.filter(aType => aType._id === data.analysisId).length > 0 ?
-                        this.state.analysisTypes.filter(aType => aType._id === data.analysisId)[0].analysisType : '',
-                    value: data.value,
-                    user: data.user.userName,
-                    date: moment(data.date).format(row.date_format),
-                    reason: data.reason,
-                    spec: '[' + filtered_certs.filter(c => c.analysis === data.analysisId)[0].min + ', ' + filtered_certs.filter(c => c.analysis === data.analysisId)[0].max + ']',
-                    comment: data.comment,
-                    certificate: this.state.selectedCertificate.certificateType,
-                    obj: this.state.analysisTypes.filter(aType => aType._id === data.analysisId)[0].analysisType + "-" +
-                        this.state.objectives.filter(o => o._id === data.obj.split('-')[0])[0].objective + ', ' +
-                        this.state.units.filter(u => u._id === data.obj.split('-')[1])[0].unit,
-                    norm: this.state.analysisTypes.filter(aType => aType._id === data.analysisId)[0].norm
-                }
-            })
-            const tableColumns = row.tablecol.filter(col => col.name !== '')
-            tableValues = tableValues.map(col => {
-                let tempObj = {}
-                tableColumns.map(tCol => {
-                    tempObj[tCol.fieldname] = col[tCol.fieldname]
-                })
-                return tempObj
-            })
-            pdfData.tableValues = tableValues
+            const res = await axios.get(process.env.REACT_APP_API_URL + "inputLabs/certTemplates")
             this.setState({
-                pdfData: pdfData,
-                pdfColumns: tableColumns
+                openCertificateModal: true,
+                selectedId: data._id,
+                selectedCertificate: cType,
+                pdfData: [],
+                certificateTemplates: res.data.certTemplates,
+                units: res.data.units,
+                objectives: res.data.objectives
             })
         } catch (err) {
-            // console.log(err)
-            notification.warning({
-                message: "Warning",
-                description: "Server error!",
-                className: "not-css",
-            });
+            console.log(err)
         }
-    }
+    };
 
-    handleClickUpdate = (item) => {
-        axios.get(process.env.REACT_APP_API_URL + `materials/clients/${item.material._id}`)
-            .then(res => {
-                const aTypes = res.data.material.aTypesValues.filter(aType => aType.client === this.state.modalData.client)
-                this.setState({
-                    clients: res.data.material.clients,
-                    filtered_aTypes: aTypes,
-                    filtered_cTypes: res.data.certTypes
-                })
+    handleClickUpdate = async (item) => {
+        try {
+            const res = await axios.get(process.env.REACT_APP_API_URL + `materials/clients/${item.material._id}`)
+
+            const a_Types = res.data.material.aTypesValues.filter(aType => aType.client === this.state.modalData.material_category)
+            let filtered_aTypes = []
+            a_Types.map(aType => {
+                if (filtered_aTypes.filter(item => item.value === aType.value).length === 0) {
+                    filtered_aTypes.push(aType)
+                }
+            });
+            this.setState({
+                clients: res.data.material.clients,
+                filtered_aTypes: filtered_aTypes.sort((a, b) => {
+                    return a.label - b.label
+                }),
+                filtered_cTypes: res.data.certTypes
             })
-            .catch(err => console.log(err.response.data))
-        const aTypeItems = item.a_types.map(aT => {
-            return {
-                label: aT.analysisType,
-                value: aT._id
-            }
-        })
-        const cTypeItems = item.c_types.map(cT => {
-            return {
-                label: cT.certificateType,
-                value: cT._id
-            }
-        })
-        this.setState({
-            selectedId: item._id,
-            openCreateModal: true,
-            selectedDelivery: item.delivery._id,
-            deliveryData: {
-                address_name1: item.delivery.name1,
-                address_name2: item.delivery.name2,
-                address_name3: item.delivery.name3,
-                address_title: item.delivery.title,
-                address_country: item.delivery.country,
-                address_street: item.delivery.street,
-                address_zip: item.delivery.zipcode,
-                customer_product_code: item.delivery.productCode,
-                email_address: item.delivery.email === "" ? [] : item.delivery.email.split(","),
-                fetch_date: item.delivery.fetchDate,
-                order_id: item.delivery.orderId,
-                pos_id: item.delivery.posId,
-                w_target: item.delivery.w_target
-            },
-            modalData: {
-                sample_type: item.sample_type._id,
-                material: item.material._id,
-                client: item.client._id,
-                packing_type: item.packing_type[0]._id,
-                due_date: item.due_date,
-                sample_date: item.sample_date,
-                sending_date: item.sending_date,
-                aType: aTypeItems,
-                cType: cTypeItems,
-                distributor: item.distributor,
-                geo_locaion: item.geo_location,
-                remark: item.remark
-            },
-        })
+            const aTypeItems = item.a_types.map(aT => {
+                return {
+                    label: aT.analysisType,
+                    value: aT._id
+                }
+            })
+            const cTypeItems = item.c_types.map(cT => {
+                return {
+                    label: cT.certificateType,
+                    value: cT._id
+                }
+            })
+            this.setState({
+                selectedId: item._id,
+                openCreateModal: true,
+                selectedDelivery: item.delivery._id,
+                deliveryData: {
+                    address_name1: item.delivery.name1,
+                    address_name2: item.delivery.name2,
+                    address_name3: item.delivery.name3,
+                    address_title: item.delivery.title,
+                    address_country: item.delivery.country,
+                    address_place: item.delivery.place,
+                    address_street: item.delivery.street,
+                    address_zip: item.delivery.zipcode,
+                    customer_product_code: item.delivery.productCode,
+                    email_address: item.delivery.email === "" ? [] : item.delivery.email.split(","),
+                    fetch_date: item.delivery.fetchDate,
+                    order_id: item.delivery.orderId,
+                    customer_order_id: item.delivery.customer_orderId,
+                    pos_id: item.delivery.posId,
+                    w_target: item.delivery.w_target
+                },
+                modalData: {
+                    sample_type: item.sample_type._id,
+                    client: item.client._id,
+                    material: item.material._id,
+                    material_category: item.material_category._id,
+                    packing_type: item.packing_type[0]._id,
+                    due_date: item.due_date,
+                    sample_date: item.sample_date,
+                    sending_date: item.sending_date,
+                    aType: aTypeItems,
+                    cType: cTypeItems,
+                    distributor: item.distributor,
+                    geo_locaion: item.geo_location,
+                    remark: item.remark
+                },
+            })
+        } catch (err) {
+            console.log(err)
+        }
     }
 
     handleClickClient = (data) => {
@@ -1147,9 +1039,10 @@ class InputLab extends Component {
                 address_street: data.delivery.street,
                 address_zip: data.delivery.zipcode,
                 customer_product_code: data.delivery.productCode,
-                email_address: data.delivery.email,
+                email_address: data.delivery.email.split(',').filter(d => d !== ''),
                 fetch_date: data.delivery.fetchDate,
                 order_id: data.delivery.orderId,
+                customer_order_id: data.delivery.customer_orderId,
                 pos_id: data.delivery.posId,
                 w_target: data.delivery.w_target
             },
@@ -1207,7 +1100,7 @@ class InputLab extends Component {
                                         data1.charge.length > 0 && row.charge.filter(i => i.date === data1.charge[0].date).length > 0
                                     )
                                     .map(i => (
-                                        stockSamples.push(i.sample_type.sampleType + " " + i.material.material + " " + i.client.name + " " + moment(i.charge[0].date).format('YYYY-MM-DD HH:mm:ss'))
+                                        stockSamples.push(i.sample_type.sampleType + " " + i.material.material + " " + i.material_category.name + " " + moment(i.charge[0].date).format(`${this.state.date_format} HH:mm:ss`))
                                     ))
                             )
                         isInclude.push(stockSamples.filter(s => s.toLowerCase().includes(search_key.toLowerCase())).length > 0)
@@ -1219,6 +1112,256 @@ class InputLab extends Component {
             return isInclude.includes(true)
         })
         this.setState({ filteredTableData: filtered_result })
+    }
+
+    getAnalysisType = (mid, cid) => {
+        const default_client = this.state.defaultClient._id;
+        // const client_array = [cid, default_client];
+        const client_array = [cid];
+        const aTypes = this.state.materials.filter(material => material._id === mid)[0]
+            .aTypesValues.filter(aT => client_array.includes(aT.client))
+            .map(data => data.value);
+        let uniqueaTypes = [...new Set(aTypes)];
+        return uniqueaTypes;
+    }
+
+    getCertificateData = async (row) => {
+        const input_Ids = [this.state.selectedId];
+        this.state.allData.filter(d => d.sample_type.stockSample === true && d.material._id === this.state.allData.filter(d => d._id === this.state.selectedId)[0].material._id)
+            .filter(dd => this.state.allData.filter(d => d._id === this.state.selectedId)[0].stock_weights.filter(ii => ii.stock === dd._id).length > 0)
+            .map(data => {
+                input_Ids.push(data._id)
+            })
+        const columns = []
+        const pdf_data = []
+        await Promise.all(input_Ids.map(async (id) => {
+            const selectedInputLab = this.state.allData.filter(d => d._id === id)[0]
+            const pdfData = {}
+            const clientData = await axios.get(process.env.REACT_APP_API_URL + `clients/${selectedInputLab.material_category._id}`)
+            pdfData.filename = this.state.selectedCertificate.certificateType
+            pdfData.date = moment(selectedInputLab.sample_date).format(row.date_format)
+            pdfData.productName = row.productdata.productTitle
+            pdfData.freetext = row.freetext
+            pdfData.address = {
+                name: selectedInputLab.material_category.name,
+                addressB: clientData.data.addressB,
+                zipcodeB: clientData.data.zipCodeB,
+                cityB: clientData.data.cityB,
+                address2B: clientData.data.address2B,
+                country: clientData.data.countryB
+            }
+            pdfData.header_styles = row.header_styles
+            pdfData.footer_styles = row.footer_styles
+            pdfData.c_title = row.certificatetitle
+            pdfData.footer = row.footer_filename
+            pdfData.logo = row.logo_filename
+            pdfData.place = row.place
+
+            pdfData.productData = row.productdata.productData.filter(pD => pD.name !== '')
+                .map(d => {
+                    let fieldValue = ''
+                    if (d.pagename === 0) {
+                        switch (d.fieldname) {
+                            case 'due_date':
+                                fieldValue = moment(selectedInputLab.due_date).format(row.date_format)
+                                break;
+                            case 'sample_type':
+                                fieldValue = selectedInputLab.sample_type.sampleType
+                                break;
+                            case 'material':
+                                fieldValue = selectedInputLab.material.material
+                                break;
+                            case 'client':
+                                fieldValue = selectedInputLab.material_category.name
+                                break;
+                            case 'packing_type':
+                                fieldValue = selectedInputLab.packing_type.map(pType => pType.packingType + ', ')
+                                break;
+                            case 'a_types':
+                                const a_types = this.getAnalysisType(selectedInputLab.material._id, selectedInputLab.material_category._id)
+                                fieldValue = this.state.analysisTypes.filter(aT => a_types.includes(aT._id))
+                                    .map(aType => aType.analysisType + ', ')
+                                break;
+                            case 'c_types':
+                                // const default_client = this.state.defaultClient._id;
+                                // const c_types = this.state.certificateTypes
+                                //     .filter(cType => cType.material === selectedInputLab.material._id && cType.client === default_client)
+                                //     .map(data => data.certificateType);
+                                // fieldValue = selectedInputLab.c_types.map(cType => cType.certificateType + ', ').concat(c_types + ', ');
+                                fieldValue = selectedInputLab.c_types.map(cType => cType.certificateType + ', ');
+                                fieldValue = [...new Set(fieldValue)];
+                                break;
+                            case 'sending_date':
+                                fieldValue = moment(selectedInputLab.sending_date).format(row.date_format)
+                                break;
+                            case 'sample_date':
+                                fieldValue = moment(selectedInputLab.sample_date).format(row.date_format)
+                                break;
+                            case 'distributor':
+                                fieldValue = selectedInputLab.distributor
+                                break;
+                            case 'geo_location':
+                                fieldValue = selectedInputLab.geo_locaion
+                                break;
+                            case 'remark':
+                                fieldValue = selectedInputLab.remark
+                                break;
+                            case 'weight':
+                                fieldValue = selectedInputLab.weight
+                                break;
+                            case 'lot_number':
+                                fieldValue = selectedInputLab.charge.map(c => moment(c.date).format(row.date_format)).toString()
+                                break;
+                            case 'delivering_address_name1':
+                                fieldValue = selectedInputLab.delivery.name1
+                                break;
+                            case 'delivering_address_name2':
+                                fieldValue = selectedInputLab.delivery.name2
+                                break;
+                            case 'delivering_address_name3':
+                                fieldValue = selectedInputLab.delivery.name3
+                                break;
+                            case 'delivering_address_title':
+                                fieldValue = selectedInputLab.delivery.title
+                                break;
+                            case 'delivering_address_country':
+                                fieldValue = selectedInputLab.delivery.country
+                                break;
+                            case 'delivering_address_street':
+                                fieldValue = selectedInputLab.delivery.street
+                                break;
+                            case 'delivering_address_zip':
+                                fieldValue = selectedInputLab.delivery.zipCode
+                                break;
+                            case 'delivering_customer_product_code':
+                                fieldValue = selectedInputLab.delivery.productCode
+                                break;
+                            case 'delivering_email_address':
+                                fieldValue = selectedInputLab.delivery.email
+                                break;
+                            case 'delivering_fetch_date':
+                                fieldValue = selectedInputLab.delivery.fetchDate
+                                break;
+                            case 'delivering_order_id':
+                                fieldValue = selectedInputLab.delivery.orderId
+                                break;
+                            case 'delivering_pos_id':
+                                fieldValue = selectedInputLab.delivery.posId
+                                break;
+                            case 'delivering_w_target':
+                                fieldValue = selectedInputLab.delivery.w_target
+                                break;
+                            case 'productCode':
+                                fieldValue = selectedInputLab.delivery.productCode
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    return {
+                        name: d.name,
+                        value: d.pagename === 0 ? (
+                            fieldValue
+                        ) : (
+                            d.pagename === 1 ? (
+                                d.fieldname == 'objectives'
+                                    ? this.state.selectedCertificate.analysises.map(aT => aT.objectives.map(obj => this.state.objectives.filter(o => o._id === obj.id)[0].objective + "-" + this.state.units.filter(u => u._id === obj.unit)[0].unit + ", "))
+                                    : this.state.selectedCertificate.analysises.map(aT => {
+                                        return this.state.analysisTypes.filter(aType => String(aType._id) === String(aT.id))[0][d.fieldname] + ', '
+                                    })
+                            ) : (
+                                selectedInputLab.material_category[d.fieldname]
+                            )
+
+                        )
+                    }
+                })
+
+            let cert_array = []
+            const certificate = this.state.selectedCertificate.analysises;
+            certificate.map(c => c.objectives.map(obj => cert_array.push(obj)))
+            const analysisIds = selectedInputLab.a_types.map(aT => aT._id)
+            const rowObjectives = this.state.materials.filter(m => m._id === selectedInputLab.material._id)[0]
+                .objectiveValues.filter(obj => obj.client === selectedInputLab.material_category._id && analysisIds.indexOf(obj.analysis) > -1)
+
+            const filtered_certs = rowObjectives.filter(rObj => cert_array.filter(c => c.id === rObj.id && c.unit === rObj.unit).length > 0)
+
+            try {
+                const data = {
+                    labId: id,
+                    analysisIds: filtered_certs.map(d => d.analysis)
+                }
+                const res = await axios.post(process.env.REACT_APP_API_URL + "inputLabs/analysisInputValue", data)
+                let tableValues = res.data.map(data => {
+                    let averageValue = this.getHistoricalValue(data.history);
+                    return {
+                        certificate: this.state.selectedCertificate.certificateType,
+                        value: averageValue,//data.history[0].value,
+                        user: data.history[0].user.userName,
+                        date: moment(data.history[0].date).format(row.date_format),
+                        reason: data.history[0].reason,
+                        spec: '[' + filtered_certs.filter(c => c.analysis === data.analysisId)[0].min + ', ' + filtered_certs.filter(c => c.analysis === data.analysisId)[0].max + ']',
+                        comment: data.history[0].comment,
+                        analysis: this.state.analysisTypes.filter(aType => aType._id === data.analysisId).length > 0 ?
+                            this.state.analysisTypes.filter(aType => aType._id === data.analysisId)[0].analysisType : '',
+                        obj: this.state.analysisTypes.filter(aType => aType._id === data.analysisId)[0].analysisType + "-" +
+                            this.state.objectives.filter(o => o._id === data.history[0].obj.split('-')[0])[0].objective + ', ' +
+                            this.state.units.filter(u => u._id === data.history[0].obj.split('-')[1])[0].unit,
+                        norm: this.state.analysisTypes.filter(aType => aType._id === data.analysisId)[0].norm
+                    }
+                })
+                const tableColumns = row.tablecol.filter(col => col.name !== '')
+                tableValues = tableValues.map(col => {
+                    let tempObj = {}
+                    tableColumns.map(tCol => {
+                        tempObj[tCol.fieldname] = col[tCol.fieldname]
+                    })
+                    return tempObj
+                })
+                pdfData.tableValues = tableValues;
+                pdf_data.push(pdfData)
+                columns.push(tableColumns)
+            } catch (err) {
+                // console.log(err)
+                notification.warning({
+                    message: "Warning",
+                    description: "Server error!",
+                    className: "not-css",
+                });
+            }
+        }))
+        console.log("Data: ", pdf_data);
+        console.log("Columns: ", columns);
+        this.setState({
+            pdfData: pdf_data,
+            pdfColumns: columns
+        })
+    }
+
+    getHistoricalValue(history_info) {
+        const sorted_histories = history_info.sort((a, b) => {
+            return new Date(a.date) > new Date(b.date) ? 1 : -1
+        })
+        // if (sorted_histories.filter(hist => hist.reason === "Mehrfach-Probe").length === 0) {
+        //     return sorted_histories[sorted_histories.length - 1].value;
+        // }
+        let correctValues = [];
+        for (let i = 0; i < sorted_histories.length; i++) {
+            if (i === sorted_histories.length - 1) {
+                if (sorted_histories[i].reason === "Mehrfach-Probe") {
+                    correctValues.push(sorted_histories[i - 1].value);
+                }
+                correctValues.push(sorted_histories[i].value);
+            } else {
+                if (sorted_histories[i].reason !== "Mehrfach-Probe") {
+                    continue;
+                } else {
+                    correctValues.push(sorted_histories[i - 1].value);
+                }
+            }
+        }
+        const retValue = Number(correctValues.reduce((a, b) => a + b, 0) / correctValues.length).toFixed(2);
+        return retValue;
     }
 
     renderModalCreate() {
@@ -1259,6 +1402,21 @@ class InputLab extends Component {
                             }
                         </CFormGroup>
                         <CFormGroup>
+                            <CLabel className="bold">Client</CLabel>
+                            <CSelect
+                                name="client"
+                                value={this.state.modalData.client}
+                                onChange={(e) => this.setState({ modalData: { ...this.state.modalData, client: e.target.value } })}
+                            >
+                                {/* <option value={this.state.defaultClient._id}>Default-0</option> */}
+                                {Object.keys(this.state.allClients).length > 0 && this.state.allClients
+                                    .sort((a, b) => { return String(a.name).toUpperCase() > String(b.name).toUpperCase() ? 1 : -1 })
+                                    .map((client, index) => (
+                                        <option key={index} value={client._id}>{client.name}-{client.clientId}</option>
+                                    ))}
+                            </CSelect>
+                        </CFormGroup>
+                        <CFormGroup>
                             <CLabel className="bold">Material</CLabel>
                             <CSelect
                                 value={this.state.modalData.material}
@@ -1285,7 +1443,7 @@ class InputLab extends Component {
                                 {Object.keys(this.state.materials).length > 0 && this.state.materials
                                     .sort((a, b) => { return String(a.material).toUpperCase() > String(b.material).toUpperCase() ? 1 : -1 })
                                     .map((item, index) => (
-                                        <option key={index} value={item._id}>{item.material}</option>
+                                        <option key={index} value={item._id}>{item.material}-{item.material_id}</option>
                                     ))}
                             </CSelect>
                             {
@@ -1293,18 +1451,18 @@ class InputLab extends Component {
                             }
                         </CFormGroup>
                         <CFormGroup>
-                            <CLabel className="bold">Client</CLabel>
+                            <CLabel className="bold">Material Category</CLabel>
                             <CSelect
                                 disabled={this.state.disabled_client}
                                 name="client"
-                                value={this.state.modalData.client}
+                                value={this.state.modalData.material_category}
                                 onChange={this.handleChangeClient.bind(this)}
                             >
-                                <option value={this.state.defaultClient._id}>Default</option>
+                                <option value={this.state.defaultClient._id}>Default-0</option>
                                 {Object.keys(this.state.clients).length > 0 && this.state.clients
                                     .sort((a, b) => { return String(a.name).toUpperCase() > String(b.name).toUpperCase() ? 1 : -1 })
                                     .map((client, index) => (
-                                        <option key={index} value={client._id}>{client.name}</option>
+                                        <option key={index} value={client._id}>{client.name}-{client.clientId}</option>
                                     ))}
                             </CSelect>
                         </CFormGroup>
@@ -1348,6 +1506,14 @@ class InputLab extends Component {
                                         name="address_name3"
                                         value={this.state.deliveryData.address_name3}
                                         onChange={(e) => this.setState({ deliveryData: { ...this.state.deliveryData, address_name3: e.target.value } })}
+                                    />
+                                </CFormGroup>
+                                <CFormGroup>
+                                    <CLabel className="bold">Delivering.Address.Place</CLabel>
+                                    <CInput
+                                        name="address_place"
+                                        value={this.state.deliveryData.address_place}
+                                        onChange={(e) => this.setState({ deliveryData: { ...this.state.deliveryData, address_place: e.target.value } })}
                                     />
                                 </CFormGroup>
                                 <CFormGroup>
@@ -1399,7 +1565,7 @@ class InputLab extends Component {
                                         <AtndDatePicker
                                             style={{ width: "700px" }}
                                             bordered={false}
-                                            format="YYYY-MM-DD"
+                                            format={this.state.date_format}
                                             onChange={(e) => this.setState({ deliveryData: { ...this.state.deliveryData, fetch_date: e } })}
                                             value={moment(this.state.deliveryData.fetch_date)}
                                         ></AtndDatePicker>
@@ -1414,6 +1580,14 @@ class InputLab extends Component {
                                     />
                                 </CFormGroup>
                                 <CFormGroup>
+                                    <CLabel className="bold">Customer Order ID</CLabel>
+                                    <CInput
+                                        name="customer_order_id"
+                                        value={this.state.deliveryData.customer_order_id}
+                                        onChange={(e) => this.setState({ deliveryData: { ...this.state.deliveryData, customer_order_id: e.target.value } })}
+                                    />
+                                </CFormGroup>
+                                <CFormGroup>
                                     <CLabel className="bold">Pos.ID</CLabel>
                                     <CInput
                                         name="pos_id"
@@ -1422,7 +1596,7 @@ class InputLab extends Component {
                                     />
                                 </CFormGroup>
                                 <CFormGroup>
-                                    <CLabel className="bold">Weight(target)</CLabel>
+                                    <CLabel className="bold">Weight(target)[kg]</CLabel>
                                     <CInput
                                         type="number"
                                         name="weight"
@@ -1447,7 +1621,9 @@ class InputLab extends Component {
                                 {this.state.packingTypes
                                     .sort((a, b) => { return String(a.packingType).toUpperCase() > String(b.packingType).toUpperCase() ? 1 : -1 })
                                     .map((item, index) => (
-                                        <option key={index} value={item._id}>{item.packingType}</option>
+                                        <option key={index} value={item._id}>
+                                            {`${item.packingType}-${item.packingType_id}${item.remark !== "" ? '-' + item.remark : ''}`}
+                                        </option>
                                     ))}
                             </CSelect>
                             {
@@ -1460,7 +1636,7 @@ class InputLab extends Component {
                                 <AtndDatePicker
                                     style={{ width: "700px" }}
                                     bordered={false}
-                                    format="YYYY-MM-DD"
+                                    format={this.state.date_format}
                                     onChange={(e) => this.setState({ modalData: { ...this.state.modalData, due_date: e } })}
                                     value={moment(this.state.modalData.due_date)}
                                     disabled={this.state.disabled_due_date}
@@ -1473,7 +1649,7 @@ class InputLab extends Component {
                                 <AtndDatePicker
                                     style={{ width: "700px" }}
                                     bordered={false}
-                                    format="YYYY-MM-DD"
+                                    format={this.state.date_format}
                                     onChange={(e) => this.setState({ modalData: { ...this.state.modalData, sample_date: e } })}
                                     value={moment(this.state.modalData.sample_date)}
                                     disabled={this.state.disabled_sample_date}
@@ -1486,7 +1662,7 @@ class InputLab extends Component {
                                 <AtndDatePicker
                                     style={{ width: "700px" }}
                                     bordered={false}
-                                    format="YYYY-MM-DD"
+                                    format={this.state.date_format}
                                     onChange={(e) => this.setState({ modalData: { ...this.state.modalData, sending_date: e } })}
                                     value={moment(this.state.modalData.sending_date)}
                                     disabled={this.state.disabled_sending_date}
@@ -1564,8 +1740,8 @@ class InputLab extends Component {
                         <CFormGroup>
                             <CLabel className="bold">Geo-Location</CLabel>
                             <CInput
-                                value={this.state.modalData.geo_locaion}
-                                onChange={(e) => this.setState({ modalData: { ...this.state.modalData, geo_locaion: e.target.value } })}
+                                value={this.state.modalData.geo_location}
+                                onChange={(e) => this.setState({ modalData: { ...this.state.modalData, geo_location: e.target.value } })}
                             />
                         </CFormGroup>
                         <CFormGroup>
@@ -1589,8 +1765,97 @@ class InputLab extends Component {
         );
     }
 
-    render() {
+    onImportCSV = async (files) => {
+        if (window.confirm(`Current date format is ${this.state.date_format}. If the date format does not match, it will happed some errors when importing CSV file. Do you really import file?`)) {
+            var reader = new FileReader();
+            reader.readAsText(files[0]);
+            const result = await new Promise((resolve, reject) => {
+                reader.onload = function (e) {
+                    resolve(reader.result);
+                }
+            })
+            axios.post(process.env.REACT_APP_API_URL + "inputLabs/importCSV", { result })
+                .then(res => {
+                    if (res.data.invalidRows.length > 0) {
+                        alert(`The basic data of packing_type or material or client are not inputed in line ${res.data.invalidRows.toString()}`)
+                    }
+                    if (res.data.success) {
+                        this.getInputLabData()
+                    }
+                }).catch(err => {
+                    // toast.error()
+                    alert('Date format does not match')
+                    console.log(err.response.data)
+                })
+        }
+    }
 
+    handleImportCSV = async (e) => {
+        const file = e.target.files[0];
+        this.setState({ importedFile: file });
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            /* Parse data */
+            const bstr = evt.target.result;
+            const wb = XLSX.read(bstr, { type: 'binary' });
+            /* Get first worksheet */
+            const wsname = wb.SheetNames[0];
+            const ws = wb.Sheets[wsname];
+            /* Convert array of arrays */
+            const data = XLSX.utils.sheet_to_csv(ws, { header: 1 });
+            const parsedData = processData(data);
+            // console.log(parsedData)
+            this.setState({
+                parsedCSVHeader: parsedData.columns,
+                parsedCSVRows: parsedData.data,
+                openCSVModal: true
+            })
+        };
+        reader.readAsBinaryString(file);
+    }
+
+    importCSV = async () => {
+        if (window.confirm(`Current date format is ${this.state.date_format}. If the date format does not match, it will happed some errors when importing CSV file. Do you really import file?`)) {
+            var reader = new FileReader();
+            reader.readAsText(this.state.importedFile);
+            const result = await new Promise((resolve, reject) => {
+                reader.onload = function (e) {
+                    resolve(reader.result);
+                }
+            })
+            axios.post(process.env.REACT_APP_API_URL + "inputLabs/importCSV", { result })
+                .then(res => {
+                    toast.success('Import success!');
+                    if (res.data.invalidRows.length > 0) {
+                        alert(`The basic data of packing_type or material or client are not inputed in line ${res.data.invalidRows.toString()}`)
+                    }
+                    if (res.data.success) {
+                        this.getInputLabData()
+                    }
+                    this.setState({
+                        openCSVModal: false,
+                        parsedCSVHeader: [],
+                        parsedCSVRows: [],
+                        importedFile: null
+                    });
+                    this.csvRef.current.value = "";
+                }).catch(err => {
+                    // toast.error()
+                    this.setState({
+                        openCSVModal: false,
+                        parsedCSVHeader: [],
+                        parsedCSVRows: [],
+                        importedFile: null
+                    });
+                    this.csvRef.current.value = "";
+                    alert('Date format does not match')
+                    console.log(err.response.data)
+                })
+        }
+    }
+
+    render() {
+        const emails = this.state.deliveryData.email_address;
         const children = []
         for (let i = 0; i < this.state.stock_count; i++) {
             children.push(<div key={i} className="row mx-0 mb-2">
@@ -1635,7 +1900,18 @@ class InputLab extends Component {
                         </CSelect>
                     </div>
                     <div className="d-flex align-items-center">
-                        <ReactFileReader handleFiles={this.handleFiles.bind(this)} fileTypes={".csv"} className="ml-4">
+                        <div className='d-flex mx-4'>
+                            {/* <ReactFileReader handleFiles={this.onImportCSV.bind(this)} fileTypes={".csv"}>
+                                <CButton color="info">
+                                    <i className="fa fa-upload"></i>&nbsp;Import CSV
+                                </CButton>
+                            </ReactFileReader> */}
+                            <CButton color="info" onClick={() => this.csvRef.current.click()}>
+                                <i className="fa fa-upload"></i>&nbsp;Import CSV
+                            </CButton>
+                            <input type="file" className='d-none' accept='.csv' ref={this.csvRef} onChange={this.handleImportCSV.bind(this)} />
+                        </div>
+                        <ReactFileReader handleFiles={this.handleFiles.bind(this)} fileTypes={".csv"} className="mx-4">
                             <CButton color="info">
                                 <i className="fa fa-upload" />&nbsp;Upload{this.state.import_label}
                             </CButton>
@@ -1644,7 +1920,7 @@ class InputLab extends Component {
                             <i className="fa fa-download"></i>&nbsp;Download{this.state.export_label}
                         </CButton>
                         <CSVLink
-                            headers={header}
+                            headers={excel_header}
                             filename="Laboratory.csv"
                             data={this.state.excellData}
                             ref={(r) => (this.csvLink = r)}
@@ -1676,18 +1952,27 @@ class InputLab extends Component {
                         scopedSlots={{
                             due_date: (item) => {
                                 return (
-                                    <td>{moment(item.due_date).format('YYYY-MM-DD')}</td>
+                                    <td>{moment(item.due_date).format(this.state.date_format)}</td>
                                 )
                             },
                             sending_date: (item) => {
                                 return (
-                                    <td>{moment(item.sending_date).format('YYYY-MM-DD')}</td>
+                                    <td>{moment(item.sending_date).format(this.state.date_format)}</td>
                                 )
                             },
                             sample_date: (item) => {
                                 return (
-                                    <td>{moment(item.sample_date).format('YYYY-MM-DD')}</td>
+                                    <td>{moment(item.sample_date).format(this.state.date_format)}</td>
                                 )
+                            },
+                            material_category: (item) => {
+                                return (
+                                    <td>
+                                        <CButton className="cursor-pointer">
+                                            {item.material_category === undefined ? '' : item.material_category.name}
+                                        </CButton>
+                                    </td>
+                                );
                             },
                             client: (item) => {
                                 return (
@@ -1699,7 +1984,7 @@ class InputLab extends Component {
                                 );
                             },
                             buttonGroups: (item) => {
-                                if (Object.keys(item.client).length > 0) {
+                                if (Object.keys(item.material_category).length > 0) {
                                     return (
                                         <td>
                                             <div className="d-flex">
@@ -1719,7 +2004,9 @@ class InputLab extends Component {
                             },
                             sample_type: (item) => {
                                 return (
-                                    <td>{item.sample_type.sampleType}</td>
+                                    <td>
+                                        {item.sample_type.sampleType}
+                                    </td>
                                 )
                             },
                             material: (item) => {
@@ -1738,7 +2025,7 @@ class InputLab extends Component {
                                         <td>
                                             {
                                                 item.a_types.length > 0 && (
-                                                    item.a_types.map((aType, k) => {
+                                                    item.charge.length === 0 ? item.a_types.map((aType, k) => {
                                                         return (
                                                             <div key={k} className="px-2 py-1">
                                                                 <CButton className={`color-white ${item.aT_validate.filter(a => a.aType === aType._id).length === 0 ?
@@ -1751,23 +2038,35 @@ class InputLab extends Component {
                                                                 >{aType.analysisType}</CButton>
                                                             </div>
                                                         );
-                                                    })
+                                                    }) : item.c_types.map(ch => item.a_types.map((aType, k) => {
+                                                        return (
+                                                            <div key={k} className="px-2 py-1">
+                                                                <CButton className={`color-white ${item.aT_validate.filter(a => a.aType === aType._id).length === 0 ?
+                                                                    `background-grey` :
+                                                                    (item.aT_validate.filter(a => a.aType === aType._id)[0].isValid === 1 ? `background-green` : `background-red`)}`}
+                                                                    size="sm" onClick={() => {
+                                                                        this.setState({ sameId: true })
+                                                                        this.handleClickAnalysisTypeColumn(item._id, aType, item._id)
+                                                                    }}
+                                                                >{aType.analysisType}</CButton>
+                                                            </div>
+                                                        );
+                                                    }))
                                                 )
                                             }
                                             {
                                                 item.charge.length > 0 &&
                                                 this.state.allData.filter(d => d.sample_type.stockSample === true && d.material._id === item.material._id)
-                                                    .filter(dd => item.stock_specValues.filter(ii => ii.stock === dd._id).length > 0)
+                                                    .filter(dd => item.stock_weights.filter(ii => String(ii.stock) === String(dd._id)).length > 0)
                                                     .map(data => data.a_types.map((aT, i) => {
                                                         const specValues = item.stock_specValues.filter(sv => sv.stock.toString() === data._id.toString() && sv.aType.toString() === aT._id.toString())
-                                                        // console.log(">>>>>>>>", specValues)
                                                         let color_info = []
                                                         if (this.state.materials.filter(mat => mat._id === item.material._id)[0]
-                                                            .aTypesValues.filter(aTValue => aTValue.client === item.client._id && aTValue.value === aT._id).length > 0) {
+                                                            .aTypesValues.filter(aTValue => aTValue.client === item.material_category._id && aTValue.value === aT._id).length > 0) {
                                                             specValues.map((sv) => {
                                                                 if (sv.value !== 0 && sv.obj !== '') {
                                                                     const matched_obj = this.state.materials.filter(mat => mat._id === item.material._id)[0].objectiveValues
-                                                                        .filter(objValue1 => objValue1.client === item.client._id && objValue1.analysis === aT._id)
+                                                                        .filter(objValue1 => objValue1.client === item.material_category._id && objValue1.analysis === aT._id)
                                                                         .filter(objValue2 => String(objValue2.id + '-' + objValue2.unit) === sv.obj)
                                                                     if (matched_obj.length === 0) {
                                                                         color_info.push(1)
@@ -1781,7 +2080,6 @@ class InputLab extends Component {
                                                         } else {
                                                             color_info.push(2)
                                                         }
-                                                        // console.log("color_info: ", color_info)
                                                         return (
                                                             <div key={i} className="px-2 py-1">
                                                                 <CButton
@@ -1831,7 +2129,7 @@ class InputLab extends Component {
                                             {item.c_types.map((cT, k) => (
                                                 <div key={k} className="p-2">
                                                     {
-                                                        (item.aT_validate.length > 0 && item.aT_validate.filter(v => parseInt(v.isValid) !== 1).length === 0) ? (
+                                                        (item.aT_validate.length > 0 && item.aT_validate.filter(v => parseInt(v.isValid) !== 1).length === 0 && item.aT_validate.length === item.a_types.length) ? (
                                                             <CButton onClick={() => this.handleClickCertificate(item, cT)}>
                                                                 {cT.certificateType}
                                                             </CButton>
@@ -1846,7 +2144,7 @@ class InputLab extends Component {
                                             {
                                                 item.charge.length > 0 &&
                                                 this.state.allData.filter(d => d.sample_type.stockSample === true && d.material._id === item.material._id)
-                                                    .filter(dd => item.stock_specValues.filter(ii => ii.stock === dd._id).length > 0)
+                                                    .filter(dd => item.stock_weights.filter(ii => ii.stock === dd._id).length > 0)
                                                     .map(data => data.c_types.map((cT, i) => {
                                                         return (
                                                             <div key={i} className="px-2 py-1">
@@ -1914,7 +2212,7 @@ class InputLab extends Component {
                                             item.sample_type.stockSample ? (
                                                 item.charge.length > 0 ? item.charge.map((data, index) => (
                                                     <CButton key={index} onClick={() => this.handleClickCharge(item)}>
-                                                        {(data.date === undefined || data.date === '') ? 'N/A' : moment(data.date).format('YYYY-MM-DD HH:mm:ss')}
+                                                        {(data.date === undefined || data.date === '') ? 'N/A' : moment(data.date).format(`${this.state.date_format} HH:mm:ss`)}
                                                     </CButton>
                                                 )) : <div className="text-center">
                                                     <CButton onClick={() => this.handleClickCharge(item)}>N/A</CButton>
@@ -1924,12 +2222,12 @@ class InputLab extends Component {
                                                     <ul>
                                                         {
                                                             item.charge.map((data, index) => (
-                                                                <li key={index}>{moment(data.date).format('YYYY-MM-DD HH:mm:ss')}</li>
+                                                                <li key={index}>{moment(data.date).format(`${this.state.date_format} HH:mm:ss`)}</li>
                                                             ))
                                                         }
                                                     </ul>
                                                 ) : <CButton onClick={() => this.handleClickCharge(item)}>
-                                                    {item.charge.length > 0 ? item.charge[0].date : 'N/A'}
+                                                    {item.charge.length > 0 ? moment(item.charge[0].date).format(`${this.state.date_format} HH:mm:ss`) : 'N/A'}
                                                 </CButton>
                                             )
                                         }
@@ -1955,7 +2253,7 @@ class InputLab extends Component {
                                                             )
                                                             .map((i, index) => (
                                                                 <li key={index}>
-                                                                    {i.sample_type.sampleType + " " + i.material.material + " " + i.client.name + " " + moment(i.charge[0].date).format('YYYY-MM-DD HH:mm:ss')}
+                                                                    {i.sample_type.sampleType + " " + i.material.material + " " + i.material_category.name + " " + moment(i.charge[0].date).format(`${this.state.date_format} HH:mm:ss`)}
                                                                 </li>
                                                             ))
                                                     }
@@ -2031,7 +2329,7 @@ class InputLab extends Component {
                                                                 return <td>{item.user.userName}</td>;
                                                             },
                                                             update_date: (item) => {
-                                                                return <td>{moment(item.updateDate).format("YYYY-MM-DD HH:mm:ss")}</td>
+                                                                return <td>{moment(item.updateDate).format(`${this.state.date_format} HH:mm:ss`)}</td>
                                                             }
                                                         }}
                                                     ></CDataTable>
@@ -2075,7 +2373,7 @@ class InputLab extends Component {
                                                     <CCol md="9">
                                                         <AtndDatePicker
                                                             className="w-100"
-                                                            format="YYYY-MM-DD HH:mm:ss"
+                                                            format={`${this.state.date_format} HH:mm:ss`}
                                                             onChange={(e) => this.setState({ charge_date: e })}
                                                             value={moment(this.state.charge_date)}
                                                             showTime={{ defaultValue: moment(this.state.charge_date, "HH:mm:ss") }}
@@ -2104,10 +2402,10 @@ class InputLab extends Component {
                                                                 return <td>{item.user.userName}</td>;
                                                             },
                                                             charge: (item) => {
-                                                                return <td>{moment(item.chargeDate).format("YYYY-MM-DD HH:mm:ss")}</td>
+                                                                return <td>{moment(item.chargeDate).format(`${this.state.date_format} HH:mm:ss`)}</td>
                                                             },
                                                             update_date: (item) => {
-                                                                return <td>{moment(item.updateDate).format("YYYY-MM-DD HH:mm:ss")}</td>
+                                                                return <td>{moment(item.updateDate).format(`${this.state.date_format} HH:mm:ss`)}</td>
                                                             }
                                                         }}
                                                     ></CDataTable>
@@ -2140,6 +2438,20 @@ class InputLab extends Component {
                                     <CCardBody>
                                         <CForm>
                                             <CFormGroup>
+                                                <CRow className="mt-2">
+                                                    <CCol md="5">
+                                                        <CLabel style={{ float: "right" }}>
+                                                            Client ID:
+                                                        </CLabel>
+                                                    </CCol>
+                                                    <CCol md="7">
+                                                        <CInput
+                                                            name="client_id"
+                                                            value={this.state.clientData.clientId}
+                                                            readOnly
+                                                        ></CInput>
+                                                    </CCol>
+                                                </CRow>
                                                 <CRow className="mt-2">
                                                     <CCol md="5">
                                                         <CLabel style={{ float: "right" }}>
@@ -2213,6 +2525,20 @@ class InputLab extends Component {
                                                 <CRow className="mt-2">
                                                     <CCol md="5">
                                                         <CLabel style={{ float: "right" }}>
+                                                            Delivering.Address.Place:
+                                                        </CLabel>
+                                                    </CCol>
+                                                    <CCol md="7">
+                                                        <CInput
+                                                            name="address_street"
+                                                            value={this.state.deliveryData.address_place}
+                                                            readOnly
+                                                        ></CInput>
+                                                    </CCol>
+                                                </CRow>
+                                                <CRow className="mt-2">
+                                                    <CCol md="5">
+                                                        <CLabel style={{ float: "right" }}>
                                                             Delivering.Address.Street:
                                                         </CLabel>
                                                     </CCol>
@@ -2260,7 +2586,7 @@ class InputLab extends Component {
                                                         <CInput
                                                             type="email"
                                                             name="email_address"
-                                                            value={this.state.deliveryData.email}
+                                                            value={emails.join()}
                                                             readOnly
                                                         ></CInput>
                                                     </CCol>
@@ -2272,7 +2598,7 @@ class InputLab extends Component {
                                                     <CCol md="7">
                                                         <CInput
                                                             name="fetch_date"
-                                                            value={moment(this.state.deliveryData.fetch_date).format("YYYY-MM-DD HH:mm:ss")}
+                                                            value={moment(this.state.deliveryData.fetch_date).format(`${this.state.date_format} HH:mm:ss`)}
                                                             readOnly
                                                         ></CInput>
                                                     </CCol>
@@ -2285,6 +2611,18 @@ class InputLab extends Component {
                                                         <CInput
                                                             name="order_id"
                                                             value={this.state.deliveryData.order_id}
+                                                            readOnly
+                                                        ></CInput>
+                                                    </CCol>
+                                                </CRow>
+                                                <CRow className="mt-2">
+                                                    <CCol md="5">
+                                                        <CLabel style={{ float: "right" }}>Customer OrderId:</CLabel>
+                                                    </CCol>
+                                                    <CCol md="7">
+                                                        <CInput
+                                                            name="order_id"
+                                                            value={this.state.deliveryData.customer_order_id}
                                                             readOnly
                                                         ></CInput>
                                                     </CCol>
@@ -2383,7 +2721,7 @@ class InputLab extends Component {
                                 <div className="border-grey p-4">
                                     {
                                         this.state.materials.filter(m => m._id === this.state.allData.filter(d => d._id === this.state.selectedId)[0].material._id)[0]
-                                            .aTypesValues.filter(aT => aT.client === this.state.allData.filter(d => d._id === this.state.selectedId)[0].client._id)
+                                            .aTypesValues.filter(aT => aT.client === this.state.allData.filter(d => d._id === this.state.selectedId)[0].material_category._id)
                                             .filter(d => d.value === this.state.selected_aType._id)
                                             .map((data, index) => (
                                                 <CRow key={index} className="mx-0 my-2">
@@ -2479,7 +2817,7 @@ class InputLab extends Component {
                                                                             return <td>{item.user.userName}</td>;
                                                                         },
                                                                         update_date: (item) => {
-                                                                            return <td>{moment(item.date).format("YYYY-MM-DD HH:mm:ss")}</td>
+                                                                            return <td>{moment(item.date).format(`${this.state.date_format} HH:mm:ss`)}</td>
                                                                         },
                                                                         limitValue: (item) => <td>{item.value}</td>,
                                                                         accept: (item) => {
@@ -2553,7 +2891,7 @@ class InputLab extends Component {
                                 />
                             </div>
                             <div className="col-md-9 col-12 p-0">
-                                {Object.keys(this.state.pdfData).length > 0 && (
+                                {this.state.pdfData.length > 0 && (
                                     <div style={{ overflow: "auto", height: "73vh" }}>
                                         <GPDF
                                             pdfdata={this.state.pdfData}
@@ -2565,7 +2903,81 @@ class InputLab extends Component {
                         </div>
                     </Card>
                 </Drawer>
-
+                {/**-------Import CSV file */}
+                {this.state.openCSVModal && (
+                    <CModal
+                        show={this.state.openCSVModal}
+                        onClose={() => {
+                            this.setState({
+                                openCSVModal: false,
+                                parsedCSVHeader: [],
+                                parsedCSVRows: [],
+                                importedFile: null
+                            });
+                            this.csvRef.current.value = "";
+                        }}
+                        style={{ width: "80vw" }}
+                    // closeOnBackdrop={false}
+                    >
+                        <CModalHeader>
+                            <CModalTitle>CSV Data</CModalTitle>
+                        </CModalHeader>
+                        <CModalBody>
+                            <div className='p-4'>
+                                <table className='table table-hover table-bordered table-responsive'>
+                                    <thead>
+                                        <tr>
+                                            {
+                                                this.state.parsedCSVHeader.map((item1, index) => (
+                                                    <th key={index}>
+                                                        <select
+                                                            style={{ minWidth: '150px' }}
+                                                            className='form-control'
+                                                            defaultValue={import_column_list.filter(column => column.key === item1.selector).length > 0 ?
+                                                                laboratory_columns.filter(labColumn => labColumn.label === import_column_list.filter(column => column.key === item1.selector)[0].label).length > 0 ?
+                                                                    laboratory_columns.filter(labColumn => labColumn.label === import_column_list.filter(column => column.key === item1.selector)[0].label)[0].key : '' : ''}
+                                                        >
+                                                            {
+                                                                laboratory_columns.map((item2, index2) =>
+                                                                    <option value={item2.key} key={index2}>{item2.label}</option>
+                                                                )
+                                                            }
+                                                        </select>
+                                                    </th>
+                                                ))
+                                            }
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {
+                                            this.state.parsedCSVRows.map((row, index1) =>
+                                                <tr key={index1}>
+                                                    {
+                                                        this.state.parsedCSVHeader.map((item, index2) =>
+                                                            <td key={index2}>{row[item.selector]}</td>
+                                                        )
+                                                    }
+                                                </tr>
+                                            )
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CModalBody>
+                        <CModalFooter>
+                            <CButton color="info" onClick={this.importCSV.bind(this)}>Import Data</CButton>
+                            <CButton onClick={() => {
+                                this.setState({
+                                    openCSVModal: false,
+                                    parsedCSVHeader: [],
+                                    parsedCSVRows: [],
+                                    importedFile: null
+                                });
+                                this.csvRef.current.value = "";
+                            }} color="secondary">Cancel</CButton>
+                        </CModalFooter>
+                    </CModal>
+                )}
             </div >
         )
     }

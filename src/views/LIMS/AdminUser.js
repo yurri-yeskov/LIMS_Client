@@ -36,7 +36,6 @@ export default class AdminUser extends Component {
     this.handleInputChange = this.handleInputChange.bind(this);
 
     this.state = {
-      lastUserID: 0,
       usersData: [],
       userTypesData: [],
       isMatched: true,
@@ -160,6 +159,10 @@ export default class AdminUser extends Component {
             (item) => item.label === "remark"
           )[0][props.selected_language],
         },
+        {
+          key: "_id",
+          label: 'Id',
+        },
       ],
     };
   }
@@ -278,6 +281,10 @@ export default class AdminUser extends Component {
               (item) => item.label === "remark"
             )[0][nextProps.selected_language],
           },
+          {
+            key: "_id",
+            label: 'Id',
+          },
         ],
       });
     }
@@ -304,12 +311,27 @@ export default class AdminUser extends Component {
         resolve(reader.result);
       };
     });
-    axios
-      .post(Config.ServerUri + "/upload_user_csv", {
-        data: result,
-      })
+    axios.post(Config.ServerUri + "/upload_user_csv", { data: result })
       .then((res) => {
-        this.setState({ usersData: res.data.users });
+        const user_list = res.data.users.map(user => {
+          return {
+            user_id: user.user_id,
+            userName: user.userName,
+            email: user.email,
+            password: user.password_text !== undefined ? user.password_text : '',
+            user_type: user.user_type,
+            remark: user.remark
+          }
+        })
+        this.setState({
+          export_all_data: user_list.sort((a, b) => {
+            return a.user_id > b.user_id ? 1 : -1;
+          }),
+          usersData: res.data.users.sort((a, b) => {
+            return a.user_id > b.user_id ? 1 : -1;
+          }),
+          userTypesData: res.data.userTypes,
+        });
         toast.success("User CSV file successfully imported");
       });
   }
@@ -330,7 +352,12 @@ export default class AdminUser extends Component {
 
       if (found === true) {
         this.setState({ double_error: "Value already exists" });
-      } else this.setState({ double_error: "" });
+      } else {
+        value = value.replace(/ /g, '_')
+        value = value.replace(/-/g, '_')
+        value = value.replace(/,/g, '')
+        this.setState({ double_error: "" });
+      }
     }
 
     this.setState({
@@ -341,9 +368,24 @@ export default class AdminUser extends Component {
   getAllUsers() {
     axios.get(Config.ServerUri + "/get_all_users")
       .then((res) => {
+        const user_list = res.data.users.map(user => {
+          return {
+            user_id: user.user_id,
+            userName: user.userName,
+            email: user.email,
+            password: user.password_text !== undefined ? user.password_text : '',
+            user_type: user.user_type,
+            remark: user.remark,
+            _id: user._id
+          }
+        })
         this.setState({
-          export_all_data: res.data.users,
-          usersData: res.data.users,
+          export_all_data: user_list.sort((a, b) => {
+            return a.user_id > b.user_id ? 1 : -1;
+          }),
+          usersData: res.data.users.sort((a, b) => {
+            return a.user_id > b.user_id ? 1 : -1;
+          }),
           userTypesData: res.data.userTypes,
         });
       })
@@ -351,17 +393,26 @@ export default class AdminUser extends Component {
   }
 
   on_create_clicked() {
-    if (this.state.usersData.length === 0) {
-      this.setState({ lastUserID: 0 });
-    } else {
-      this.setState({
-        lastUserID:
-          this.state.usersData[this.state.usersData.length - 1].auto_id,
-      });
+    let id = 1;
+    if (this.state.usersData.length > 0) {
+      const max_id = Math.max.apply(Math, this.state.usersData.map(data => data.user_id));
+      if (max_id === this.state.usersData.length) {
+        id = max_id + 1
+      } else {
+        var a = this.state.usersData.map(data => Number(data.user_id));
+        var missing = new Array();
+
+        for (var i = 1; i <= max_id; i++) {
+          if (a.indexOf(i) == -1) {
+            missing.push(i);
+          }
+        }
+        id = Math.min.apply(Math, missing)
+      }
     }
     this.setState({
       current_id: "",
-      user_id: this.state.usersData.length + 1,
+      user_id: id,
       userName: "",
       email: "",
       password: "",
@@ -380,7 +431,7 @@ export default class AdminUser extends Component {
       user_id: item.user_id,
       userName: item.userName,
       email: item.email,
-      password: item.password_text,
+      password: `${item.password.slice(0, 20)}...`,
       userType: this.state.userTypesData.filter(uType => uType.userType === item.user_type)[0]._id,
       remark: item.remark,
       double_error: "",
@@ -398,21 +449,36 @@ export default class AdminUser extends Component {
     axios.post(Config.ServerUri + "/delete_user", {
       id: this.state.current_id,
     }).then((res) => {
+      const user_list = res.data.users.map(user => {
+        return {
+          user_id: user.user_id,
+          userName: user.userName,
+          email: user.email,
+          password: user.password_text !== undefined ? user.password_text : '',
+          user_type: user.user_type,
+          remark: user.remark
+        }
+      })
       toast.success("User successfully deleted");
       this.setState({
-        export_all_data: res.data.users,
-        usersData: res.data.users,
+        export_all_data: user_list.sort((a, b) => {
+          return a.user_id > b.user_id ? 1 : -1;
+        }),
+        usersData: res.data.users.sort((a, b) => {
+          return a.user_id > b.user_id ? 1 : -1;
+        }),
         userTypesData: res.data.userTypes,
       });
-    })
-      .catch((error) => { });
+    }).catch((error) => {
+      toast.error(error.response.data.message)
+    });
   }
 
   createUser(event) {
     event.preventDefault();
     var last_userid = 0;
     if (this.state.user_id === "") {
-      last_userid = Number(this.state.lastUserID) + 1;
+      last_userid = 1;
     } else {
       last_userid = this.state.user_id;
     }
@@ -425,6 +491,10 @@ export default class AdminUser extends Component {
       return;
     }
     if (this.state.double_error !== "") return;
+    if (this.state.usersData.filter(data => data.user_id === this.state.user_id).length > 0) {
+      this.setState({ double_error: "Value already exists" });
+      return;
+    }
     this.setState({
       modal_create: false
     })
@@ -438,10 +508,24 @@ export default class AdminUser extends Component {
         remark: this.state.remark,
       })
       .then((res) => {
+        const user_list = res.data.users.map(user => {
+          return {
+            user_id: user.user_id,
+            userName: user.userName,
+            email: user.email,
+            password: user.password_text !== undefined ? user.password_text : '',
+            user_type: user.user_type,
+            remark: user.remark
+          }
+        })
         toast.success("User successfully created");
         this.setState({
-          export_all_data: res.data.users,
-          usersData: res.data.users,
+          export_all_data: user_list.sort((a, b) => {
+            return a.user_id > b.user_id ? 1 : -1;
+          }),
+          usersData: res.data.users.sort((a, b) => {
+            return a.user_id > b.user_id ? 1 : -1;
+          }),
           userTypesData: res.data.userTypes,
         });
       })
@@ -451,7 +535,6 @@ export default class AdminUser extends Component {
   updateUser(event) {
     event.preventDefault();
     if (this.state.new_password !== "" && this.state.new_password !== this.state.confirm_password) {
-      console.log("sdfsd")
       this.setState({ isMatched: false })
       return;
     }
@@ -466,13 +549,26 @@ export default class AdminUser extends Component {
       userType: this.state.userType,
       remark: this.state.remark
     }
-    console.log(data)
     axios.post(Config.ServerUri + "/update_user", data)
       .then((res) => {
+        const user_list = res.data.users.map(user => {
+          return {
+            user_id: user.user_id,
+            userName: user.userName,
+            email: user.email,
+            password: user.password_text !== undefined ? user.password_text : '',
+            user_type: user.user_type,
+            remark: user.remark
+          }
+        })
         toast.success("User successfully updated");
         this.setState({
-          export_all_data: res.data.users,
-          usersData: res.data.users,
+          export_all_data: user_list.sort((a, b) => {
+            return a.user_id > b.user_id ? 1 : -1;
+          }),
+          usersData: res.data.users.sort((a, b) => {
+            return a.user_id > b.user_id ? 1 : -1;
+          }),
           userTypesData: res.data.userTypes,
           modal_create: false
         });
@@ -502,20 +598,10 @@ export default class AdminUser extends Component {
                 onChange={this.handleInputChange}
                 type="number"
               />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+              {
+                this.state.current_id === '' && this.state.usersData.filter(user => user.user_id === this.state.user_id).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>User id already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>
@@ -527,20 +613,10 @@ export default class AdminUser extends Component {
                 onChange={this.handleInputChange}
                 required
               />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+              {
+                this.state.current_id === '' && this.state.usersData.filter(user => user.userName === this.state.userName).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>UserName already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>
@@ -741,7 +817,7 @@ export default class AdminUser extends Component {
               user_id: (item) => <td>{item.user_id}</td>,
               userType: (item) => <td>{item.user_type}</td>,
               remark: (item) => <td>{item.remark}</td>,
-              password: (item) => <td>{item.password_text}</td>,
+              password: (item) => <td>{item.password.slice(0, 20)}...</td>,
               buttonGroups: (item, index) => {
                 return (
                   <td>

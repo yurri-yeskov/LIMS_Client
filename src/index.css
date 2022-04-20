@@ -113,7 +113,7 @@
 }
 
 .transform-scale-1-1 {
-    transform: scale(1,1) !important;
+    transform: scale(1, 1) !important;
 }
 
 .search-input {
@@ -122,4 +122,37 @@
 
 .certificate-doc table td {
     line-height: 1.2rem !important;
+}
+
+.border-left-grey {
+    border-left: 1px solid #b5afaf;
+}
+
+.border-right-grey {
+    border-right: 1px solid #b5afaf;
+}
+
+.certificate-doc th>div {
+    line-height: 1rem !important;
+}
+
+.svg-white {
+    filter: brightness(0) invert(1);
+}
+
+.svg-black {
+    filter: brightness(1) invert(1);
+}
+
+.divider {
+    height: 100%;
+    width: 3px;
+    background-color: white;
+}
+
+@media (min-width: 576px) {
+    .modal-dialog {
+        max-width: 3200px;
+        margin: 1.75rem auto;
+    }
 }

@@ -27,7 +27,6 @@ import Config from "../../Config.js";
 export default class AdminUserType extends Component {
   constructor(props) {
     super(props);
-    console.log(props);
     this.getAllUserTypes = this.getAllUserTypes.bind(this);
     this.deleteUserType = this.deleteUserType.bind(this);
     this.createUserType = this.createUserType.bind(this);
@@ -98,6 +97,7 @@ export default class AdminUserType extends Component {
         { key: 'geologyExport', label: props.language_data.filter(item => item.label === 'geology')[0][props.selected_language] + ' ' + props.language_data.filter(item => item.label === 'export')[0][props.selected_language] },
         { key: 'geologyAdmin', label: props.language_data.filter(item => item.label === 'geology')[0][props.selected_language] + ' ' + props.language_data.filter(item => item.label === 'admin')[0][props.selected_language] },
         { key: 'remark', label: props.language_data.filter(item => item.label === 'remark')[0][props.selected_language] },
+        { key: '_id', label: 'Id' },
       ]
     };
   }
@@ -149,6 +149,7 @@ export default class AdminUserType extends Component {
           { key: 'geologyExport', label: nextProps.language_data.filter(item => item.label === 'geology')[0][nextProps.selected_language] + ' ' + nextProps.language_data.filter(item => item.label === 'export')[0][nextProps.selected_language] },
           { key: 'geologyAdmin', label: nextProps.language_data.filter(item => item.label === 'geology')[0][nextProps.selected_language] + ' ' + nextProps.language_data.filter(item => item.label === 'admin')[0][nextProps.selected_language] },
           { key: 'remark', label: nextProps.language_data.filter(item => item.label === 'remark')[0][nextProps.selected_language] },
+          { key: '_id', label: 'Id' },
         ]
       })
     }
@@ -170,7 +171,12 @@ export default class AdminUserType extends Component {
 
       if (found === true) {
         this.setState({ double_error: "Value already exists" });
-      } else this.setState({ double_error: "" });
+      } else {
+        value = value.replace(/ /g, '_')
+        value = value.replace(/-/g, '_')
+        value = value.replace(/,/g, '')
+        this.setState({ double_error: "" });
+      }
     }
 
     this.setState({
@@ -190,7 +196,6 @@ export default class AdminUserType extends Component {
         resolve(reader.result);
       }
     })
-    console.log(result);
     axios.post(Config.ServerUri + '/upload_usertype_csv', {
       data: result
     })
@@ -288,8 +293,8 @@ export default class AdminUserType extends Component {
               <CLabel style={{ fontWeight: '500' }}>UserType ID</CLabel>
               <CInput name="userType_id" value={this.state.userType_id} onChange={this.handleInputChange} required />
               {
-                error === undefined || error === '' ? <div></div> :
-                  <div style={{ width: '100%', marginTop: '0.25rem', fontSize: '80%', color: '#e55353' }}>{error}</div>
+                this.state.current_id === '' && this.state.userTypesData.filter(uType => uType.userType_id === this.state.userType_id).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>UserType id already exist</div>
               }
             </CFormGroup>
             <CFormGroup>
@@ -300,20 +305,10 @@ export default class AdminUserType extends Component {
                 onChange={this.handleInputChange}
                 required
               />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+              {
+                this.state.current_id === '' && this.state.userTypesData.filter(uType => uType.userType === this.state.userType).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>UserType already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CRow>
@@ -522,10 +517,10 @@ export default class AdminUserType extends Component {
     const trContent = '<tr id="insertedTr">' +
       '<th></th>' +
       '<th></th>' +
-      '<th colspan="3" style="text-align: center">'+ this.state.laboratory_label + '</th>' +
-      '<th colspan="2" style="text-align: center">'+ this.state.stock_management_label + '</th>' +
-      '<th colspan="3" style="text-align: center">'+ this.state.hs_label + '</th>' +
-      '<th colspan="3" style="text-align: center">'+ this.state.geology_label + '</th>' +
+      '<th colspan="3" style="text-align: center">' + this.state.laboratory_label + '</th>' +
+      '<th colspan="2" style="text-align: center">' + this.state.stock_management_label + '</th>' +
+      '<th colspan="3" style="text-align: center">' + this.state.hs_label + '</th>' +
+      '<th colspan="3" style="text-align: center">' + this.state.geology_label + '</th>' +
       '<th></th>' +
       '<th rowspan="2"></th>' +
       '</tr>';
@@ -825,11 +820,15 @@ export default class AdminUserType extends Component {
     axios.get(Config.ServerUri + '/get_all_userTypes')
       .then((res) => {
         this.setState({
-          userTypesData: res.data,
-          export_all_data: res.data,
+          userTypesData: res.data.sort((a, b) => {
+            return a.userType_id > b.userType_id ? 1 : -1;
+          }),
+          export_all_data: res.data.sort((a, b) => {
+            return a.userType_id > b.userType_id ? 1 : -1;
+          }),
         });
       })
-      .catch((error) => {})
+      .catch((error) => { })
   }
 
   on_delete_clicked(id) {
@@ -839,10 +838,27 @@ export default class AdminUserType extends Component {
   }
 
   on_create_clicked() {
+    let id = 1;
+    if (this.state.userTypesData.length > 0) {
+      const max_id = Math.max.apply(Math, this.state.userTypesData.map(data => data.userType_id));
+      if (max_id === this.state.userTypesData.length) {
+        id = max_id + 1;
+      } else {
+        var a = this.state.userTypesData.map(data => Number(data.userType_id));
+        var missing = new Array();
+
+        for (var i = 1; i <= max_id; i++) {
+          if (a.indexOf(i) == -1) {
+            missing.push(i);
+          }
+        }
+        id = Math.min.apply(Math, missing)
+      }
+    }
     this.setState({
       current_id: '',
       userType: '',
-      userType_id: this.state.userTypesData.length + 1,
+      userType_id: id,
       labInput: false,
       labAnalysis: false,
       labAdmin: false,
@@ -898,8 +914,12 @@ export default class AdminUserType extends Component {
           usertype_list.push({ "userType_id": usertype.userType_id, "userType": usertype.userType, "labInput": usertype.labInput, "labAnalysis": usertype.labAnalysis, "labAdmin": usertype.labAdmin, "stockUser": usertype.stockUser, "stockAdmin": usertype.stockAdmin, "hsImport": usertype.hsImport, "hsExport": usertype.hsExport, "hsAdmin": usertype.hsAdmin, "geologyImport": usertype.geologyImport, "geologyExport": usertype.geologyExport, "geologyAdmin": usertype.geologyAdmin, "remark": usertype.remark })
         });
         this.setState({
-          userTypesData: res.data,
-          export_all_data: usertype_list,
+          userTypesData: res.data.sort((a, b) => {
+            return a.userType_id > b.userType_id ? 1 : -1;
+          }),
+          export_all_data: usertype_list.sort((a, b) => {
+            return a.userType_id > b.userType_id ? 1 : -1;
+          }),
         });
 
       })
@@ -911,6 +931,10 @@ export default class AdminUserType extends Component {
   createUserType(event) {
     event.preventDefault();
     if (this.state.double_error !== "") return;
+    if (this.state.userTypesData.filter(data => data.userType_id === this.state.userType_id).length > 0) {
+      this.setState({ double_error: "Value already exists" });
+      return;
+    }
     this.setModal_Create(false);
     axios.post(Config.ServerUri + '/create_userType', {
       userType_id: this.state.userType_id,
@@ -935,8 +959,12 @@ export default class AdminUserType extends Component {
           usertype_list.push({ "userType_id": usertype.userType_id, "userType": usertype.userType, "labInput": usertype.labInput, "labAnalysis": usertype.labAnalysis, "labAdmin": usertype.labAdmin, "stockUser": usertype.stockUser, "stockAdmin": usertype.stockAdmin, "hsImport": usertype.hsImport, "hsExport": usertype.hsExport, "hsAdmin": usertype.hsAdmin, "geologyImport": usertype.geologyImport, "geologyExport": usertype.geologyExport, "geologyAdmin": usertype.geologyAdmin, "remark": usertype.remark })
         });
         this.setState({
-          userTypesData: res.data,
-          export_all_data: usertype_list,
+          userTypesData: res.data.sort((a, b) => {
+            return a.userType_id > b.userType_id ? 1 : -1;
+          }),
+          export_all_data: usertype_list.sort((a, b) => {
+            return a.userType_id > b.userType_id ? 1 : -1;
+          }),
         });
       })
       .catch((error) => {
@@ -972,8 +1000,12 @@ export default class AdminUserType extends Component {
           usertype_list.push({ "userType_id": usertype.userType_id, "userType": usertype.userType, "labInput": usertype.labInput, "labAnalysis": usertype.labAnalysis, "labAdmin": usertype.labAdmin, "stockUser": usertype.stockUser, "stockAdmin": usertype.stockAdmin, "hsImport": usertype.hsImport, "hsExport": usertype.hsExport, "hsAdmin": usertype.hsAdmin, "geologyImport": usertype.geologyImport, "geologyExport": usertype.geologyExport, "geologyAdmin": usertype.geologyAdmin, "remark": usertype.remark })
         });
         this.setState({
-          userTypesData: res.data,
-          export_all_data: usertype_list,
+          userTypesData: res.data.sort((a, b) => {
+            return a.userType_id > b.userType_id ? 1 : -1;
+          }),
+          export_all_data: usertype_list.sort((a, b) => {
+            return a.userType_id > b.userType_id ? 1 : -1;
+          }),
         });
       })
       .catch((error) => {

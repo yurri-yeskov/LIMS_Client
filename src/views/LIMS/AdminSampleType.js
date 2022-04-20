@@ -197,6 +197,12 @@ export default class AdminSampleType extends Component {
           )[0][props.selected_language],
         },
         {
+          key: "stockSample",
+          label: props.language_data.filter(
+            (item) => item.label === "stock_sample"
+          )[0][props.selected_language],
+        },
+        {
           key: "dueDate",
           label: props.language_data.filter(
             (item) => item.label === "due_date"
@@ -244,6 +250,10 @@ export default class AdminSampleType extends Component {
             (item) => item.label === "remark"
           )[0][props.selected_language],
         },
+        {
+          key: "_id",
+          label: "Id",
+        },
       ],
     };
   }
@@ -278,12 +288,6 @@ export default class AdminSampleType extends Component {
             )[0][nextProps.selected_language],
           },
           {
-            key: "stockSample",
-            label: nextProps.language_data.filter(
-              (item) => item.label === "stock_sample"
-            )[0][nextProps.selected_language],
-          },
-          {
             key: "material",
             sorter: false,
             label: nextProps.language_data.filter(
@@ -302,6 +306,13 @@ export default class AdminSampleType extends Component {
             sorter: false,
             label: nextProps.language_data.filter(
               (item) => item.label === "packing_type"
+            )[0][nextProps.selected_language],
+          },
+          {
+            key: "stockSample",
+            sorter: false,
+            label: nextProps.language_data.filter(
+              (item) => item.label === "stock_sample"
             )[0][nextProps.selected_language],
           },
           {
@@ -394,6 +405,12 @@ export default class AdminSampleType extends Component {
             )[0][nextProps.selected_language],
           },
           {
+            key: "stockSample",
+            label: nextProps.language_data.filter(
+              (item) => item.label === "stock_sample"
+            )[0][nextProps.selected_language],
+          },
+          {
             key: "dueDate",
             label: nextProps.language_data.filter(
               (item) => item.label === "due_date"
@@ -440,6 +457,10 @@ export default class AdminSampleType extends Component {
             label: nextProps.language_data.filter(
               (item) => item.label === "remark"
             )[0][nextProps.selected_language],
+          },
+          {
+            key: "_id",
+            label: "Id",
           },
         ],
       });
@@ -504,13 +525,17 @@ export default class AdminSampleType extends Component {
 
   getAllSampleTypes() {
     axios.get(Config.ServerUri + "/get_all_sampleTypes")
-    .then((res) => {
-      this.setState({
-        export_all_data: res.data,
-        sampleTypesData: res.data,
-      });
-    })
-    .catch((error) => {});
+      .then((res) => {
+        this.setState({
+          export_all_data: res.data.sort((a, b) => {
+            return a.sampleType_id > b.sampleType_id ? 1 : -1;
+          }),
+          sampleTypesData: res.data.sort((a, b) => {
+            return a.sampleType_id > b.sampleType_id ? 1 : -1;
+          }),
+        });
+      })
+      .catch((error) => { });
   }
 
   on_delete_clicked(id) {
@@ -519,10 +544,27 @@ export default class AdminSampleType extends Component {
   }
 
   on_create_clicked() {
+    let id = 1;
+    if (this.state.sampleTypesData.length > 0) {
+      const max_id = Math.max.apply(Math, this.state.sampleTypesData.map(data => data.sampleType_id));
+      if (max_id === this.state.sampleTypesData.length) {
+        id = max_id + 1
+      } else {
+        var a = this.state.sampleTypesData.map(data => Number(data.sampleType_id));
+        var missing = new Array();
+
+        for (var i = 1; i <= max_id; i++) {
+          if (a.indexOf(i) == -1) {
+            missing.push(i);
+          }
+        }
+        id = Math.min.apply(Math, missing)
+      }
+    }
     this.setState({
       current_id: "",
       sampleType: "",
-      sampleType_id: this.state.sampleTypesData.length + 1,
+      sampleType_id: id,
       stockSample: false,
       material: false,
       client: false,
@@ -542,49 +584,72 @@ export default class AdminSampleType extends Component {
     this.setModal_Create(true);
   }
 
-  on_update_clicked(item) {
-    this.setState({
-      current_id: item._id,
-      sampleType: item.sampleType,
-      sampleType_id: item.sampleType_id,
-      stockSample: item.stockSample,
-      material: item.material,
-      client: item.client,
-      packingType: item.packingType,
-      dueDate: item.dueDate,
-      sampleDate: item.sampleDate,
-      sendingDate: item.sendingDate,
-      analysisType: item.analysisType,
-      incomingProduct: item.incomingProduct,
-      distributor: item.distributor,
-      certificateType: item.certificateType,
-      remark: item.remark,
-      _create: false,
-      double_error: "",
-    });
+  async on_update_clicked(item) {
+    try {
+      const result = await axios.post(Config.ServerUri + "/check_sampleType", { id: item._id });
+      if (!result.data.changeable) {
+        toast.error('This sample type has been already used in Input/Laboratory');
+        return;
+      }
+      this.setState({
+        current_id: item._id,
+        sampleType: item.sampleType,
+        sampleType_id: item.sampleType_id,
+        stockSample: item.stockSample,
+        material: item.material,
+        client: item.client,
+        packingType: item.packingType,
+        dueDate: item.dueDate,
+        sampleDate: item.sampleDate,
+        sendingDate: item.sendingDate,
+        analysisType: item.analysisType,
+        incomingProduct: item.incomingProduct,
+        distributor: item.distributor,
+        certificateType: item.certificateType,
+        remark: item.remark,
+        _create: false,
+        double_error: "",
+      });
 
-    this.setModal_Create(true);
+      this.setModal_Create(true);
+    } catch (err) {
+      toast.error(err.response.data.message)
+    }
   }
 
-  deleteSampleType() {
-    this.setModal_Delete(false);
-    axios.post(Config.ServerUri + "/delete_sampleType", {
+  async deleteSampleType() {
+    try {
+      this.setModal_Delete(false);
+      const result = await axios.post(Config.ServerUri + "/check_sampleType", { id: this.state.current_id });
+      if (!result.data.changeable) {
+        toast.error('This sample type has been already used in Input/Laboratory');
+        return;
+      }
+      const res = await axios.post(Config.ServerUri + "/delete_sampleType", {
         id: this.state.current_id,
       })
-      .then((res) => {
-        toast.success("SampleType successfully deleted");
-        this.setState({
-          export_all_data: res.data,
-          sampleTypesData: res.data,
-        });
-      })
-      .catch((error) => {});
+      toast.success("SampleType successfully deleted");
+      this.setState({
+        export_all_data: res.data.sort((a, b) => {
+          return a.sampleType_id > b.sampleType_id ? 1 : -1;
+        }),
+        sampleTypesData: res.data.sort((a, b) => {
+          return a.sampleType_id > b.sampleType_id ? 1 : -1;
+        }),
+      });
+    } catch (err) {
+      toast.error(err.response.data.message)
+    }
   }
 
   createSampleType(event) {
     event.preventDefault();
 
     if (this.state.double_error !== "") return;
+    if (this.state.sampleTypesData.filter(data => data.sampleType_id === this.state.sampleType_id).length > 0) {
+      this.setState({ double_error: "Value already exists" });
+      return;
+    }
 
     const data = {
       sampleType_id: this.state.sampleType_id,
@@ -608,11 +673,15 @@ export default class AdminSampleType extends Component {
       .then((res) => {
         toast.success("SampleType successfully created");
         this.setState({
-          export_all_data: res.data,
-          sampleTypesData: res.data,
+          export_all_data: res.data.sort((a, b) => {
+            return a.sampleType_id > b.sampleType_id ? 1 : -1;
+          }),
+          sampleTypesData: res.data.sort((a, b) => {
+            return a.sampleType_id > b.sampleType_id ? 1 : -1;
+          }),
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   updateSampleType(event) {
@@ -644,11 +713,15 @@ export default class AdminSampleType extends Component {
       .then((res) => {
         toast.success("SampleType successfully updated");
         this.setState({
-          export_all_data: res.data,
-          sampleTypesData: res.data,
+          export_all_data: res.data.sort((a, b) => {
+            return a.sampleType_id > b.sampleType_id ? 1 : -1;
+          }),
+          sampleTypesData: res.data.sort((a, b) => {
+            return a.sampleType_id > b.sampleType_id ? 1 : -1;
+          }),
         });
       })
-      .catch((error) => {});
+      .catch((error) => { });
   }
 
   setModal_Delete(modal) {
@@ -685,20 +758,10 @@ export default class AdminSampleType extends Component {
                 onChange={this.handleInputChange}
                 required
               />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+              {
+                this.state.current_id === '' && this.state.sampleTypesData.filter(sType => sType.sampleType_id === this.state.sampleType_id).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>SampleType id already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CLabel style={{ fontWeight: "500" }}>SampleType</CLabel>
@@ -708,20 +771,10 @@ export default class AdminSampleType extends Component {
                 onChange={this.handleInputChange}
                 required
               />
-              {error === undefined || error === "" ? (
-                <div></div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    marginTop: "0.25rem",
-                    fontSize: "80%",
-                    color: "#e55353",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
+              {
+                this.state.current_id === '' && this.state.sampleTypesData.filter(sType => sType.sampleType === this.state.sampleType).length > 0 &&
+                <div className="mt-1" style={{ fontSize: '80%', color: '#e55353' }}>SampleType name already exist</div>
+              }
             </CFormGroup>
             <CFormGroup>
               <CRow>
@@ -969,7 +1022,7 @@ export default class AdminSampleType extends Component {
               color="info"
               className="float-right"
               style={{ margin: "0px 0px 0px 16px" }}
-              //style={{margin: '16px'}}
+            //style={{margin: '16px'}}
             >
               <i className="fa fa-upload" />
               <span style={{ padding: "4px" }} />
